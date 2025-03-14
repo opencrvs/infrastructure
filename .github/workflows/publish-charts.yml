@@ -26,7 +26,7 @@ jobs:
           done
       - name: Publish helm charts
         run: |
-          for chart in $(ls -1 packages)
+          for package in $(ls -1 packages)
           do
-            helm push packages
+            helm push packages/$package oci://ghcr.io/opencrvs
           done
