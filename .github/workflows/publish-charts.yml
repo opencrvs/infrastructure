@@ -26,7 +26,7 @@ jobs:
           done
       - name: Publish helm charts
         env:
-            GITHUB_TOKEN_REGISTRY: ${{ secrets.GITHUB_TOKEN }}
+            GITHUB_TOKEN_REGISTRY: ${{ secrets.PACKAGE_GITHUB_TOKEN }}
         run: |
           echo $GITHUB_TOKEN_REGISTRY | helm registry login ghcr.io/opencrvs --username adskyiproger --password-stdin
           for package in $(ls -1 packages)
