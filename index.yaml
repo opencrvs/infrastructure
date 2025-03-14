@@ -1,0 +1,23 @@
+apiVersion: v1
+entries:
+  opencrvs-dependencies-chart:
+  - apiVersion: v2
+    created: "2025-03-14T12:12:41.8512996Z"
+    description: Dependencies required by OpenCRVS
+    digest: 651b3cb3272982c0e2f66a9964baa9262fb594dbc78e9581dcd5894db263e30a
+    name: opencrvs-dependencies-chart
+    type: application
+    urls:
+    - https://github.com/opencrvs/infrastructure/releases/download/opencrvs-dependencies-chart-0.1.0/opencrvs-dependencies-chart-0.1.0.tgz
+    version: 0.1.0
+  opencrvs-services-chart:
+  - apiVersion: v2
+    created: "2025-03-14T12:12:41.972812012Z"
+    description: OpenCRVS Services
+    digest: a56490b41261fde4ecbe5b206b6c96e364d1fa8513d5aa7a3df8aef39da845b5
+    name: opencrvs-services-chart
+    type: application
+    urls:
+    - https://github.com/opencrvs/infrastructure/releases/download/opencrvs-services-chart-0.1.0/opencrvs-services-chart-0.1.0.tgz
+    version: 0.1.0
+generated: "2025-03-14T12:12:41.972816951Z"
