@@ -24,3 +24,9 @@ jobs:
           do
             helm package charts/$chart --destination packages
           done
+      - name: Publish helm charts
+        run: |
+          for chart in $(ls -1 packages)
+          do
+            helm push packages
+          done
