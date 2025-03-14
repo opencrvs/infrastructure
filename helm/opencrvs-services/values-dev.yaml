@@ -1,9 +1,0 @@
-image:
-  tag: local
-
-hostname: opencrvs.localhost
-dev_mode: false
-
-countryconfig:
-  image:
-    tag: v1.6.0

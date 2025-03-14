@@ -1,5 +1,0 @@
-apiVersion: v2
-name: opencrvs-dependencies-chart
-description: Dependencies required by OpenCRVS
-type: application
-version: 0.1.0
