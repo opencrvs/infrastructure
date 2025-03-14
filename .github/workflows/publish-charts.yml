@@ -25,7 +25,10 @@ jobs:
             helm package charts/$chart --destination packages
           done
       - name: Publish helm charts
+        env:
+            GITHUB_TOKEN_REGISTRY: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          echo $GITHUB_TOKEN_REGISTRY | helm registry login ghcr.io/opencrvs --username adskyiproger --password-stdin
           for package in $(ls -1 packages)
           do
             helm push packages/$package oci://ghcr.io/opencrvs
