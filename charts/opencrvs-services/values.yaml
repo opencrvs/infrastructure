@@ -22,6 +22,8 @@ login:
 metrics:
   replicas: 1
 notification:
+  env:
+    COUNTRY: bgd
   replicas: 1
 search:
   replicas: 1
