@@ -34,4 +34,6 @@ Automatically issue SSL secret for traefix, check possibility to issue valid SSL
 # Fixes
 
 1. Fix events
-2. Fix clients
+2. Fix clients:
+   - [16:11:44.470] ERROR: Failed to connect to MongoDB. Retrying...
+   - HTTP 500 https://config.opencrvs.localhost/publicConfig
