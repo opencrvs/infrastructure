@@ -1,3 +1,17 @@
+env:
+  SENTRY_DSN: ""
+  FHIR_URL: "http://hearth.opencrvs-deps-dev.svc.cluster.local:3447/fhir"
+  APPLICATION_CONFIG_URL: "http://config.opencrvs-services-dev.svc.cluster.local:2021"
+  COUNTRY_CONFIG_URL: "http://countryconfig.opencrvs-services-dev.svc.cluster.local:3040"
+  # TODO: Fix variable name
+  COUNTRY_CONFIG_HOST: "http://countryconfig.opencrvs-services-dev.svc.cluster.local:3040"
+  GATEWAY_URL: "http://gateway.opencrvs-services-dev.svc.cluster.local:7070"
+  # TODO: Fix variable name
+  GATEWAY_HOST: "http://gateway.opencrvs-services-dev.svc.cluster.local:7070"
+  LOGIN_URL: "http://login.opencrvs-services-dev.svc.cluster.local:3020"
+  AUTH_URL: "http://auth.opencrvs-services-dev.svc.cluster.local:4040"
+  # TODO: Fix variable name
+  AUTH_HOST: "http://auth.opencrvs-services-dev.svc.cluster.local:4040"
 client:
   replicas: 1
 auth:
@@ -13,10 +27,78 @@ countryconfig:
   replicas: 1
 dashboards:
   replicas: 1
+data_seeder:
+  enabled: false
+  env:
+    SUPER_USER_PASSWORD: "password"
+    ACTIVATE_USERS: "true"
 documents:
   replicas: 1
 gateway:
   replicas: 1
+  env:
+            # - name: APPLICATION_CONFIG_URL
+            #   value: http://config.opencrvs-services-dev.svc.cluster.local:2021 # FIXME: harcoded/
+            # - name: AUTH_URL
+            #   value: http://auth.opencrvs-services-dev.svc.cluster.local:4040 # FIXME: harcoded
+            # - name: CERT_PUBLIC_KEY_PATH
+            #   value: /secrets/public-key.pem
+            # - name: CHECK_INVALID_TOKEN
+            #   value: "true"
+            # - name: CONFIG_SMS_CODE_EXPIRY_SECONDS
+            #   value: "600"
+            # - name: CONFIG_TOKEN_EXPIRY_SECONDS
+            #   value: "604800"
+            # - name: COUNTRY_CONFIG_URL
+            #   value: http://countryconfig.opencrvs-services-dev.svc.cluster.local:3040 # FIXME: harcoded
+            # - name: DOCUMENTS_URL
+            #   value: http://documents.opencrvs-services-dev.svc.cluster.local:9050 # FIXME: harcoded
+            # - name: METRICS_URL
+            #   value: http://metrics.opencrvs-services-dev.svc.cluster.local:1050 # FIXME: harcoded
+            # - name: MINIO_BUCKET
+            #   value: ocrvs
+            # - name: NODE_ENV
+            #   value: development
+            # - name: NOTIFICATION_URL
+            #   value: http://notification.opencrvs-services-dev.svc.cluster.local:2020/
+            # - name: REDIS_HOST
+            #   value: redis.opencrvs-deps-dev.svc.cluster.local # FIXME: harcoded
+            # - name: SEARCH_URL
+            #   value: http://search.opencrvs-services-dev.svc.cluster.local:9090/ # FIXME: harcoded
+            # - name: USER_MANAGEMENT_URL
+            #   value: http://user-mgnt.opencrvs-services-dev.svc.cluster.local:3030/ # FIXME: hardcoded
+            # - name: WEBHOOKS_URL
+            #   value: http://webhooks.opencrvs-services-dev.svc.cluster.local:2525/
+            # - name: WORKFLOW_URL
+            #   value: http://workflow.opencrvs-services-dev.svc.cluster.local:5050/
+    CERT_PUBLIC_KEY_PATH: "/secrets/public-key.pem"
+    CHECK_INVALID_TOKEN: "true"
+    CONFIG_SMS_CODE_EXPIRY_SECONDS: "600"
+    CONFIG_TOKEN_EXPIRY_SECONDS: "604800"
+     # FIXME: harcoded
+    DOCUMENTS_URL: "http://documents.opencrvs-services-dev.svc.cluster.local:9050" # FIXME: harcoded
+    METRICS_URL: "http://metrics.opencrvs-services-dev.svc.cluster.local:1050" # FIXME: harcoded
+    MINIO_BUCKET: "ocrvs"
+    NODE_ENV: "development"
+    # TODO: Check usage
+    # "NODE_ENV=production",
+    NOTIFICATION_URL: "http://notification.opencrvs-services-dev.svc.cluster.local:2020/"
+    REDIS_HOST: "redis.opencrvs-deps-dev.svc.cluster.local" # FIXME: harcoded
+    SEARCH_URL: "http://search.opencrvs-services-dev.svc.cluster.local:9090/" # FIXME: harcoded
+    USER_MANAGEMENT_URL: "http://user-mgnt.opencrvs-services-dev.svc.cluster.local:3030/" # FIXME: hardcoded
+    WEBHOOKS_URL: "http://webhooks.opencrvs-services-dev.svc.cluster.local:2525/"
+    WORKFLOW_URL: "http://workflow.opencrvs-services-dev.svc.cluster.local:5050/"
+    CLIENT_APP_URL: "http://client.opencrvs-services-dev.svc.cluster.local:3000"
+    COUNTRY: FAR
+    DISABLE_RATE_LIMIT: "true"
+    # TODO: Check usage
+    DOMAIN: "opencrvs.localhost"
+    EVENTS_URL: "http://events.opencrvs-services-dev.svc.cluster.local:5555/"
+    HOST: "0.0.0.0"
+    LANGUAGES: "en,fr"
+    
+    QA_ENV: "true"
+    # "APN_SERVICE_URL=http://dependencies_apm-server:8200",
 login:
   replicas: 1
 metrics:
