@@ -23,6 +23,7 @@ sentry_dsn: ""
 
 env:
   QA_ENV: true
+  # APN_SERVICE_URL: http://dependencies_apm-server:8200
 
 
 client:
@@ -35,22 +36,11 @@ config:
   replicas: 1
   env:
     LOG_LEVEL: "debug"
-    # APN_SERVICE_URL: http://dependencies_apm-server:8200
-    # DOMAIN: opencrvs.localhost
     DOMAIN: "*"
     CHECK_INVALID_TOKEN: true
-    AUTH_URL: "http://auth.opencrvs-services-dev.svc.cluster.local:4040"
-    COUNTRY_CONFIG_URL: http://countryconfig.opencrvs-services-dev.svc.cluster.local:3040
-    COUNTRY_CONFIG_URL_INTERNAL: http://countryconfig.opencrvs-services-dev.svc.cluster.local:3040
-    DOCUMENTS_URL: http://documents.opencrvs-services-dev.svc.cluster.local:9050
-    # Defined at global level
-    # GATEWAY_URL: http://gateway.opencrvs-services-dev.svc.cluster.local:7070/
     HEARTH_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/hearth-dev
-    METRICS_URL: http://metrics.opencrvs-services-dev.svc.cluster.local:1050
     MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/application-config
     NODE_ENV: production
-    SEARCH_URL: http://search.opencrvs-deps-dev.svc.cluster.local:9090/    
-    USER_MANAGEMENT_URL: http://user-mgnt.opencrvs-services-dev.svc.cluster.local:3030/
 countryconfig:
   image:
     name: opencrvs/ocrvs-countryconfig
@@ -59,17 +49,15 @@ countryconfig:
   env:
     ALERT_EMAIL: kibana-alerts-aaaafy3oysoklmlsqcjxad7rfi@opencrvsworkspace.slack.com
     # "APN_SERVICE_URL=http://apm-server:8200",
-    APPLICATION_CONFIG_URL: "http://config.opencrvs-services-dev.svc.cluster.local:2021"
-    AUTH_URL: "http://auth.opencrvs-services-dev.svc.cluster.local:4040"
+
     CHECK_INVALID_TOKEN: true
     # TODO: Replace with https://register.{{ .Values.hostname }}
     # CLIENT_APP_URL: https://register.opencrvs.localhost
     COUNTRY_CONFIG_HOST: "0.0.0.0"
     CERT_PUBLIC_KEY_PATH: /secrets/public-key.pem
     CONFIG_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/application-config
-    CONFIRM_REGISTRATION_URL: http://workflow.opencrvs-services-dev.svc.cluster.local:5050/confirm/registration
-    COUNTRY_CONFIG_URL: https://countryconfig.opencrvs.localhost
-    GATEWAY_URL: "http://gateway.opencrvs-services-dev.svc.cluster.local:7070"
+
+    # GATEWAY_URL: "http://gateway.opencrvs-services-dev.svc.cluster.local:7070"
     # TODO: Replace with {{ .Values.hostname }}
     INFOBIP_API_KEY: ""
     INFOBIP_GATEWAY_ENDPOINT: ""
@@ -99,41 +87,31 @@ documents:
 gateway:
   replicas: 1
   env:
-    APPLICATION_CONFIG_URL: http://config.opencrvs-services-dev.svc.cluster.local:2021 # FIXME: harcoded/
-    AUTH_URL: http://auth.opencrvs-services-dev.svc.cluster.local:4040
     CERT_PUBLIC_KEY_PATH: "/secrets/public-key.pem"
     CHECK_INVALID_TOKEN: "true"
     CONFIG_SMS_CODE_EXPIRY_SECONDS: "600"
     CONFIG_TOKEN_EXPIRY_SECONDS: "604800"
-    #  # FIXME: harcoded
-    DOCUMENTS_URL: "http://documents.opencrvs-services-dev.svc.cluster.local:9050" # FIXME: harcoded
-    METRICS_URL: "http://metrics.opencrvs-services-dev.svc.cluster.local:1050" # FIXME: harcoded
+
     MINIO_BUCKET: "ocrvs"
     # # TODO: Check usage
     # NODE_ENV: "development"
     # LOGIN_URL: "https://login.opencrvs.localhost"
     NODE_ENV: production
-    NOTIFICATION_URL: "http://notification.opencrvs-services-dev.svc.cluster.local:2020/"
-    SEARCH_URL: "http://search.opencrvs-services-dev.svc.cluster.local:9090/" # FIXME: harcoded
-    USER_MANAGEMENT_URL: "http://user-mgnt.opencrvs-services-dev.svc.cluster.local:3030/" # FIXME: hardcoded
-    WEBHOOKS_URL: "http://webhooks.opencrvs-services-dev.svc.cluster.local:2525/"
-    WORKFLOW_URL: "http://workflow.opencrvs-services-dev.svc.cluster.local:5050/"
-    CLIENT_APP_URL: "https://register.opencrvs.localhost"
+
     COUNTRY: FAR
     DISABLE_RATE_LIMIT: "true"
     # # TODO: Check usage
     DOMAIN: "opencrvs.localhost"
-    EVENTS_URL: "http://events.opencrvs-services-dev.svc.cluster.local:5555/"
+
     HOST: "0.0.0.0"
     LANGUAGES: "en,fr"
-    COUNTRY_CONFIG_URL: http://countryconfig.opencrvs-services-dev.svc.cluster.local:3040
+
     QA_ENV: "true"
     # "APN_SERVICE_URL=http://dependencies_apm-server:8200",
 
 login:
   replicas: 1
-  env:
-    COUNTRY_CONFIG_URL_INTERNAL: http://countryconfig.opencrvs-services-dev.svc.cluster.local:3040
+
 metrics:
   replicas: 1
 notification:

@@ -34,20 +34,20 @@ spec:
           env:
             - name: FHIR_URL
               value: {{ .Values.fhir_url | quote }}
-            - name: NODE_ENV
+            - name: NODE_ENV  # FIXME: hardcoded
               value: development
             - name: CERT_PUBLIC_KEY_PATH
               value: /secrets/public-key.pem
             - name: CONFIG_API_URL
-              value: http://config.opencrvs-services-dev.svc.cluster.local:2021 # FIXME: harcoded
+              value: http://config.{{ .Release.Namespace }}.svc.cluster.local:2021
             - name: COUNTRY_CONFIG_URL
-              value: http://countryconfig.opencrvs-services-dev.svc.cluster.local:3040 # FIXME: harcoded/
+              value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
             - name: DOCUMENTS_URL
-              value: http://documents.opencrvs-services-dev.svc.cluster.local:9050 # FIXME: harcoded
+              value: http://documents.{{ .Release.Namespace }}.svc.cluster.local:9050
             - name: SEARCH_URL
-              value: http://search.opencrvs-deps-dev.svc.cluster.local:9090/ # FIXME: harcoded
+              value: http://search.{{ .Release.Namespace }}.svc.cluster.local:9090/
             - name: USER_MANAGEMENT_URL
-              value: http://user-mgnt.opencrvs-services-dev.svc.cluster.local:3030 # FIXME: harcoded
+              value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030
             - name: DASHBOARD_MONGO_URL
               value: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/performance
             - name: HEARTH_MONGO_URL
@@ -62,6 +62,14 @@ spec:
               value: "8086"
             - name: METRICS_PORT
               value: "1050"
+          {{- range $k, $v := .Values.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+          {{- end }}
+          {{- range $k, $v := .Values.gateway.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+          {{- end }}
           ports:
             - containerPort: 1050
               protocol: TCP

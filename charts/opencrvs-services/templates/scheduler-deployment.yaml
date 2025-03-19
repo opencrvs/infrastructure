@@ -20,7 +20,7 @@ spec:
           image: "ghcr.io/opencrvs/ocrvs-scheduler:{{ .Values.image.tag }}"
           env:
             - name: METRICS_URL
-              value: http://metrics.opencrvs-services-dev.svc.cluster.local:1050 # FIXME: harcoded
+              value: http://metrics.{{ .Release.Namespace }}.svc.cluster.local:1050 # FIXME: harcoded
             - name: NODE_ENV
               value: development
             - name: OPENHIM_MONGO_URL

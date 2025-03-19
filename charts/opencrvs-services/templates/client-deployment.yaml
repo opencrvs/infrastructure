@@ -52,9 +52,9 @@ spec:
             - name: CONTENT_SECURITY_POLICY_WILDCARD
               value: "*.{{ .Values.hostname }}"
             - name: COUNTRY_CONFIG_URL_INTERNAL
-              value: http://countryconfig.opencrvs-services-dev.svc.cluster.local:3040 # FIXME: harcoded
+              value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040 # FIXME: harcoded
             - name: GATEWAY_URL_INTERNAL
-              value: http://gateway.opencrvs-services-dev.svc.cluster.local:7070 # FIXME: harcoded
+              value: http://gateway.{{ .Release.Namespace }}.svc.cluster.local:7070 # FIXME: harcoded
             # CHECK: Following variables are present on Dev environment
             # "COUNTRY_CONFIG_URL
             # "DECLARED_DECLARATION_SEARCH_QUERY_COUNT
