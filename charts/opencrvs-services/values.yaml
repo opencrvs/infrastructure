@@ -11,6 +11,10 @@ redis_host: redis.opencrvs-deps-dev.svc.cluster.local
 #     port: 9200
 elasticsearch_host: elasticsearch.opencrvs-deps-dev.svc.cluster.local:9200
 
+influx:
+  host: influxdb-0.influxdb.opencrvs-deps-dev.svc.cluster.local
+  port: 8086
+  db: ocrvs
 # TODO: Add description
 fhir_url: http://hearth.opencrvs-deps-dev.svc.cluster.local:3447/fhir
 
