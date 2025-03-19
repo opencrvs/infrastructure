@@ -21,7 +21,7 @@ spec:
             - name: PERFORMANCE_MONGO_URL
               value: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/performance
             - name: ES_HOST
-              value: elasticsearch.opencrvs-deps-dev.svc.cluster.local:9200
+              value: {{ .Values.elasticsearch_host | quote }}
             - name: SEARCH_URL
               value: http://search.opencrvs-services-dev.svc.cluster.local:9090/ # FIXME: harcoded
             - name: HEARTH_MONGO_URL

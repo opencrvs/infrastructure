@@ -32,6 +32,8 @@ spec:
         - name: workflow
           image: "ghcr.io/opencrvs/ocrvs-workflow:{{ .Values.image.tag }}"
           env:
+            - name: FHIR_URL
+              value: {{ .Values.fhir_url | quote }}
             - name: APPLICATION_CONFIG_URL
               value: http://config.opencrvs-services-dev.svc.cluster.local:2021 # FIXME: harcoded/
             - name: CERT_PUBLIC_KEY_PATH
@@ -42,8 +44,6 @@ spec:
               value: http://countryconfig.opencrvs-services-dev.svc.cluster.local:3040 # FIXME: harcoded
             - name: DOCUMENTS_URL
               value: http://documents.opencrvs-services-dev.svc.cluster.local:9050 # FIXME: harcoded
-            - name: FHIR_URL
-              value: http://hearth.opencrvs-deps-dev.svc.cluster.local:3447/fhir # FIXME: harcoded
             - name: METRICS_URL
               value: http://metrics.opencrvs-services-dev.svc.cluster.local:1050 # FIXME: harcoded
             - name: NODE_ENV

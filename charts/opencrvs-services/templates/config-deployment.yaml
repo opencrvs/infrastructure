@@ -6,8 +6,8 @@ metadata:
   name: config
 spec:
   ports:
-    - port: {{ .Values.config.container_port }}
-      targetPort: {{ .Values.config.container_port }}
+    - port: 2021
+      targetPort: 2021
   selector:
     app: config
   type: LoadBalancer
@@ -25,7 +25,7 @@ spec:
     services:
     - name: config
       namespace: opencrvs-services-dev
-      port: {{ .Values.config.container_port }}
+      port: 2021
     middlewares:
       - name: sts-and-basic-response-headers
 ---
@@ -49,20 +49,26 @@ spec:
         - name: config
           image: "ghcr.io/opencrvs/ocrvs-config:{{ .Values.image.tag }}"
           env:
-            {{- range $k, $v := .Values.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-            {{- end }}
-            {{- range $k, $v := .Values.config.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-            {{- end }}
+            - name: FHIR_URL
+              value: {{ .Values.fhir_url | quote }}
+            - name: CLIENT_APP_URL
+              value: "https://register.{{ .Values.hostname }}"
+            - name: HOST
+              value: 0.0.0.0
             - name: PORT
-              value: "{{ .Values.config.container_port }}"
+              value: "2021"
+          {{- range $k, $v := .Values.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+          {{- end }}
+          {{- range $k, $v := .Values.config.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+          {{- end }}
             - name: CERT_PUBLIC_KEY_PATH
               value: /secrets/public-key.pem
           ports:
-            - containerPort: {{ .Values.config.container_port }}
+            - containerPort: 2021
               protocol: TCP
           volumeMounts:
             - mountPath: /secrets/public-key.pem

@@ -76,28 +76,25 @@ spec:
         - name: countryconfig
           image: "{{ .Values.countryconfig.image.name }}:{{ .Values.countryconfig.image.tag }}"
           env:
-            {{- range $k, $v := .Values.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-            {{- end }}
-            {{- range $k, $v := .Values.gateway.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-            {{- end }}
-            - name: CERT_PUBLIC_KEY_PATH
-              value: /secrets/public-key.pem
-            - name: CHECK_INVALID_TOKEN
-              value: "true"
-            - name: CONFIRM_REGISTRATION_URL
-              value: http://workflow.opencrvs-services-dev.svc.cluster.local:5050/confirm/registration
-            - name: MONGO_URL
-              value: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/user-mgnt
-            - name: NODE_ENV
-              value: production
-            - name: DOMAIN
-              value: "{{ .Values.hostname }}"
+            - name: FHIR_URL
+              value: {{ .Values.fhir_url | quote }}
             - name: CLIENT_APP_URL
-              value: https://register.{{ .Values.hostname }}
+              value: "https://register.{{ .Values.hostname }}"
+            - name: LOGIN_URL
+              value: "https://login.{{ .Values.hostname }}"
+            # TODO: Check if this value is needed here?
+            - name: COUNTRY_CONFIG_URL
+              value: "https://countryconfig.{{ .Values.hostname }}"
+            - name: DOMAIN
+              value: {{ .Values.hostname | quote }}
+          {{- range $k, $v := .Values.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+          {{- end }}
+          {{- range $k, $v := .Values.countryconfig.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+          {{- end }}
           ports:
             - containerPort: 3040
               protocol: TCP
