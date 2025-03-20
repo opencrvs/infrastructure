@@ -16,16 +16,10 @@ spec:
         - name: migration
           image: "ghcr.io/opencrvs/ocrvs-migration:{{ .Values.image.tag }}"
           env:
-            - name: APPLICATION_CONFIG_MONGO_URL
-              value: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/application-config
-            - name: PERFORMANCE_MONGO_URL
-              value: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/performance
             - name: ES_HOST
               value: {{ .Values.elasticsearch_host | quote }}
             - name: SEARCH_URL
-              value: http://search.{{ .Release.Namespace }}.svc.cluster.local:9090/ # FIXME: harcoded
-            - name: HEARTH_MONGO_URL
-              value: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/hearth-dev
+              value: http://search.{{ .Release.Namespace }}.svc.cluster.local:9090/
             - name: INFLUX_DB
               value: {{ .Values.influxdb.db | quote }}
             - name: INFLUX_HOST
@@ -33,13 +27,13 @@ spec:
             - name: INFLUX_PORT
               value: {{ .Values.influxdb.port | quote }}
             - name: MINIO_HOST
-              value: "minio-0.minio.opencrvs-deps-dev.svc.cluster.local"
-            - name: OPENHIM_MONGO_URL
-              value: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/openhim-dev
-            - name: USER_MGNT_MONGO_URL
-              value: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/user-mgnt
+              value: {{ .Values.minio_host | quote }}
             - name: WAIT_HOSTS
-              value: mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local:27017,influxdb.opencrvs-deps-dev.svc.cluster.local:8086,minio-0.minio.opencrvs-deps-dev.svc.cluster.local:3535,elasticsearch.opencrvs-deps-dev.svc.cluster.local:9200
+              value: "{{ .Values.mongodb_host }}:27017,{{ .Values.influxdb.host }}:{{ .Values.influxdb.port }},{{ .Values.minio_host }}:3535,{{ .Values.elasticsearch_host }}"
+          {{- range $k, $v := .Values.migration.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+          {{- end }}
       completions: 1 # Run the job once
       backoffLimit: 0 # Don't retry if the job fails
       restartPolicy: "OnFailure"

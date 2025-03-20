@@ -50,12 +50,6 @@ spec:
               value: http://search.{{ .Release.Namespace }}.svc.cluster.local:9090/
             - name: USER_MANAGEMENT_URL
               value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030
-            - name: DASHBOARD_MONGO_URL
-              value: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/performance
-            - name: HEARTH_MONGO_URL
-              value: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/hearth-dev
-            - name: MONGO_URL
-              value: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/metrics
             - name: INFLUX_DB
               value: {{ .Values.influxdb.db | quote }}
             - name: INFLUX_HOST
@@ -66,7 +60,7 @@ spec:
             - name: {{ $k }}
               value: {{ $v | quote }}
           {{- end }}
-          {{- range $k, $v := .Values.gateway.env }}
+          {{- range $k, $v := .Values.metrics.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}
           {{- end }}

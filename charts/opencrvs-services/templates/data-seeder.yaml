@@ -17,6 +17,10 @@ spec:
         - name: data-seeder
           image: "ghcr.io/opencrvs/ocrvs-data-seeder:{{ .Values.image.tag }}"
           env:
+            - name: AUTH_HOST
+              value: "http://auth.{{ .Release.Namespace }}.svc.cluster.local:4040"
+            - name: GATEWAY_HOST
+              value: "http://gateway.{{ .Release.Namespace }}.svc.cluster.local:7070"
             {{- range $k, $v := .Values.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}

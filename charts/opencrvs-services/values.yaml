@@ -18,6 +18,12 @@ influxdb:
 # TODO: Add description
 fhir_url: http://hearth.opencrvs-deps-dev.svc.cluster.local:3447/fhir
 
+# Minio hostname
+minio_host: minio-0.minio.opencrvs-deps-dev.svc.cluster.local
+
+# MongoDB hostname
+mongodb_host: mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local
+
 # Defined at global level
 # SENTRY_DSN: https://...@o309867.ingest.sentry.io/....
 sentry_dsn: ""
@@ -25,10 +31,10 @@ sentry_dsn: ""
 # Hostname for OpenCRVS (without wildcard or subdomain)
 # hostname: opencrvs.localhost
 
+
 env:
   QA_ENV: true
   # APN_SERVICE_URL: http://dependencies_apm-server:8200
-
 
 client:
   replicas: 1
@@ -55,18 +61,15 @@ countryconfig:
     # "APN_SERVICE_URL=http://apm-server:8200",
 
     CHECK_INVALID_TOKEN: true
-    # TODO: Replace with https://register.{{ .Values.hostname }}
-    # CLIENT_APP_URL: https://register.opencrvs.localhost
     COUNTRY_CONFIG_HOST: "0.0.0.0"
     CERT_PUBLIC_KEY_PATH: /secrets/public-key.pem
     CONFIG_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/application-config
 
-    # GATEWAY_URL: "http://gateway.opencrvs-services-dev.svc.cluster.local:7070"
     # TODO: Replace with {{ .Values.hostname }}
     INFOBIP_API_KEY: ""
     INFOBIP_GATEWAY_ENDPOINT: ""
     INFOBIP_SENDER_ID: ""
-    # LOGIN_URL: "https://login.opencrvs.localhost"
+
     MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/user-mgnt
     NODE_ENV: production
     NOTIFICATION_TRANSPORT: email
@@ -118,20 +121,44 @@ login:
 
 metrics:
   replicas: 1
+  env:
+    DASHBOARD_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/performance
+    HEARTH_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/hearth-dev
+    MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/metrics
 notification:
   env:
     COUNTRY: bgd
+    MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/notification
   replicas: 1
 search:
   replicas: 1
+  env:
+    HEARTH_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/hearth-dev
 userMgnt:
   replicas: 1
+  env:
+    MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/user-mgnt
 webhooks:
   replicas: 1
+  env:
+    MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/webhooks
 workflow:
   replicas: 1
+scheduler:
+  env:
+    OPENHIM_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/openhim-dev
 events:
   replicas: 1
-
+  env:
+    USER_MGNT_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/user-mgnt
+    EVENTS_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/events
+    MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/events
+migration:
+  env:
+    APPLICATION_CONFIG_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/application-config
+    USER_MGNT_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/user-mgnt
+    PERFORMANCE_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/performance
+    HEARTH_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/hearth-dev
+    OPENHIM_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/openhim-dev
 hostname: farajaland.com
 dev_mode: false

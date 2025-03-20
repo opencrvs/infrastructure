@@ -1,5 +1,30 @@
 # Reduce number of hardcoded variables
 
+
+Follow up patterns:
+1. Links to services within same namespace should be explicitly listed:
+   Examples:
+   ```yaml
+   - name: APPLICATION_CONFIG_URL
+      value: http://config.{{ .Release.Namespace }}.svc.cluster.local:2021
+   ```
+2. Configuraton to Dependencies (middleware) should go as dedicated variables in helm chart:
+   Example: values.yaml
+   ```yaml
+   elasticsearch_host: elasticsearch.opencrvs-deps-dev.svc.cluster.local:9200
+
+   influxdb:
+      host: influxdb-0.influxdb.opencrvs-deps-dev.svc.cluster.local
+      port: 8086
+      db: ocrvs
+   ```
+   Take into account variables differ for each environment and for each setup. Google cloud have Mongo and Redis as a service.
+3. Inside manifests for particular services mentioning of middleware should be also explicit:
+   ```yaml
+   - name: ES_HOST
+     value: {{ .Values.elasticsearch_host | quote }}
+   ```
+
 CERT_PUBLIC_KEY_PATH is common for almost all services
 
 Few examples of common variables:
