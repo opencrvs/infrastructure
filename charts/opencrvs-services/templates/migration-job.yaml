@@ -27,9 +27,9 @@ spec:
             - name: INFLUX_PORT
               value: {{ .Values.influxdb.port | quote }}
             - name: MINIO_HOST
-              value: {{ .Values.minio_host | quote }}
+              value: {{ .Values.minio.host | quote }}
             - name: WAIT_HOSTS
-              value: "{{ .Values.mongodb_host }}:27017,{{ .Values.influxdb.host }}:{{ .Values.influxdb.port }},{{ .Values.minio_host }}:3535,{{ .Values.elasticsearch_host }}"
+              value: "{{ .Values.mongodb_host }}:27017,{{ .Values.influxdb.host }}:{{ .Values.influxdb.port }},{{ .Values.minio.host }}:{{ .Values.minio.port }},{{ .Values.elasticsearch_host }}"
           {{- range $k, $v := .Values.migration.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}
