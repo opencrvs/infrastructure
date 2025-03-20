@@ -6,3 +6,5 @@
 4. Add mongodb authentication
 5. hearth: Authentication is disabled
 
+Features
+1. Encrypted storage class is requirement for kubernetes

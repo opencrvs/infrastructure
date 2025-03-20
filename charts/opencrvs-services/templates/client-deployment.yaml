@@ -24,7 +24,7 @@ spec:
     kind: Rule
     services:
     - name: client
-      namespace: opencrvs-services-dev
+      namespace: {{ .Release.Namespace }}
       port: 3000
     middlewares:
       - name: sts-and-basic-response-headers

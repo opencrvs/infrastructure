@@ -24,7 +24,7 @@ spec:
     kind: Rule
     services:
     - name: webhooks
-      namespace: opencrvs-services-dev
+      namespace: {{ .Release.Namespace }}
       port: 2525
     middlewares:
       - name: sts-and-basic-response-headers

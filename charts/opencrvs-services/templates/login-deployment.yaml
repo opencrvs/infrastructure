@@ -24,7 +24,7 @@ spec:
     kind: Rule
     services:
     - name: login
-      namespace: opencrvs-services-dev
+      namespace: {{ .Release.Namespace }}
       port: 3020
     middlewares:
       - name: sts-and-basic-response-headers

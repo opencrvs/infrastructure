@@ -24,7 +24,7 @@ spec:
     kind: Rule
     services:
     - name: events
-      namespace: opencrvs-services-dev
+      namespace: {{ .Release.Namespace }}
       port: 5555
     middlewares:
       - name: sts-and-basic-response-headers

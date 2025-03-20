@@ -24,7 +24,7 @@ spec:
     kind: Rule
     services:
     - name: auth
-      namespace: opencrvs-services-dev
+      namespace: {{ .Release.Namespace }}
       port: 4040
     middlewares:
       - name: sts-and-basic-response-headers

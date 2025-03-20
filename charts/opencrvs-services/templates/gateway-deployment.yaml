@@ -24,7 +24,7 @@ spec:
     kind: Rule
     services:
     - name: gateway
-      namespace: opencrvs-services-dev
+      namespace: {{ .Release.Namespace }}
       port: 7070
     middlewares:
       - name: sts-and-basic-response-headers
