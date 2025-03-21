@@ -1,35 +1,128 @@
-# !!! Work in progress
 
-Not all features available in docker swarm solution are supported now.
+# 🚧 Work in Progress
 
-Limitations:
-- Only manual helm installation and upgrade
-- Manual initial users configuration for minio, mongodb, elastic search
-- No data reset feature
+Please note that not all features from the Docker Swarm solution are supported yet.
 
-# General information
+**Limitations:**
+- Manual Helm installation and upgrade only
+- Manual initial user configuration for MinIO, MongoDB, Elasticsearch
+- No data reset feature available
 
-Repository to store infrastructure code for OpenCRVS deployment
+---
 
+# General Information
+
+This repository is used to store infrastructure code for deploying OpenCRVS.
+
+---
 
 # OpenCRVS on Kubernetes
 
-## Kubernetes cluster Prerequisites
+## Prerequisites for Kubernetes Cluster
 
 ### Storage
 
-Storage class with encryption or respective encryption is implemented at filesystem level:
-- For existing OpenCRVS installations make sure cluster has at least `hostpath` storage class configured and directories on file system are pointed to encrypted partitions. `hostpath` is the best option for drop-in replacement docker swarm to kubernetes, data will not be touched in that case. Later data can be migrated to more robust storage, e/g `local` or `nfs` volumes.
-- For new installations please check available options at official documentation [[1]](https://kubernetes.io/docs/concepts/storage/volumes/), [[2]](https://kubernetes.io/docs/concepts/storage/storage-classes/#provisioner). Recommended storage class for new installations is NFS.
+Ensure your cluster has a storage class with encryption, or encryption is implemented at the filesystem level:
 
-Please also check all available options for CSI at: https://github.com/kubernetes-csi/
+- **For existing OpenCRVS installations:**
+  Make sure the cluster has at least the `hostpath` storage class configured and directories on the filesystem should point to encrypted partitions.
+  `hostpath` is the best option for migration from Docker Swarm to Kubernetes; it allows data to remain untouched. Data can be migrated to more robust storage later, such as `local` or `nfs` volumes after OpenCRVS migration to Kubernetes.
 
-**NOTE:** Depending on available hardware resources it is also possible to optimize installation by splitting data into different types of volumes, e/g `hostpath` works better for Elasticsearch, while `NFS` is best option for `minio` and `mongo` (`postgres`)
+- **For new installations:**
+  - Please check the available storage options in the official documentation: [Kubernetes Volumes Documentation](https://kubernetes.io/docs/concepts/storage/volumes/) and [Kubernetes Storage Classes Documentation](https://kubernetes.io/docs/concepts/storage/storage-classes/#provisioner).
+  - The recommended storage class for new installations is NFS.
+
+Additionally, explore all possible options for CSI (Container Storage Interface) at the [CSI GitHub repository](https://github.com/kubernetes-csi/).
+
+**NOTE:** Depending on your available hardware resources, you may optimize the installation by splitting data across different types of volumes. For example:
+- `Hostpath` works better for Elasticsearch.
+- `NFS` is the best option for MinIO and Mongo (or Postgres).
+
+---
+
+# Development with Kubernetes
+
+## Prerequisites
+
+Ensure you have one of the following solutions installed on your laptop:
+- Docker Desktop (with Kubernetes enabled): https://www.docker.com/products/docker-desktop/
+- MicroK8s: https://microk8s.io/
+- Minikube: https://minikube.sigs.k8s.io/docs/
+
+You will also need the following tools for running the local development environment:
+- Git: https://git-scm.com/downloads
+- Helm: https://helm.sh/
+- Kubectl: https://kubernetes.io/docs/tasks/tools/
+- Tilt: https://tilt.dev/
+
+**NOTE:** This guide does not cover the installation of these prerequisites.
+
+---
+
+## For OpenCRVS Core Developers
+
+You need to clone the [opencrvs-core](https://github.com/opencrvs/opencrvs-core) and [infrastructure](https://github.com/opencrvs/infrastructure) repositories. If these repositories are already on your laptop, ensure they are in the same folder.
+
+1. Create a new folder or use an existing folder to store the repositories.
+2. Open a terminal (command line) and navigate to the folder.
+3. Clone the OpenCRVS Core repository:
+    ```bash
+    git clone git@github.com:opencrvs/opencrvs-core.git
+    ```
+4. Clone the Infrastructure repository:
+    ```bash
+    git clone git@github.com:opencrvs/infrastructure.git
+    ```
+5. Change directory to the OpenCRVS Core repository:
+    ```bash
+    cd opencrvs-core
+    ```
+6. [Temporary Step] Switch to the k8s-version branch:
+    ```bash
+    git checkout k8s-version
+    ```
+7. Run Tilt:
+    ```bash
+    tilt up
+    ```
+8. Navigate to [http://localhost:10350/](http://localhost:10350/)
+9. Once all container images are up and running your environment will be available at https://opencrvs.localhost
+
+---
+
+## [🚧  Coming soon] For OpenCRVS Country Configuration Developers
+
+You need to fork the [opencrvs-countryconfig](https://github.com/opencrvs/opencrvs-countryconfig) repository and clone the [infrastructure](https://github.com/opencrvs/infrastructure) repository. If these repositories are already on your laptop, ensure they are in the same folder.
+
+1. Create a new folder or use an existing folder to store the repositories.
+2. Open a terminal (command line) and navigate to the folder.
+3. Clone your fork of the OpenCRVS Country Configuration repository:
+    ```bash
+    git clone git@github.com:<your-github-account>/<your-repository>.git
+    ```
+4. Clone the Infrastructure repository:
+    ```bash
+    git clone git@github.com:opencrvs/infrastructure.git
+    ```
+5. Change directory to your forked repository:
+    ```bash
+    cd <your-repository>
+    ```
+6. [Temporary Step] Switch to the k8s-version branch:
+    ```bash
+    git checkout k8s-version
+    ```
+7. Run Tilt:
+    ```bash
+    tilt up
+    ```
+8. Navigate to [http://localhost:10350/](http://localhost:10350/)
+9. Once all container images are up and running your environment will be available at https://opencrvs.localhost
+
+---
 
 
+# Useful Links
 
-# Links
-
-[1] https://kubernetes.io/docs/concepts/storage/volumes/
-
-[2] https://kubernetes.io/docs/concepts/storage/storage-classes/#provisioner
+- [Kubernetes Volumes Documentation](https://kubernetes.io/docs/concepts/storage/volumes/)
+- [Kubernetes Storage Classes Documentation](https://kubernetes.io/docs/concepts/storage/storage-classes/#provisioner)
