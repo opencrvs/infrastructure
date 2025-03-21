@@ -21,6 +21,8 @@ spec:
               value: "http://auth.{{ .Release.Namespace }}.svc.cluster.local:4040"
             - name: GATEWAY_HOST
               value: "http://gateway.{{ .Release.Namespace }}.svc.cluster.local:7070"
+            - name: COUNTRY_CONFIG_HOST
+              value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
             {{- range $k, $v := .Values.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}

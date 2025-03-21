@@ -84,11 +84,23 @@ countryconfig:
     SMTP_USERNAME: apikey
 dashboards:
   replicas: 1
+  env:
+    OPENCRVS_METABASE_ADMIN_EMAIL: metabase-admin@opencrvs.org
+    OPENCRVS_METABASE_ADMIN_PASSWORD: idNMe7yiHIWtpL61ydsY
+    OPENCRVS_METABASE_DB_AUTH_DB: ""
+    OPENCRVS_METABASE_DB_HOST: mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local
+    OPENCRVS_METABASE_DB_PASS: ""
+    OPENCRVS_METABASE_DB_USER: ""
+    OPENCRVS_METABASE_MAP_NAME: Full country
+    OPENCRVS_METABASE_MAP_REGION_KEY: State
+    OPENCRVS_METABASE_MAP_REGION_NAME: State
+    OPENCRVS_METABASE_SITE_NAME: OpenCRVS Dashboards
+    OPENCRVS_METABASE_ADMIN_EMAIL: user@opencrvs.org
+    OPENCRVS_METABASE_ADMIN_PASSWORD: m3tabase
+
 data_seeder:
   enabled: false
   env:
-    # TODO: Fix variable name
-    COUNTRY_CONFIG_HOST: "http://countryconfig.opencrvs-services-dev.svc.cluster.local:3040"
     SUPER_USER_PASSWORD: "password"
     ACTIVATE_USERS: "true"
 documents:
@@ -162,5 +174,6 @@ migration:
     PERFORMANCE_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/performance
     HEARTH_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/hearth-dev
     OPENHIM_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/openhim-dev
+
 hostname: farajaland.com
 dev_mode: false

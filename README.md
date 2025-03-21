@@ -45,7 +45,9 @@ Additionally, explore all possible options for CSI (Container Storage Interface)
 ## Prerequisites
 
 Ensure you have one of the following solutions installed on your laptop:
-- Docker Desktop (with Kubernetes enabled): https://www.docker.com/products/docker-desktop/
+- [**Recommended**]: Docker Desktop (with Kubernetes enabled): https://www.docker.com/products/docker-desktop/. Please check following:
+  - Enable host networking
+  - Enable Kubernetes
 - MicroK8s: https://microk8s.io/
 - Minikube: https://minikube.sigs.k8s.io/docs/
 
@@ -118,6 +120,12 @@ You need to fork the [opencrvs-countryconfig](https://github.com/opencrvs/opencr
     ```
 8. Navigate to [http://localhost:10350/](http://localhost:10350/)
 9. Once all container images are up and running your environment will be available at https://opencrvs.localhost
+
+## Common issues
+
+### Countryconfig is failing with ImagePullBackOff
+
+Check image tag was set properly, use `kubectl`, adjust value in `kubernetes/opencrvs-services/values-dev.yaml`
 
 ---
 
