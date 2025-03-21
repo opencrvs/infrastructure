@@ -100,9 +100,9 @@ spec:
             - name: CONFIRM_REGISTRATION_URL
               value: http://workflow.{{ .Release.Namespace }}.svc.cluster.local:5050/confirm/registration
             - name: CONFIG_MONGO_URL
-              value: mongodb://{{ .Values.mongodb.mongodb_host }}/application-config
+              value: mongodb://{{ .Values.mongodb_host }}/application-config
             - name: MONGO_URL
-              value: mongodb://{{ .Values.mongodb.mongodb_host }}/user-mgnt
+              value: mongodb://{{ .Values.mongodb_host }}/user-mgnt
           {{- range $k, $v := .Values.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}

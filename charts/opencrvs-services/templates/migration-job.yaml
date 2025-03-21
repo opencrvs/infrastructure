@@ -29,18 +29,18 @@ spec:
             - name: MINIO_HOST
               value: {{ .Values.minio.host | quote }}
             - name: APPLICATION_CONFIG_MONGO_URL
-              value: mongodb://{{ .Values.mongodb.mongodb_host }}/application-config
+              value: mongodb://{{ .Values.mongodb_host }}/application-config
             - name: USER_MGNT_MONGO_URL
-              value: mongodb://{{ .Values.mongodb.mongodb_host }}/user-mgnt
+              value: mongodb://{{ .Values.mongodb_host }}/user-mgnt
             - name: PERFORMANCE_MONGO_URL
-              value: mongodb://{{ .Values.mongodb.mongodb_host }}/performance
+              value: mongodb://{{ .Values.mongodb_host }}/performance
             - name: HEARTH_MONGO_URL
-              value: mongodb://{{ .Values.mongodb.mongodb_host }}/hearth-dev
+              value: mongodb://{{ .Values.mongodb_host }}/hearth-dev
             - name: OPENHIM_MONGO_URL
-              value: mongodb://{{ .Values.mongodb.mongodb_host }}/openhim-dev
+              value: mongodb://{{ .Values.mongodb_host }}/openhim-dev
             - name: WAIT_HOSTS
               value: "{{ .Values.mongodb_host }}:27017,{{ .Values.influxdb.host }}:{{ .Values.influxdb.port }},{{ .Values.minio.host }}:{{ .Values.minio.port }},{{ .Values.elasticsearch_host }}"
-          {{- range $k, $v := .Values.migration.env }}
+          {{- range $k, $v := .Values.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}
           {{- end }}

@@ -72,7 +72,7 @@ spec:
             - name: USER_MANAGEMENT_URL
               value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/
             - name: MONGO_URL
-              value: mongodb://{{ .Values.mongodb.mongodb_host }}/webhooks
+              value: mongodb://{{ .Values.mongodb_host }}/webhooks
           {{- range $k, $v := .Values.webhooks.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}

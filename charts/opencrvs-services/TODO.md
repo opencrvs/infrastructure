@@ -48,6 +48,7 @@ We are starting development, but helm charts already exist and once we setup ser
    - check if it's possible to build post-deploy job for opencrvs-services chart
 3. Add workflow for creating users in ELK and mongo
    - check if it's possible to build post-deploy job for dependencies chart
+
 # Monitoring
 
 1. Review option of replacing ELK with something more simple
@@ -58,12 +59,19 @@ Automatically issue SSL secret for traefix, check possibility to issue valid SSL
 
 # Fixes
 
-1. Fix events
-2. Fix clients:
-   - [16:11:44.470] ERROR: Failed to connect to MongoDB. Retrying...
-   - HTTP 500 https://config.opencrvs.localhost/publicConfig
-
+1. Fix events variables
 
 # Check
 
 - https://kubernetes.io/docs/concepts/storage/volumes/#image
+
+# Secrets
+
+There is a need to store secrets for Mongo, Elastic search, etc.
+
+Easiest option is to store values as kubernetes secrets
+```
+kubectl create secret generic opencrvs-shared-secrets --from-env-file=.env.qa
+```
+
+And then pass as shared secret name

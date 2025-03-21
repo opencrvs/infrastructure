@@ -15,6 +15,7 @@ influxdb:
   host: influxdb-0.influxdb.opencrvs-deps-dev.svc.cluster.local
   port: 8086
   db: ocrvs
+
 # TODO: Add description
 fhir_url: http://hearth.opencrvs-deps-dev.svc.cluster.local:3447/fhir
 
@@ -26,17 +27,23 @@ minio:
 # MongoDB hostname
 mongodb_host: mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local
 
-# Defined at global level
+# Defined at global level of env variables
 # SENTRY_DSN: https://...@o309867.ingest.sentry.io/....
 sentry_dsn: ""
 
 # Hostname for OpenCRVS (without wildcard or subdomain)
 # hostname: opencrvs.localhost
+hostname: farajaland.com
+
+
+# TODO: Check usage
+dev_mode: false
 
 
 env:
   QA_ENV: true
   # APN_SERVICE_URL: http://dependencies_apm-server:8200
+  # SENTRY_DSN: https://...@o309867.ingest.sentry.io/....
 
 client:
   replicas: 1
@@ -136,6 +143,3 @@ workflow:
 
 events:
   replicas: 1
-
-hostname: farajaland.com
-dev_mode: false
