@@ -40,6 +40,8 @@ spec:
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
             - name: USER_MANAGEMENT_URL
               value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/
+            - name: MONGO_URL
+              value: mongodb://{{ .Values.mongodb.mongodb_host }}/notification
           {{- range $k, $v := .Values.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}

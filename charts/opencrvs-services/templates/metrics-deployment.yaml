@@ -56,6 +56,12 @@ spec:
               value: {{ .Values.influxdb.host | quote }}
             - name: INFLUX_PORT
               value: {{ .Values.influxdb.port | quote }}
+            - name: DASHBOARD_MONGO_URL
+              value: mongodb://{{ .Values.mongodb.mongodb_host }}/performance
+            - name: HEARTH_MONGO_URL
+              value: mongodb://{{ .Values.mongodb.mongodb_host }}/hearth-dev
+            - name: MONGO_URL
+              value: mongodb://{{ .Values.mongodb.mongodb_host }}/metrics
           {{- range $k, $v := .Values.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}

@@ -71,6 +71,10 @@ spec:
               value: http://search.{{ .Release.Namespace }}.svc.cluster.local:9090/    
             - name: USER_MANAGEMENT_URL
               value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/
+            - name: HEARTH_MONGO_URL
+              value: "mongodb://{{ .Values.mongodb.mongodb_host }}/hearth-dev"
+            - name: MONGO_URL
+              value: mongodb://{{ .Values.mongodb.mongodb_host }}/application-config
           {{- range $k, $v := .Values.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}

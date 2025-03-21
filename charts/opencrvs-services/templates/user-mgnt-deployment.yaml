@@ -46,6 +46,8 @@ spec:
               value: http://notification.{{ .Release.Namespace }}.svc.cluster.local:2020/
             - name: DOCUMENTS_URL
               value: http://documents.{{ .Release.Namespace }}.svc.cluster.local:9050
+            - name: MONGO_URL
+              value: mongodb://{{ .Values.mongodb.mongodb_host }}/user-mgnt
           {{- range $k, $v := .Values.userMgnt.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}

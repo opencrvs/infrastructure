@@ -50,8 +50,6 @@ config:
     LOG_LEVEL: "debug"
     DOMAIN: "*"
     CHECK_INVALID_TOKEN: true
-    HEARTH_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/hearth-dev
-    MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/application-config
     NODE_ENV: production
 countryconfig:
   image:
@@ -60,22 +58,14 @@ countryconfig:
   replicas: 1
   env:
     ALERT_EMAIL: kibana-alerts-aaaafy3oysoklmlsqcjxad7rfi@opencrvsworkspace.slack.com
-    # "APN_SERVICE_URL=http://apm-server:8200",
-
     CHECK_INVALID_TOKEN: true
-    COUNTRY_CONFIG_HOST: "0.0.0.0"
-    CERT_PUBLIC_KEY_PATH: /secrets/public-key.pem
-    CONFIG_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/application-config
-
-    # TODO: Replace with {{ .Values.hostname }}
     INFOBIP_API_KEY: ""
     INFOBIP_GATEWAY_ENDPOINT: ""
     INFOBIP_SENDER_ID: ""
 
-    MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/user-mgnt
     NODE_ENV: production
     NOTIFICATION_TRANSPORT: email
-    QA_ENV: true
+
     SENDER_EMAIL_ADDRESS: noreply@opencrvs.org
     SMTP_HOST: localhost
     SMTP_PASSWORD: ""
@@ -85,10 +75,9 @@ countryconfig:
 dashboards:
   replicas: 1
   env:
-    OPENCRVS_METABASE_ADMIN_EMAIL: metabase-admin@opencrvs.org
-    OPENCRVS_METABASE_ADMIN_PASSWORD: idNMe7yiHIWtpL61ydsY
+    OPENCRVS_METABASE_ADMIN_EMAIL: ""
+    OPENCRVS_METABASE_ADMIN_PASSWORD: ""
     OPENCRVS_METABASE_DB_AUTH_DB: ""
-    OPENCRVS_METABASE_DB_HOST: mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local
     OPENCRVS_METABASE_DB_PASS: ""
     OPENCRVS_METABASE_DB_USER: ""
     OPENCRVS_METABASE_MAP_NAME: Full country
@@ -108,15 +97,12 @@ documents:
 gateway:
   replicas: 1
   env:
-    CERT_PUBLIC_KEY_PATH: "/secrets/public-key.pem"
     CHECK_INVALID_TOKEN: "true"
     CONFIG_SMS_CODE_EXPIRY_SECONDS: "600"
     CONFIG_TOKEN_EXPIRY_SECONDS: "604800"
 
     MINIO_BUCKET: "ocrvs"
-    # # TODO: Check usage
-    # NODE_ENV: "development"
-    # LOGIN_URL: "https://login.opencrvs.localhost"
+
     NODE_ENV: production
 
     COUNTRY: FAR
@@ -124,56 +110,32 @@ gateway:
     # # TODO: Check usage
     DOMAIN: "opencrvs.localhost"
 
-    HOST: "0.0.0.0"
     LANGUAGES: "en,fr"
-
-    QA_ENV: "true"
-    # "APN_SERVICE_URL=http://dependencies_apm-server:8200",
 
 login:
   replicas: 1
 
 metrics:
   replicas: 1
-  env:
-    DASHBOARD_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/performance
-    HEARTH_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/hearth-dev
-    MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/metrics
+
 notification:
   env:
     COUNTRY: bgd
-    MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/notification
   replicas: 1
 search:
   replicas: 1
-  env:
-    HEARTH_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/hearth-dev
+
 userMgnt:
   replicas: 1
-  env:
-    MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/user-mgnt
+
 webhooks:
   replicas: 1
-  env:
-    MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/webhooks
+
 workflow:
   replicas: 1
-scheduler:
-  env:
-    OPENHIM_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/openhim-dev
+
 events:
   replicas: 1
-  env:
-    USER_MGNT_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/user-mgnt
-    EVENTS_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/events
-    MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/events
-migration:
-  env:
-    APPLICATION_CONFIG_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/application-config
-    USER_MGNT_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/user-mgnt
-    PERFORMANCE_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/performance
-    HEARTH_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/hearth-dev
-    OPENHIM_MONGO_URL: mongodb://mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local/openhim-dev
 
 hostname: farajaland.com
 dev_mode: false

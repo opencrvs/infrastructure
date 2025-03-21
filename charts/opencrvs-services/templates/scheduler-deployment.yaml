@@ -23,6 +23,8 @@ spec:
               value: http://metrics.{{ .Release.Namespace }}.svc.cluster.local:1050 # FIXME: harcoded
             - name: NODE_ENV
               value: development
+            - name: OPENHIM_MONGO_URL
+              value: mongodb://{{ .Values.mongodb.mongodb_host }}/openhim-dev
           {{- range $k, $v := .Values.scheduler.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}

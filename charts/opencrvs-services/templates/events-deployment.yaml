@@ -61,6 +61,12 @@ spec:
               value: "events"
             - name: USER_MANAGEMENT_URL
               value: "http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/"
+            - name: USER_MGNT_MONGO_URL
+              value: mongodb://{{ .Values.mongodb.mongodb_host }}/user-mgnt
+            - name: EVENTS_MONGO_URL
+              value: mongodb://{{ .Values.mongodb.mongodb_host }}/events
+            - name: MONGO_URL
+              value: mongodb://{{ .Values.mongodb.mongodb_host }}/events
           {{- range $k, $v := .Values.events.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}

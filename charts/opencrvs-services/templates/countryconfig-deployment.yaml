@@ -76,6 +76,10 @@ spec:
         - name: countryconfig
           image: "{{ .Values.countryconfig.image.name }}:{{ .Values.countryconfig.image.tag }}"
           env:
+            - name: CERT_PUBLIC_KEY_PATH
+              value: /secrets/public-key.pem
+            - name: COUNTRY_CONFIG_HOST
+              value: "0.0.0.0"
             - name: FHIR_URL
               value: {{ .Values.fhir_url | quote }}
             - name: CLIENT_APP_URL
@@ -95,6 +99,10 @@ spec:
               value: "http://auth.{{ .Release.Namespace }}.svc.cluster.local:4040"
             - name: CONFIRM_REGISTRATION_URL
               value: http://workflow.{{ .Release.Namespace }}.svc.cluster.local:5050/confirm/registration
+            - name: CONFIG_MONGO_URL
+              value: mongodb://{{ .Values.mongodb.mongodb_host }}/application-config
+            - name: MONGO_URL
+              value: mongodb://{{ .Values.mongodb.mongodb_host }}/user-mgnt
           {{- range $k, $v := .Values.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}
