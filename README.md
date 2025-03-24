@@ -17,7 +17,7 @@ This repository is used to store infrastructure code for deploying OpenCRVS.
 
 ---
 
-# OpenCRVS on Kubernetes
+# Running OpenCRVS on Kubernetes
 
 ## Prerequisites for Kubernetes Cluster
 
@@ -40,6 +40,36 @@ Additionally, explore all possible options for CSI (Container Storage Interface)
 - `NFS` is the best option for MinIO and Mongo (or Postgres).
 
 ---
+
+
+## [🚧 ] Manual deployment guide
+
+1. Create yaml file with custom values for your installation:
+   ```yaml
+   # Kubernetes load balancer domain used by traefik as entrypoint
+   hostname: opencrvs.<you domain>
+   # OpenCRVS Core image tag
+   image:
+     tag: local
+   # Your country image repository and tag
+   countryconfig:
+     image:
+       name: opencrvs/ocrvs-countryconfig
+       tag: develop
+   ```
+2. Add helm repository:
+   ```
+   helm repo add ...
+   ```
+3. Install OpenCRVS:
+   ```
+   helm install ... opencrvs
+   ```
+   **NOTE:** Data seed will run only on `install`, don't use `update --install`.
+
+# [🚧  Coming soon] Server environment migration
+
+TODO: Migration from docker swarm to kubernetes guide
 
 # Development with Kubernetes
 
