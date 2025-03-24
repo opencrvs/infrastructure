@@ -73,10 +73,7 @@ spec:
               value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/
             - name: MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/webhooks
-          {{- range $k, $v := .Values.webhooks.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-          {{- end }}
+          {{- include "render-env-vars" (dict "service_name" "webhooks" "Values" .Values) }}
           ports:
             - containerPort: 2525
               protocol: TCP

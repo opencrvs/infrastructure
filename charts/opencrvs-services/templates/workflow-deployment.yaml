@@ -35,27 +35,28 @@ spec:
             - name: FHIR_URL
               value: {{ .Values.fhir_url | quote }}
             - name: APPLICATION_CONFIG_URL
-              value: http://config.{{ .Release.Namespace }}.svc.cluster.local:2021 # FIXME: harcoded/
+              value: http://config.{{ .Release.Namespace }}.svc.cluster.local:2021
             - name: CERT_PUBLIC_KEY_PATH
               value: /secrets/public-key.pem
             - name: COUNTRY
               value: bgd
             - name: COUNTRY_CONFIG_URL
-              value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040 # FIXME: harcoded
+              value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
             - name: DOCUMENTS_URL
-              value: http://documents.{{ .Release.Namespace }}.svc.cluster.local:9050 # FIXME: harcoded
+              value: http://documents.{{ .Release.Namespace }}.svc.cluster.local:9050
             - name: METRICS_URL
-              value: http://metrics.{{ .Release.Namespace }}.svc.cluster.local:1050 # FIXME: harcoded
+              value: http://metrics.{{ .Release.Namespace }}.svc.cluster.local:1050
             - name: NODE_ENV
               value: development
             - name: NOTIFICATION_SERVICE_URL
               value: http://notification.{{ .Release.Namespace }}.svc.cluster.local:2020/
             - name: SEARCH_URL
-              value: http://search.{{ .Release.Namespace }}.svc.cluster.local:9090/ # FIXME: harcoded
+              value: http://search.{{ .Release.Namespace }}.svc.cluster.local:9090/
             - name: USER_MANAGEMENT_URL
-              value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/ # FIXME: hardcoded
+              value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/
             - name: WEBHOOKS_URL
               value: http://webhooks.{{ .Release.Namespace }}.svc.cluster.local:2525/
+          {{- include "render-env-vars" (dict "service_name" "webhooks" "Values" .Values) }}
           ports:
             - containerPort: 5050
               protocol: TCP

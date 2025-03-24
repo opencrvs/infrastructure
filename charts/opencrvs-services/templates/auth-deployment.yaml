@@ -66,25 +66,18 @@ spec:
             - name: CONFIG_TOKEN_EXPIRY_SECONDS
               value: '604800'
             - name: METRICS_URL
-              value: http://metrics.{{ .Release.Namespace }}.svc.cluster.local:1050 # FIXME: harcoded
+              value: http://metrics.{{ .Release.Namespace }}.svc.cluster.local:1050
             - name: NOTIFICATION_SERVICE_URL
               value: http://notification.{{ .Release.Namespace }}.svc.cluster.local:2020/
             - name: USER_MANAGEMENT_URL
-              value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/ # FIXME: hardcoded
+              value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/
             - name: AUTH_PORT
               value: "4040"
             - name: COUNTRY_CONFIG_URL_INTERNAL
-              value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040 # FIXME: harcoded
+              value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
             - name: DOMAIN
               value: "{{ .Release.Namespace }}.svc.cluster.local"
-          {{- range $k, $v := .Values.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-          {{- end }}
-          {{- range $k, $v := .Values.auth.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-          {{- end }}
+          {{- include "render-env-vars" (dict "service_name" "auth" "Values" .Values) }}
           ports:
             - containerPort: 4040
               protocol: TCP

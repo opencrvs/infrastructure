@@ -62,14 +62,7 @@ spec:
               value: mongodb://{{ .Values.mongodb_host }}/hearth-dev
             - name: MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/metrics
-          {{- range $k, $v := .Values.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-          {{- end }}
-          {{- range $k, $v := .Values.metrics.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-          {{- end }}
+          {{- include "render-env-vars" (dict "service_name" "metrics" "Values" .Values) }}
           ports:
             - containerPort: 1050
               protocol: TCP

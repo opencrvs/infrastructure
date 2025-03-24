@@ -103,14 +103,7 @@ spec:
               value: mongodb://{{ .Values.mongodb_host }}/application-config
             - name: MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/user-mgnt
-          {{- range $k, $v := .Values.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-          {{- end }}
-          {{- range $k, $v := .Values.countryconfig.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-          {{- end }}
+          {{- include "render-env-vars" (dict "service_name" "countryconfig" "Values" .Values) }}
           ports:
             - containerPort: 3040
               protocol: TCP

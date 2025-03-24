@@ -46,10 +46,7 @@ spec:
               value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/
             - name: HEARTH_MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/hearth-dev
-          {{- range $k, $v := .Values.search.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-          {{- end }}
+          {{- include "render-env-vars" (dict "service_name" "search" "Values" .Values) }}
           ports:
             - containerPort: 9090
               protocol: TCP

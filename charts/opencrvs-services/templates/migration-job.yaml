@@ -40,10 +40,7 @@ spec:
               value: mongodb://{{ .Values.mongodb_host }}/openhim-dev
             - name: WAIT_HOSTS
               value: "{{ .Values.mongodb_host }}:27017,{{ .Values.influxdb.host }}:{{ .Values.influxdb.port }},{{ .Values.minio.host }}:{{ .Values.minio.port }},{{ .Values.elasticsearch_host }}"
-          {{- range $k, $v := .Values.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-          {{- end }}
+          {{- include "render-env-vars" (dict "service_name" "migration" "Values" .Values) }}
       completions: 1 # Run the job once
       backoffLimit: 0 # Don't retry if the job fails
       restartPolicy: "OnFailure"

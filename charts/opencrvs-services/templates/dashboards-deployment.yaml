@@ -54,8 +54,5 @@ spec:
               value: "http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040/content/map.geojson"
             - name: OPENCRVS_METABASE_DB_HOST
               value: {{ .Values.mongodb_host | quote }}
-          {{- range $k, $v := .Values.dashboards.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-          {{- end }}
+          {{- include "render-env-vars" (dict "service_name" "dashboards" "Values" .Values) }}
       restartPolicy: Always

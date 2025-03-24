@@ -7,6 +7,7 @@ Please note that not all features from the Docker Swarm solution are supported y
 - Manual Helm installation and upgrade only
 - Manual initial user configuration for MinIO, MongoDB, Elasticsearch
 - No data reset feature available
+- Any kind of secrets (Logins and passwords, etc) should be created manually 
 
 ---
 

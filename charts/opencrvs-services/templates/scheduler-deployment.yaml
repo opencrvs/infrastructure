@@ -20,13 +20,10 @@ spec:
           image: "ghcr.io/opencrvs/ocrvs-scheduler:{{ .Values.image.tag }}"
           env:
             - name: METRICS_URL
-              value: http://metrics.{{ .Release.Namespace }}.svc.cluster.local:1050 # FIXME: harcoded
+              value: http://metrics.{{ .Release.Namespace }}.svc.cluster.local:1050
             - name: NODE_ENV
               value: development
             - name: OPENHIM_MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/openhim-dev
-          {{- range $k, $v := .Values.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-          {{- end }}
+          {{- include "render-env-vars" (dict "service_name" "scheduler" "Values" .Values) }}
       restartPolicy: Always
