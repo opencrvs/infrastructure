@@ -88,14 +88,7 @@ spec:
               value: "http://events.{{ .Release.Namespace }}.svc.cluster.local:5555/"
             - name: COUNTRY_CONFIG_URL
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
-          {{- range $k, $v := .Values.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-          {{- end }}
-          {{- range $k, $v := .Values.gateway.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-          {{- end }}
+          {{- include "render-env-vars" (dict "service_name" "gateway" "Values" .Values) }}
           ports:
             - containerPort: 7070
               protocol: TCP

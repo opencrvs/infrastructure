@@ -57,19 +57,12 @@ spec:
             - name: INFLUX_PORT
               value: {{ .Values.influxdb.port | quote }}
             - name: DASHBOARD_MONGO_URL
-              value: mongodb://{{ .Values.mongodb.mongodb_host }}/performance
+              value: mongodb://{{ .Values.mongodb_host }}/performance
             - name: HEARTH_MONGO_URL
-              value: mongodb://{{ .Values.mongodb.mongodb_host }}/hearth-dev
+              value: mongodb://{{ .Values.mongodb_host }}/hearth-dev
             - name: MONGO_URL
-              value: mongodb://{{ .Values.mongodb.mongodb_host }}/metrics
-          {{- range $k, $v := .Values.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-          {{- end }}
-          {{- range $k, $v := .Values.metrics.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-          {{- end }}
+              value: mongodb://{{ .Values.mongodb_host }}/metrics
+          {{- include "render-env-vars" (dict "service_name" "metrics" "Values" .Values) }}
           ports:
             - containerPort: 1050
               protocol: TCP

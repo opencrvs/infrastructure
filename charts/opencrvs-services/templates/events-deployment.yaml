@@ -62,15 +62,12 @@ spec:
             - name: USER_MANAGEMENT_URL
               value: "http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/"
             - name: USER_MGNT_MONGO_URL
-              value: mongodb://{{ .Values.mongodb.mongodb_host }}/user-mgnt
+              value: mongodb://{{ .Values.mongodb_host }}/user-mgnt
             - name: EVENTS_MONGO_URL
-              value: mongodb://{{ .Values.mongodb.mongodb_host }}/events
+              value: mongodb://{{ .Values.mongodb_host }}/events
             - name: MONGO_URL
-              value: mongodb://{{ .Values.mongodb.mongodb_host }}/events
-          {{- range $k, $v := .Values.events.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-          {{- end }}
+              value: mongodb://{{ .Values.mongodb_host }}/events
+          {{- include "render-env-vars" (dict "service_name" "events" "Values" .Values) }}
           ports:
             - containerPort: 5555
               protocol: TCP

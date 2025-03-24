@@ -43,10 +43,7 @@ spec:
               value: {{ .Values.minio.host | quote }}
             - name: MINIO_PORT
               value: {{ .Values.minio.port | quote }}
-          {{- range $k, $v := .Values.documents.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-          {{- end }}
+          {{- include "render-env-vars" (dict "service_name" "documents" "Values" .Values) }}
           image: "ghcr.io/opencrvs/ocrvs-documents:{{ .Values.image.tag }}"
           volumeMounts:
             - mountPath: /secrets/public-key.pem

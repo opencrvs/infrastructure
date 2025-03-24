@@ -47,11 +47,8 @@ spec:
             - name: DOCUMENTS_URL
               value: http://documents.{{ .Release.Namespace }}.svc.cluster.local:9050
             - name: MONGO_URL
-              value: mongodb://{{ .Values.mongodb.mongodb_host }}/user-mgnt
-          {{- range $k, $v := .Values.userMgnt.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-          {{- end }}
+              value: mongodb://{{ .Values.mongodb_host }}/user-mgnt
+          {{- include "render-env-vars" (dict "service_name" "userMgnt" "Values" .Values) }}
           ports:
             - containerPort: 3030
               protocol: TCP

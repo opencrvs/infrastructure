@@ -1,42 +1,43 @@
-
-# Dependencies configuration for OpenCRVS services
-# Redis hostname
-redis_host: redis.opencrvs-deps-dev.svc.cluster.local
-# TODO: Clarify if we can define port
-
-# Elasticsearch hostname
-# TODO: Should we define port as separate variable?
-# elasticsearch:
-#     host: elasticsearch.opencrvs-deps-dev.svc.cluster.local
-#     port: 9200
+# Elasticsearch configuration, including the hostname and port.
+# TODO: Consider defining the port as a separate variable.
 elasticsearch_host: elasticsearch.opencrvs-deps-dev.svc.cluster.local:9200
 
+# InfluxDB configuration, including the hostname, port, and database name.
 influxdb:
   host: influxdb-0.influxdb.opencrvs-deps-dev.svc.cluster.local
   port: 8086
   db: ocrvs
-# TODO: Add description
+
+# TODO: Add description for FHIR URL configuration.
+# FHIR URL Endpoint.
 fhir_url: http://hearth.opencrvs-deps-dev.svc.cluster.local:3447/fhir
 
-# Minio hostname
+# MinIO configuration, including the hostname and port.
 minio:
   host: minio-0.minio.opencrvs-deps-dev.svc.cluster.local
   port: 3535
 
-# MongoDB hostname
+# MongoDB hostname configuration.
 mongodb_host: mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local
 
-# Defined at global level
-# SENTRY_DSN: https://...@o309867.ingest.sentry.io/....
-sentry_dsn: ""
+# Hostname for OpenCRVS application, without wildcard or subdomain.
+# Example: hostname: opencrvs.localhost
+hostname: farajaland.com
 
-# Hostname for OpenCRVS (without wildcard or subdomain)
-# hostname: opencrvs.localhost
+# TODO: Check the usage and purpose of this variable.
+# Developer mode flag.
+dev_mode: false
 
-
+# Global environment variables applied to
+# all OpenCRVS microservices (Kubernetes PODs).
 env:
   QA_ENV: true
+  # Application performance monitoring service URL.
   # APN_SERVICE_URL: http://dependencies_apm-server:8200
+
+  # Sentry DSN (Data Source Name) configuration for error tracking.
+  # Note: The SENTRY_DSN should be defined at the global level of environment variables.
+  # SENTRY_DSN: https://...@o309867.ingest.sentry.io/....
 
 client:
   replicas: 1
@@ -44,13 +45,19 @@ auth:
   replicas: 1
 components:
   replicas: 1
+
+# `config` Microservice configuration example:
 config:
   replicas: 1
+  # Service level environment variables
   env:
-    LOG_LEVEL: "debug"
     DOMAIN: "*"
     CHECK_INVALID_TOKEN: true
     NODE_ENV: production
+  # Mapping for external secrets goes here:
+  
+  secrets:
+    
 countryconfig:
   image:
     name: opencrvs/ocrvs-countryconfig
@@ -59,9 +66,10 @@ countryconfig:
   env:
     ALERT_EMAIL: kibana-alerts-aaaafy3oysoklmlsqcjxad7rfi@opencrvsworkspace.slack.com
     CHECK_INVALID_TOKEN: true
-    INFOBIP_API_KEY: ""
-    INFOBIP_GATEWAY_ENDPOINT: ""
-    INFOBIP_SENDER_ID: ""
+
+    # INFOBIP_API_KEY: ""
+    # INFOBIP_GATEWAY_ENDPOINT: ""
+    # INFOBIP_SENDER_ID: ""
 
     NODE_ENV: production
     NOTIFICATION_TRANSPORT: email
@@ -137,5 +145,4 @@ workflow:
 events:
   replicas: 1
 
-hostname: farajaland.com
-dev_mode: false
+scheduler: {}
