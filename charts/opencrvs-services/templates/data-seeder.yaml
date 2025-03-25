@@ -1,9 +1,10 @@
-# FIXME: This is likely not gonna work as expected and is naive implementation
-# see also https://github.com/opencrvs/opencrvs-core/issues/7451
 {{- if .Values.data_seeder.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "2"
   labels:
     app: data-seeder
   name: data-seeder

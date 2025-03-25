@@ -49,6 +49,8 @@ spec:
         - image: "ghcr.io/opencrvs/ocrvs-auth:{{ .Values.image.tag }}"
           name: auth
           env:
+            - name: NODE_ENV
+              value: production
             - name: REDIS_HOST
               value: {{ .Values.redis_host | quote }}
             - name: COUNTRY_CONFIG_URL
@@ -76,7 +78,7 @@ spec:
             - name: COUNTRY_CONFIG_URL_INTERNAL
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
             - name: DOMAIN
-              value: "{{ .Release.Namespace }}.svc.cluster.local"
+              value: {{ .Values.hostname | quote }}
           {{- include "render-env-vars" (dict "service_name" "auth" "Values" .Values) }}
           ports:
             - containerPort: 4040

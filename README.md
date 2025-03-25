@@ -154,9 +154,15 @@ You need to fork the [opencrvs-countryconfig](https://github.com/opencrvs/opencr
 
 ## Common issues
 
-### Countryconfig is failing with ImagePullBackOff
+### Container start is failing with ImagePullBackOff
 
 Check image tag was set properly, use `kubectl`, adjust value in `kubernetes/opencrvs-services/values-dev.yaml`
+- Usually for repository your are working tag is `local`, e/g country config repository should have `local` tag only for countryconfig.
+- Check tag exists on docker hub (or any other repository)
+
+### Reset local environment
+
+Restart docker desktop
 
 ---
 

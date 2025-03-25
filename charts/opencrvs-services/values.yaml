@@ -17,6 +17,7 @@ minio:
   host: minio-0.minio.opencrvs-deps-dev.svc.cluster.local
   port: 3535
 
+redis_host: redis-0.redis.opencrvs-deps-dev.svc.cluster.local
 # MongoDB hostname configuration.
 mongodb_host: mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local
 

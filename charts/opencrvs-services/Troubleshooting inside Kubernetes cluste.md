@@ -5,7 +5,7 @@ Troubleshooting inside Kubernetes cluster
   ```bash
   USERNAME=o.admin
   SUPER_USER_PASSWORD=password
-  curl -X POST "http://auth.opencrvs-services-dev.svc.cluster.local:4040/authenticate-super-user" \
+  curl -X POST "http://auth.opencrvs-dev.svc.cluster.local:4040/authenticate-super-user" \
       -H "Content-Type: application/json" \
       -d '{
         "username": "'"${USERNAME}"'",
@@ -15,7 +15,7 @@ Troubleshooting inside Kubernetes cluster
 
 2. Check gateway host:
   ```bash
-    GATEWAY_HOST=http://gateway.opencrvs-services-dev.svc.cluster.local:7070
+    GATEWAY_HOST=http://gateway.opencrvs-dev.svc.cluster.local:7070
     curl -X GET \
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer ${token}" \
@@ -23,10 +23,14 @@ Troubleshooting inside Kubernetes cluster
   ```
 3. Check config host:
   ```bash
-  curl -X GET \
+  curl -v -X GET \
       -H "Content-Type: application/json" \
       -H "Authorization: Bearer ${token}" \
-      http://config.opencrvs-services-dev.svc.cluster.local:2021/locations?type=ADMIN_STRUCTURE&_count=0
+      http://config.opencrvs-dev.svc.cluster.local:2021/locations?type=ADMIN_STRUCTURE&_count=0
+  ```
+4. Check Hearth:
+  ```bash
+  curl -v http://hearth.opencrvs-deps-dev.svc.cluster.local:3447/fhir/Location
   ```
 
 # Issues
