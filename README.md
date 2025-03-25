@@ -3,6 +3,11 @@
 
 Please note that not all features from the Docker Swarm solution are supported yet.
 
+**Implemented features**
+
+- Data migration
+- Data seeding
+
 **Limitations:**
 - Manual Helm installation and upgrade only
 - Manual initial user configuration for MinIO, MongoDB, Elasticsearch
@@ -14,6 +19,188 @@ Please note that not all features from the Docker Swarm solution are supported y
 # General Information
 
 This repository is used to store infrastructure code for deploying OpenCRVS.
+
+
+
+---
+
+
+# Developing OpenCRVS with Kubernetes
+
+## Prerequisites
+
+Ensure you have one of the following solutions installed on your laptop:
+- [**Recommended**]: Docker Desktop (with Kubernetes enabled): https://www.docker.com/products/docker-desktop/. Please check following:
+  - Enable host networking
+  - Enable Kubernetes
+- MicroK8s: https://microk8s.io/
+- Minikube: https://minikube.sigs.k8s.io/docs/
+
+You will also need the following tools for running the local development environment:
+- Git: https://git-scm.com/downloads
+- Helm: https://helm.sh/
+- Kubectl: https://kubernetes.io/docs/tasks/tools/
+- Tilt: https://tilt.dev/
+
+**NOTE:** This guide does not cover the installation of these prerequisites.
+
+---
+
+## For OpenCRVS Core Developers
+
+You need to clone the [opencrvs-core](https://github.com/opencrvs/opencrvs-core) and [infrastructure](https://github.com/opencrvs/infrastructure) repositories. If these repositories are already on your laptop, ensure they are in the same folder.
+
+1. Create a new folder or use an existing folder to store the repositories.
+2. Open a terminal (command line) and navigate to the folder.
+3. Clone the OpenCRVS Core repository:
+    ```bash
+    git clone git@github.com:opencrvs/opencrvs-core.git
+    ```
+4. Clone the Infrastructure repository:
+    ```bash
+    git clone git@github.com:opencrvs/infrastructure.git
+    ```
+5. Change directory to the OpenCRVS Core repository:
+    ```bash
+    cd opencrvs-core
+    ```
+6. [Temporary Step] Switch to the k8s-version branch:
+    ```bash
+    git checkout k8s-refresh
+    ```
+7. Run Tilt:
+    ```bash
+    tilt up
+    ```
+8. Navigate to [http://localhost:10350/](http://localhost:10350/)
+9. Once all container images are up and running your environment will be available at https://opencrvs.localhost
+
+---
+
+## For OpenCRVS Country Config Developers
+
+Please follow official documentation how to setup your own country configuration at [Set-up your own, local, country configuration](https://documentation.opencrvs.org/setup/3.-installation/3.2-set-up-your-own-country-configuration).
+You need to fork (clone) the [opencrvs-countryconfig](https://github.com/opencrvs/opencrvs-countryconfig) repository and clone the [infrastructure](https://github.com/opencrvs/infrastructure) repository. If repositories are already on your laptop, ensure they are in the same parent folder, for example:
+```
+repositories/
+    infrastructure
+    opencrvs-countryconfig
+    ...
+```
+
+**Step by step instruction**
+
+1. Create a new folder or use an existing folder to store the repositories. For example folder could be located at your home directory or in documents:
+   ```bash
+   mkdir ~/Documents/repository
+   ```
+2. Open a terminal (command line) and navigate to the folder.
+   ```bash
+   cd ~/Documents/repository
+   ```
+3. Clone OpenCRVS Country Config repository:
+    
+    For county config use:
+    ```bash
+    git clone https://github.com/opencrvs/opencrvs-countryconfig
+    ```
+    For your own fork use:
+    ```bash
+    git clone git@github.com:<your-github-account>/<your-repository>.git
+    ```
+
+4. Clone the Infrastructure repository:
+    ```bash
+    git clone git@github.com:opencrvs/infrastructure.git
+    ```
+5. Change directory to country config (your own) repository:
+    
+    For county config use:
+    ```bash
+    cd opencrvs-countryconfig
+    ```
+    For your own fork use:
+    ```bash
+    cd <your-repository>
+    ```
+6. [Temporary Step] Switch to the k8s-refresh branch:
+    ```bash
+    git checkout k8s-refresh
+    ```
+7. Run Tilt:
+    ```bash
+    tilt up
+    ```
+8. Navigate to [http://localhost:10350/](http://localhost:10350/)
+9. Once all container images are up and running your environment will be available at https://opencrvs.localhost
+
+## Seed data
+
+1. Navigate to file `kubernetes/opencrvs-services/values-dev.yaml` in opencrvs-core (or your country config) repository
+2. Change value `data_seeder.enabled` to `true`.
+3. Save changes
+4. New tilt resource `data-seeder` will be created, check [http://localhost:10350/](http://localhost:10350/)
+5. Make sure data-seeder job completed without issues.
+6. Change value `data_seeder.enabled` to `false`.
+7. Save changes
+
+## Common issues
+
+### Container start is failing with ImagePullBackOff
+
+Check image tag was set properly, use `kubectl`, adjust value in `kubernetes/opencrvs-services/values-dev.yaml`
+- Usually for repository your are working tag is `local`, e/g country config repository should have `local` tag only for countryconfig.
+- Check tag exists on docker hub (or any other repository)
+
+### Reset local environment
+
+Draft and working way is to restart docker desktop
+
+### Troubleshooting connectivity inside Kubernetes cluster
+
+1. Issue fresh token:
+
+  ```bash
+  USERNAME=o.admin
+  SUPER_USER_PASSWORD=password
+  curl -X POST "http://auth.opencrvs-dev.svc.cluster.local:4040/authenticate-super-user" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "username": "'"${USERNAME}"'",
+        "password": "'"$SUPER_USER_PASSWORD"'"
+      }'
+  ```
+
+2. Check gateway host:
+  ```bash
+    GATEWAY_HOST=http://gateway.opencrvs-dev.svc.cluster.local:7070
+    curl -X GET \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer ${token}" \
+        ${GATEWAY_HOST}/locations?type=ADMIN_STRUCTURE&_count=0
+  ```
+3. Check config host:
+  ```bash
+  curl -v -X GET \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer ${token}" \
+      http://config.opencrvs-dev.svc.cluster.local:2021/locations?type=ADMIN_STRUCTURE&_count=0
+  ```
+4. Check Hearth:
+  ```bash
+  curl -v http://hearth.opencrvs-deps-dev.svc.cluster.local:3447/fhir/Location
+  ```
+
+### Login/Client service is not responding: Check login logs
+```
+2025/03/19 07:53:38 [error] 15#15: *1 upstream timed out (110: Connection timed out) while connecting to upstream, client: 10.1.3.102, server: localhost, request: "GET /api/countryconfig/login-config.js HTTP/1.1", upstream: "http://10.100.14.175:3040/login-config.js", host: "login.opencrvs.localhost", referrer: "https://login.opencrvs.localhost/"
+```
+
+Solution: restart nginx inside login container or delete login pod
+```
+nginx -s reload
+```
+
 
 ---
 
@@ -70,102 +257,6 @@ Additionally, explore all possible options for CSI (Container Storage Interface)
 # [🚧  Coming soon] Server environment migration
 
 TODO: Migration from docker swarm to kubernetes guide
-
-# Development with Kubernetes
-
-## Prerequisites
-
-Ensure you have one of the following solutions installed on your laptop:
-- [**Recommended**]: Docker Desktop (with Kubernetes enabled): https://www.docker.com/products/docker-desktop/. Please check following:
-  - Enable host networking
-  - Enable Kubernetes
-- MicroK8s: https://microk8s.io/
-- Minikube: https://minikube.sigs.k8s.io/docs/
-
-You will also need the following tools for running the local development environment:
-- Git: https://git-scm.com/downloads
-- Helm: https://helm.sh/
-- Kubectl: https://kubernetes.io/docs/tasks/tools/
-- Tilt: https://tilt.dev/
-
-**NOTE:** This guide does not cover the installation of these prerequisites.
-
----
-
-## For OpenCRVS Core Developers
-
-You need to clone the [opencrvs-core](https://github.com/opencrvs/opencrvs-core) and [infrastructure](https://github.com/opencrvs/infrastructure) repositories. If these repositories are already on your laptop, ensure they are in the same folder.
-
-1. Create a new folder or use an existing folder to store the repositories.
-2. Open a terminal (command line) and navigate to the folder.
-3. Clone the OpenCRVS Core repository:
-    ```bash
-    git clone git@github.com:opencrvs/opencrvs-core.git
-    ```
-4. Clone the Infrastructure repository:
-    ```bash
-    git clone git@github.com:opencrvs/infrastructure.git
-    ```
-5. Change directory to the OpenCRVS Core repository:
-    ```bash
-    cd opencrvs-core
-    ```
-6. [Temporary Step] Switch to the k8s-version branch:
-    ```bash
-    git checkout k8s-version
-    ```
-7. Run Tilt:
-    ```bash
-    tilt up
-    ```
-8. Navigate to [http://localhost:10350/](http://localhost:10350/)
-9. Once all container images are up and running your environment will be available at https://opencrvs.localhost
-
----
-
-## [🚧  Coming soon] For OpenCRVS Country Configuration Developers
-
-You need to fork the [opencrvs-countryconfig](https://github.com/opencrvs/opencrvs-countryconfig) repository and clone the [infrastructure](https://github.com/opencrvs/infrastructure) repository. If these repositories are already on your laptop, ensure they are in the same folder.
-
-1. Create a new folder or use an existing folder to store the repositories.
-2. Open a terminal (command line) and navigate to the folder.
-3. Clone your fork of the OpenCRVS Country Configuration repository:
-    ```bash
-    git clone git@github.com:<your-github-account>/<your-repository>.git
-    ```
-4. Clone the Infrastructure repository:
-    ```bash
-    git clone git@github.com:opencrvs/infrastructure.git
-    ```
-5. Change directory to your forked repository:
-    ```bash
-    cd <your-repository>
-    ```
-6. [Temporary Step] Switch to the k8s-version branch:
-    ```bash
-    git checkout k8s-version
-    ```
-7. Run Tilt:
-    ```bash
-    tilt up
-    ```
-8. Navigate to [http://localhost:10350/](http://localhost:10350/)
-9. Once all container images are up and running your environment will be available at https://opencrvs.localhost
-
-## Common issues
-
-### Container start is failing with ImagePullBackOff
-
-Check image tag was set properly, use `kubectl`, adjust value in `kubernetes/opencrvs-services/values-dev.yaml`
-- Usually for repository your are working tag is `local`, e/g country config repository should have `local` tag only for countryconfig.
-- Check tag exists on docker hub (or any other repository)
-
-### Reset local environment
-
-Restart docker desktop
-
----
-
 
 # Useful Links
 

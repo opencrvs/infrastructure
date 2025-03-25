@@ -25,7 +25,5 @@ spec:
             - name: COUNTRY_CONFIG_HOST
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
           {{- include "render-env-vars" (dict "service_name" "data_seeder" "Values" .Values) }}
-      completions: 1 # Run the job once
-      backoffLimit: 0 # Don't retry if the job fails
       restartPolicy: "OnFailure"
 {{- end }}

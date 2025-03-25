@@ -56,8 +56,7 @@ config:
     CHECK_INVALID_TOKEN: true
     NODE_ENV: production
   # Mapping for external secrets goes here:
-  
-  secrets:
+  secrets: {}
     
 countryconfig:
   image:

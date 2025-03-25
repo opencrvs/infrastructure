@@ -18,7 +18,7 @@ Helm chart to deploy all OpenCRVS services on Kubernetes cluster.
         <tr>
             <td>elasticsearch_host</td>
             <td>elasticsearch.opencrvs-deps-dev.svc.cluster.local:9200</td>
-            <td>Elasticsearch configuration, including the hostname and port. TODO: Consider defining the port as a separate variable.</td>
+            <td>Elasticsearch configuration, including the hostname and port.<br> <b>NOTE</b>: Some services require authentication, please use secrets to redefine ES_HOST variable if needed.</td>
         </tr>
         <tr>
             <td>influxdb.host</td>
@@ -56,6 +56,11 @@ Helm chart to deploy all OpenCRVS services on Kubernetes cluster.
             <td>MongoDB hostname configuration.</td>
         </tr>
         <tr>
+            <td>redis_host</td>
+            <td>redis-0.redis.opencrvs-deps-dev.svc.cluster.local</td>
+            <td>Redis hostname configuration.</td>
+        </tr>
+        <tr>
             <td>hostname</td>
             <td>farajaland.com</td>
             <td>Hostname for OpenCRVS application, without wildcard or subdomain. Example: hostname: opencrvs.localhost</td>
@@ -80,25 +85,16 @@ Helm chart to deploy all OpenCRVS services on Kubernetes cluster.
             <td>{}</td>
             <td>Mapping kubernetes secrets as environment variables. For more information see [Mapping secrets](#mapping-secrets)</td>
         </tr>
+        <tr>
+            <td>data_seeder.enabled</td>
+            <td>true</td>
+            <td>Seed data as post-install step, data seeder is executed only once while `helm install`. In some cases when data is already seeded, e/g upgrade, this value must be set to false. **Note**: default user is used for data seeding, it will fail anyway on database with non-default data.</td>
+        </tr>
     </tbody>
 </table>
 
-# Microservice environment variables configuration
-
-<pre>Do we need this section?</pre>
-
-Helm chart allows to define environment variables in following scopes:
-- **Global variables** are defined at top level of values file and is added to all containers. See `env` key in [values.yaml](values.yaml)
-- **Service level variables** are defined for each particular service. See `<service_name>.env` key in [values.yaml](values.yaml)
-- **Secret environment variables** are defined at service level as `<service_name>.secrets` key, see [values.yaml](values.yaml).
 
 # Mapping secrets
-
-Suppose we need to store ES_HOST variable as a secret since it contains url with login and password for Elastic search.
-Kubernetes secret is key/value object usually created from `.env` file, for example:
-```
-ES_HOST=user:randompass@elasticsearch:9200
-```
 
 Mapping needs to be added for particular service to access variable inside workload (service), e/g for `search` service to access ES_HOST following configuration is needed:
 ```
@@ -118,3 +114,36 @@ Summary:
 - `secret_name`, name of Kubernetes secret object
 - `secret_key`, key (variable name) inside Kubernetes secret data property
 - `environment_variable`, environment variable name inside container. If `secret_key` value `environment_variable` are the same, last one can be omitted.
+
+**Step by step example**
+
+Suppose we need to store ES_HOST variable as a secret and provide variable value to service `search`.
+
+1. Create `.env` like file and put all variables:
+    ```
+    ES_HOST=user:randompass@elasticsearch:9200
+    ```
+2. Create kubernetes secret from `.env` file:
+    ```
+    kubectl create secret generic elasticsearch-secret --from-env-file=.env
+    ```
+3. Make sure the secret was created:
+    ```
+    kubectl get secret -oyaml elasticsearch-secret
+    ```
+    Example output:
+    ```yaml
+    apiVersion: v1
+    data:
+        ES_HOST: dXNlcjpyYW5kb21wYXNzQGVsYXN0aWNzZWFyY2g6OTIwMA==
+    ...
+    ```
+3. Map variable in your helm chart values file:
+    ```yaml
+    search:
+        secrets:
+            elasticsearch-secret:
+                - ES_HOST
+    ...
+    ```
+4. Redeploy service with `helm upgrade`
