@@ -20,8 +20,6 @@ Please note that not all features from the Docker Swarm solution are supported y
 
 This repository is used to store infrastructure code for deploying OpenCRVS.
 
-
-
 ---
 
 
