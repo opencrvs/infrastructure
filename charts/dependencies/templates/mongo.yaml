@@ -45,6 +45,10 @@ spec:
     spec:
       containers:
         - image: mongo:4.4
+          {{- if or .Values.mongodb.secrets .Values.mongodb.env .Values.env }}
+          env:
+          {{- include "render-env-vars" (dict "service_name" "mongodb" "Values" .Values) }}
+          {{- end }}
           name: mongodb
           ports:
             - containerPort: 27017

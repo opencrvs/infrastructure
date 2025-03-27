@@ -28,7 +28,7 @@ spec:
       port: 3020
     middlewares:
       - name: sts-and-basic-response-headers
-      - name: enable-compression
+      # - name: enable-compression
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -52,7 +52,7 @@ spec:
           ports:
             - containerPort: 80
               protocol: TCP
-          readinessProbe:
+          livenessProbe:
             httpGet:
               # /api/countryconfig/login-config.js is external service proxied by nginx
               # pod should be restarted once countryconfig is up

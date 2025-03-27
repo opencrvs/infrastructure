@@ -31,6 +31,10 @@ spec:
       containers:
         - image: redis:5
           name: redis
+          {{- if or .Values.redis.secrets .Values.redis.env .Values.env }}
+          env:
+          {{- include "render-env-vars" (dict "service_name" "redis" "Values" .Values) }}
+          {{- end }}
           ports:
             - containerPort: 6379
               protocol: TCP

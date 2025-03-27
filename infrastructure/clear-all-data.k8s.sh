@@ -147,7 +147,6 @@ kubectl run minio-delete-job --namespace $NAMESPACE --rm -i --image=minio/mc --r
   mc mb myminio/ocrvs"
 echo "All data has been deleted"
 
-# Restart the metabase and events services
+# Restart events by deleting pod
 #-----------------------------
-kubectl delete pod --namespace $OPENCRVS_NAMESPACE -lapp=dashboards
 kubectl delete pod --namespace $OPENCRVS_NAMESPACE -lapp=events

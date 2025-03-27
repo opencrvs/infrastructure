@@ -28,7 +28,7 @@ spec:
       port: 7070
     middlewares:
       - name: sts-and-basic-response-headers
-      - name: enable-compression
+      # - name: enable-compression
 ---
 apiVersion: apps/v1
 kind: Deployment

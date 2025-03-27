@@ -18,7 +18,16 @@ kind: Middleware
 metadata:
   name: enable-compression
 spec:
-  compress: {} # XXX: use all defaults - note this has zstd in 3.0 vs just gzip in 2.0
+  compress:
+    excludedContentTypes:
+      - "image/png"
+      - "image/jpeg"
+      - "image/gif"
+      - "video/mp4"
+      - "audio/mpeg"
+      - "application/zip"
+      - "application/pdf"
+      - "application/x-tar" 
 ---
 # Enable compression
 apiVersion: traefik.io/v1alpha1

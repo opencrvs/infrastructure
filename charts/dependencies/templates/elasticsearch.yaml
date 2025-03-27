@@ -70,6 +70,9 @@ spec:
               value: /data/backups/elasticsearch
             - name: xpack.security.enabled
               value: 'false'
+          {{- if or .Values.elasticsearch.secrets .Values.elasticsearch.env .Values.env }}
+          {{- include "render-env-vars" (dict "service_name" "elasticsearch" "Values" .Values) }}
+          {{- end }}
           image: docker.elastic.co/elasticsearch/elasticsearch:8.16.4
           name: elasticsearch
           resources:

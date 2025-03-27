@@ -28,7 +28,7 @@ spec:
       port: 3040
     middlewares:
       - name: sts-and-basic-response-headers
-      - name: enable-compression
+      # - name: enable-compression
   - match: 'Host(`countryconfig.{{ .Values.hostname }}`) && Path(`/email`)'
     kind: Rule
     services:

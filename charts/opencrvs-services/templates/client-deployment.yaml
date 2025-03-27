@@ -28,7 +28,7 @@ spec:
       port: 3000
     middlewares:
       - name: sts-and-basic-response-headers
-      - name: enable-compression
+      # - name: enable-compression
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -58,8 +58,18 @@ spec:
             # CHECK: Following variables are present on Dev environment
             # "COUNTRY_CONFIG_URL
             # "DECLARED_DECLARATION_SEARCH_QUERY_COUNT
+            # Implement:
             # "MINIO_URL
           {{- include "render-env-vars" (dict "service_name" "client" "Values" .Values) }}
+          livenessProbe:
+            httpGet:
+              # /manifest.json is external service proxied by nginx on countryconfig
+              # pod should be restarted once countryconfig is up
+              path: /manifest.json
+              port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          
           name: client
           ports:
             - containerPort: 80

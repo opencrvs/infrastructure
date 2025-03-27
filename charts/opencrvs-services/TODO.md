@@ -59,19 +59,20 @@ Automatically issue SSL secret for traefix, check possibility to issue valid SSL
 
 # Fixes
 
-1. Fix events variables
+...
 
 # Check
 
 - https://kubernetes.io/docs/concepts/storage/volumes/#image
 
-# Secrets
+# Add Pod Disruption Budget
 
-There is a need to store secrets for Mongo, Elastic search, etc.
+If we would like to give people a way to deploy without downtime this option is mandatory
 
-Easiest option is to store values as kubernetes secrets
-```
-kubectl create secret generic opencrvs-shared-secrets --from-env-file=.env.qa
-```
+# Liveness and readiness probes
 
-And then pass as shared secret name
+Some services like login and client require extra attention at this point since nginx proxy does cache IP address of downstream service.
+
+Some services just need proper configuration
+
+# Add minio-mc container

@@ -79,6 +79,10 @@ spec:
       containers:
         - image: influxdb:1.8.10
           name: influxdb
+          {{- if or .Values.influxdb.secrets .Values.influxdb.env .Values.env }}
+          env:
+          {{- include "render-env-vars" (dict "service_name" "influxdb" "Values" .Values) }}
+          {{- end }}
           ports:
             - containerPort: 8086
               protocol: TCP

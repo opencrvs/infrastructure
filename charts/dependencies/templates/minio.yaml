@@ -11,6 +11,21 @@ spec:
     requests:
       storage: 1Gi
 ---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: minio-route
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - match: 'Host(`minio.{{ .Values.hostname }}`) || Host(`{{ .Values.hostname }}`)'
+    kind: Rule
+    services:
+    - name: minio
+      namespace: {{ .Release.Namespace }}
+      port: 3536
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -56,6 +71,10 @@ spec:
             - /data
           image: quay.io/minio/minio:RELEASE.2023-09-16T01-01-47Z.fips
           name: minio
+          {{- if or .Values.minio.secrets .Values.minio.env .Values.env }}
+          env:
+          {{- include "render-env-vars" (dict "service_name" "minio" "Values" .Values) }}
+          {{- end }}
           ports:
             - containerPort: 3535
               protocol: TCP
