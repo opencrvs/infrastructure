@@ -41,6 +41,8 @@ spec:
               value: mongodb://{{ .Values.mongodb_host }}/hearth-dev
             - name: OPENHIM_MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/openhim-dev
+            - name: DASHBOARD_MONGO_URL
+              value: mongodb://{{ .Values.mongodb_host }}/performance
             - name: WAIT_HOSTS
               value: "{{ .Values.mongodb_host }}:27017,{{ .Values.influxdb.host }}:{{ .Values.influxdb.port }},{{ .Values.minio.host }}:{{ .Values.minio.port }},{{ .Values.elasticsearch_host }}"
           {{- include "render-env-vars" (dict "service_name" "migration" "Values" .Values) }}
