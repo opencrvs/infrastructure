@@ -48,6 +48,8 @@ spec:
               value: http://documents.{{ .Release.Namespace }}.svc.cluster.local:9050
             - name: MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/user-mgnt
+            - name: COUNTRY_CONFIG_URL
+              value: "https://countryconfig.{{ .Values.hostname }}"
           {{- include "render-env-vars" (dict "service_name" "userMgnt" "Values" .Values) }}
           ports:
             - containerPort: 3030

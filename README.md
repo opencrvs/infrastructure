@@ -27,10 +27,14 @@ This repository is used to store infrastructure code for deploying OpenCRVS.
 
 ## Prerequisites
 
+Hardware requirements:
+- 16G RAM
+
 Ensure you have one of the following solutions installed on your laptop:
 - [**Recommended**]: Docker Desktop (with Kubernetes enabled): https://www.docker.com/products/docker-desktop/. Please check following:
   - Enable host networking
   - Enable Kubernetes
+  - Ensure docker-desktop is configured to use at least 16G of RAM
 - MicroK8s: https://microk8s.io/
 - Minikube: https://minikube.sigs.k8s.io/docs/
 
@@ -72,6 +76,14 @@ You need to clone the [opencrvs-core](https://github.com/opencrvs/opencrvs-core)
     ```
 8. Navigate to [http://localhost:10350/](http://localhost:10350/)
 9. Once all container images are up and running your environment will be available at https://opencrvs.localhost
+
+
+**NOTE:** On local environment you need manually access self signed certificate for the following URLs:
+- https://login.opencrvs.localhost/
+- https://gateway.opencrvs.localhost/ping
+- https://register.opencrvs.localhost/ping
+- https://countryconfig.opencrvs.localhost/ping
+
 
 ---
 
@@ -132,15 +144,20 @@ repositories/
 8. Navigate to [http://localhost:10350/](http://localhost:10350/)
 9. Once all container images are up and running your environment will be available at https://opencrvs.localhost
 
+**NOTE:** On local environment you need manually access self signed certificate for the following URLs:
+- https://login.opencrvs.localhost/
+- https://gateway.opencrvs.localhost/ping
+- https://register.opencrvs.localhost/ping
+- https://countryconfig.opencrvs.localhost/ping
+
 ## Seed data
 
-1. Navigate to file `kubernetes/opencrvs-services/values-dev.yaml` in opencrvs-core (or your country config) repository
-2. Change value `data_seeder.enabled` to `true`.
-3. Save changes
-4. New tilt resource `data-seeder` will be created, check [http://localhost:10350/](http://localhost:10350/)
-5. Make sure data-seeder job completed without issues.
-6. Change value `data_seeder.enabled` to `false`.
-7. Save changes
+1. Navigate to [http://localhost:10350/](http://localhost:10350/)
+2. Scroll to section `2.Data-tasks` and find resource `Reset database`
+3. Run resource using reload button
+
+See screenshot for more information:
+![](doc/images/seed-data-on-local-env.png)
 
 ## Common issues
 
