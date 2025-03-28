@@ -55,8 +55,6 @@ spec:
               value: {{ .Values.fhir_url | quote }}
             - name: REDIS_HOST
               value: {{ .Values.redis_host | quote }}
-            - name: NODE_ENV
-              value: development
             - name: QA_ENV
               value: "false"
             - name: AUTH_URL

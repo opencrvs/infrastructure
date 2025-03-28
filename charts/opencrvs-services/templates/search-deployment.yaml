@@ -40,8 +40,6 @@ spec:
               value: /secrets/public-key.pem
             - name: ES_HOST
               value: {{ .Values.elasticsearch_host | quote }}
-            - name: NODE_ENV
-              value: development
             - name: USER_MANAGEMENT_URL
               value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/
             - name: HEARTH_MONGO_URL

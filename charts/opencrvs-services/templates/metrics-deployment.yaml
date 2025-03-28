@@ -36,8 +36,6 @@ spec:
               value: {{ .Values.fhir_url | quote }}
             - name: METRICS_PORT  # Similar to PORT (Check if it's the same?)
               value: "1050"
-            - name: NODE_ENV  # FIXME: hardcoded
-              value: development
             - name: CERT_PUBLIC_KEY_PATH
               value: /secrets/public-key.pem
             - name: CONFIG_API_URL

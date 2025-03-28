@@ -49,8 +49,6 @@ spec:
         - image: "ghcr.io/opencrvs/ocrvs-auth:{{ .Values.image.tag }}"
           name: auth
           env:
-            - name: NODE_ENV
-              value: production
             - name: REDIS_HOST
               value: {{ .Values.redis_host | quote }}
             - name: COUNTRY_CONFIG_URL

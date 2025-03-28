@@ -33,6 +33,8 @@ dev_mode: false
 # all OpenCRVS microservices (Kubernetes PODs).
 env:
   QA_ENV: true
+  NODE_ENV: production
+  # LOG_LEVEL: debug
   # Application performance monitoring service URL.
   # APN_SERVICE_URL: http://dependencies_apm-server:8200
 

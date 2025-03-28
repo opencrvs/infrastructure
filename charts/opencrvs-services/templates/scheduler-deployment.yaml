@@ -21,8 +21,6 @@ spec:
           env:
             - name: METRICS_URL
               value: http://metrics.{{ .Release.Namespace }}.svc.cluster.local:1050
-            - name: NODE_ENV
-              value: development
             - name: OPENHIM_MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/openhim-dev
           {{- include "render-env-vars" (dict "service_name" "scheduler" "Values" .Values) }}

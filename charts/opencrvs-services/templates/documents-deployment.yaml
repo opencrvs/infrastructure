@@ -34,15 +34,16 @@ spec:
             - name: COUNTRY_CONFIG_URL
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
             - name: DOCUMENTS_PORT
-              value: "4040"
-            - name: NODE_ENV
-              value: development
+              value: "9050"
             - name: CERT_PUBLIC_KEY_PATH
               value: /secrets/public-key.pem
             - name: MINIO_HOST
               value: {{ .Values.minio.host | quote }}
             - name: MINIO_PORT
               value: {{ .Values.minio.port | quote }}
+            # TODO: MINIO
+            - name: MINIO_URL
+              value: minio.{{ .Values.hostname }}
           {{- include "render-env-vars" (dict "service_name" "documents" "Values" .Values) }}
           image: "ghcr.io/opencrvs/ocrvs-documents:{{ .Values.image.tag }}"
           volumeMounts:

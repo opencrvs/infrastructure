@@ -58,8 +58,9 @@ spec:
             # CHECK: Following variables are present on Dev environment
             # "COUNTRY_CONFIG_URL
             # "DECLARED_DECLARATION_SEARCH_QUERY_COUNT
-            # Implement:
-            # "MINIO_URL
+            # TODO: MINIO
+            - name: MINIO_URL
+              value: "https://minio.{{ .Values.hostname }}"
           {{- include "render-env-vars" (dict "service_name" "client" "Values" .Values) }}
           livenessProbe:
             httpGet:
