@@ -36,6 +36,8 @@ spec:
               value: /secrets/public-key.pem
             - name: HOST
               value: 0.0.0.0
+            - name: PORT
+              value: "2020"
             - name: COUNTRY_CONFIG_URL
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
             - name: USER_MANAGEMENT_URL
