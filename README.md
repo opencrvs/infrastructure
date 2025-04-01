@@ -242,32 +242,46 @@ Additionally, explore all possible options for CSI (Container Storage Interface)
 - `NFS` is the best option for MinIO and Mongo (or Postgres).
 
 ---
+### Cert-manager
 
+cert-manager is optional component for traefik and provides an easy way to issue multiple SSL certificates and share it within multiple traefik pods.
+
+If your installation use custom SSL stored as secrets cert-manager is not required.
+
+Recommended way to install cert-manager is a helm chart, see official documentation for more details how to install cert-manager: https://cert-manager.io/docs/installation/helm/
+
+---
 
 ## [🚧 ] Manual deployment guide
 
-1. Create yaml file with custom values for your installation:
+TODO: Add steps with middleware installation:
+- traefik
+- dependencies
+
+
+1. Clone this repository
+    ```bash
+    git clone https://github.com/opencrvs/infrastructure.git
+    ```
+2. Create yaml file with custom values for your installation:
    ```yaml
    # Kubernetes load balancer domain used by traefik as entrypoint
-   hostname: opencrvs.<you domain>
+   hostname: <you domain>
    # OpenCRVS Core image tag
    image:
-     tag: local
+     tag: develop
    # Your country image repository and tag
    countryconfig:
      image:
        name: opencrvs/ocrvs-countryconfig
        tag: develop
    ```
-2. Add helm repository:
-   ```
-   helm repo add ...
-   ```
+   **NOTE:** Please refer to [opencrvs-services/README.md](charts/opencrvs-services/README.md) for full list of options.
 3. Install OpenCRVS:
    ```
-   helm install ... opencrvs
+   helm install opencrvs charts/opencrvs-services
    ```
-   **NOTE:** Data seed will run only on `install`, don't use `update --install`.
+   **NOTE:** Data seed will run only on `install`, don't use `update --install` for first installation or run data-seeder manually.
 
 # [🚧  Coming soon] Server environment migration
 
