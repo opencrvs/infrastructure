@@ -29,6 +29,9 @@ hostname: farajaland.com
 # Developer mode flag.
 dev_mode: false
 
+ingress:
+  ssl_enabled: true
+
 service_type: ClusterIP
 
 # Global environment variables applied to

@@ -37,3 +37,12 @@ Parameters:
     {{- end }}
   {{- end }}
 {{- end }}
+
+{{- define "render-external-url" -}}
+{{- $service_name := .service_name }}
+{{- $http_scheme := "http" }}
+{{- if .Values.ingress.ssl_enabled }}
+  {{- $http_scheme = "https" }}
+{{- end }}
+{{- printf "%s://%s.%s" $http_scheme $service_name .Values.hostname }}
+{{- end }}

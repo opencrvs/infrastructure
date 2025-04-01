@@ -18,7 +18,11 @@ metadata:
   name: gateway-route
 spec:
   entryPoints:
+  {{- if .Values.ingress.ssl_enabled }}
     - websecure
+  {{- else }}
+    - web
+  {{- end }}
   routes:
   - match: 'Host(`gateway.{{ .Values.hostname }}`)'
     kind: Rule
@@ -29,6 +33,7 @@ spec:
     middlewares:
       - name: sts-and-basic-response-headers
       # - name: enable-compression
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -59,9 +64,9 @@ spec:
             - name: REDIS_HOST
               value: {{ .Values.redis_host | quote }}
             - name: CLIENT_APP_URL
-              value: "https://register.{{ .Values.hostname }}"
+              value: {{ include "render-external-url" (dict "service_name" "register" "Values" .Values) }}
             - name: LOGIN_URL
-              value: "https://login.{{ .Values.hostname }}"
+              value: {{ include "render-external-url" (dict "service_name" "login" "Values" .Values) }}
             - name: APPLICATION_CONFIG_URL
               value: "http://config.{{ .Release.Namespace }}.svc.cluster.local:2021"
             - name: AUTH_URL

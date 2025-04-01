@@ -18,7 +18,11 @@ metadata:
   name: countryconfig-route
 spec:
   entryPoints:
+  {{- if .Values.ingress.ssl_enabled }}
     - websecure
+  {{- else }}
+    - web
+  {{- end }}
   routes:
   - match: 'Host(`countryconfig.{{ .Values.hostname }}`) && !Path(`/email`) && !Path(`/notification`) && !Path(`/dashboards/queries.json`)'
     kind: Rule
@@ -53,8 +57,7 @@ spec:
       port: 3040
     middlewares:
       - name: block-internal-routes
-  # tls:
-  #   certResolver: myresolver
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -83,12 +86,12 @@ spec:
             - name: FHIR_URL
               value: {{ .Values.fhir_url | quote }}
             - name: CLIENT_APP_URL
-              value: "https://register.{{ .Values.hostname }}"
+              value: {{ include "render-external-url" (dict "service_name" "register" "Values" .Values) }}
             - name: LOGIN_URL
-              value: "https://login.{{ .Values.hostname }}"
+              value: {{ include "render-external-url" (dict "service_name" "login" "Values" .Values) }}
             # TODO: Check if this value is needed here?
             - name: COUNTRY_CONFIG_URL
-              value: "https://countryconfig.{{ .Values.hostname }}"
+              value: {{ include "render-external-url" (dict "service_name" "countryconfig" "Values" .Values) }}
             - name: DOMAIN
               value: {{ .Values.hostname | quote }}
             - name: GATEWAY_URL

@@ -18,7 +18,11 @@ metadata:
   name: config-route
 spec:
   entryPoints:
+  {{- if .Values.ingress.ssl_enabled }}
     - websecure
+  {{- else }}
+    - web
+  {{- end }}
   routes:
   - match: 'Host(`config.{{ .Values.hostname }}`)'
     kind: Rule
@@ -28,6 +32,10 @@ spec:
       port: 2021
     middlewares:
       - name: sts-and-basic-response-headers
+{{- $http := "http" }}
+{{- if .Values.ingress.ssl_enabled }}
+{{- $http = "https" }}
+{{- end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -54,7 +62,7 @@ spec:
             - name: FHIR_URL
               value: {{ .Values.fhir_url | quote }}
             - name: CLIENT_APP_URL
-              value: "https://register.{{ .Values.hostname }}"
+              value: "{{ $http }}://register.{{ .Values.hostname }}"
             - name: HOST
               value: 0.0.0.0
             - name: PORT

@@ -11,6 +11,7 @@ spec:
   selector:
     app: user-mgnt
   type: {{ .Values.service_type }}
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -49,7 +50,7 @@ spec:
             - name: MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/user-mgnt
             - name: COUNTRY_CONFIG_URL
-              value: "https://countryconfig.{{ .Values.hostname }}"
+              value: {{ include "render-external-url" (dict "service_name" "countryconfig" "Values" .Values) }}
           {{- include "render-env-vars" (dict "service_name" "userMgnt" "Values" .Values) }}
           ports:
             - containerPort: 3030
