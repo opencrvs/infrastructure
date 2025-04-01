@@ -19,6 +19,10 @@ metadata:
 spec:
   entryPoints:
     - websecure
+  {{- if .Values.cert_manager.enabled }}
+  tls:
+    secretName: {{ .Values.hostname | replace "." "-" }}-tls
+  {{- end }}
   routes:
   - match: 'Host(`register.{{ .Values.hostname }}`) || Host(`{{ .Values.hostname }}`)'
     kind: Rule
@@ -68,8 +72,8 @@ spec:
               # pod should be restarted once countryconfig is up
               path: /manifest.json
               port: 80
-          initialDelaySeconds: 10
-          periodSeconds: 30
+            initialDelaySeconds: 10
+            periodSeconds: 30
           
           name: client
           ports:

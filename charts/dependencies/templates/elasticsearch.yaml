@@ -31,6 +31,7 @@ metadata:
     app: elasticsearch
   name: elasticsearch
 spec:
+  clusterIP: None
   ports:
     - name: '9200'
       port: 9200
@@ -58,6 +59,17 @@ spec:
       labels:
         app: elasticsearch
     spec:
+      initContainers:
+        - name: volume-permission-fix
+          image: busybox
+          command:
+            - chown
+            - -R
+            - "1000:0"  # Change ownership to elasticsearch user and group
+            - /usr/share/elasticsearch/data
+          volumeMounts:
+            - name: elasticsearch
+              mountPath: /usr/share/elasticsearch/data
       containers:
         - env:
             - name: ES_JAVA_OPTS

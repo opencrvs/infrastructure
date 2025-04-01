@@ -18,6 +18,7 @@ metadata:
     app: mongodb
   name: mongodb
 spec:
+  clusterIP: None
   ports:
     - port: 27017
       targetPort: 27017
@@ -57,7 +58,11 @@ spec:
             - mountPath: /data/db
               name: mongodb-data
       restartPolicy: Always
+      # volumes:
+      #   - name: mongodb-data
+      #     hostPath:
+      #       path: /data/db
       volumes:
         - name: mongodb-data
-          hostPath:
-            path: /data/mongo
+          persistentVolumeClaim:
+            claimName: mongodb

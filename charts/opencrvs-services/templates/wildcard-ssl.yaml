@@ -1,0 +1,14 @@
+{{- if .Values.cert_manager.enabled }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .Values.hostname | replace "." "-" }}-ssl
+spec:
+  secretName: {{ .Values.hostname | replace "." "-" }}-tls
+  issuerRef:
+    name: {{ .Values.cert_manager.cluster_issuer | quote }}
+    kind: ClusterIssuer
+  dnsNames:
+  - "*.{{ .Values.hostname }}"
+{{- end }}

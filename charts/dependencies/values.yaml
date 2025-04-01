@@ -13,3 +13,8 @@ redis: {}
 elasticsearch: {}
 
 hostname: farajaland.dev
+
+cert_manager:
+  enabled: false
+  # Check doc at: https://cert-manager.io/docs/configuration/issuers/
+  cluster_issuer: "<put issuer here>"

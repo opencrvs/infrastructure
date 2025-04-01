@@ -25,6 +25,11 @@ mongodb_host: mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local
 # Example: hostname: opencrvs.localhost
 hostname: farajaland.com
 
+cert_manager:
+  enabled: false
+  # Check doc at: https://cert-manager.io/docs/configuration/issuers/
+  cluster_issuer: "<put issuer here>"
+
 # TODO: Check the usage and purpose of this variable.
 # Developer mode flag.
 dev_mode: false
