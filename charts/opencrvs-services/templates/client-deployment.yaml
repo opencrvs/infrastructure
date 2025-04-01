@@ -19,10 +19,6 @@ metadata:
 spec:
   entryPoints:
     - websecure
-  {{- if .Values.cert_manager.enabled }}
-  tls:
-    secretName: {{ .Values.hostname | replace "." "-" }}-tls
-  {{- end }}
   routes:
   - match: 'Host(`register.{{ .Values.hostname }}`) || Host(`{{ .Values.hostname }}`)'
     kind: Rule

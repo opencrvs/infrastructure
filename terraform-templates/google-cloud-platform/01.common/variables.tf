@@ -8,13 +8,10 @@
 
 variable "project_id" {
   type    = string
-  default = "opencrvs-on-k8s"
 }
 
 variable "location" {
   type    = string
-  default = "europe-west1"
-
 }
 
 

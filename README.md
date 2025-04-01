@@ -252,6 +252,49 @@ Recommended way to install cert-manager is a helm chart, see official documentat
 
 ---
 
+### traefik custom changes
+
+traefik is used to proxy OpenCRVS services behind load balancer on kubernetes cluster.
+
+Please change default traefik certificate with your own wildcard or SANs certificate by following guide at https://doc.traefik.io/traefik/https/tls/#default-certificate
+
+If cert-manager is used create `Certificate manifest at traefik namespace:
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: k8s-opencrvs-dev-ssl
+  namespace: traefik
+spec:
+  dnsNames:
+  - '*.<your domain>'
+  - <your domain>
+  issuerRef:
+    kind: ClusterIssuer
+    name: <dns-cluster-issuer>
+  secretName: traefik-cert-tls
+```
+
+Make sure certificate was issued.
+```
+kubectl get cert
+```
+
+Create default tls store traefik:
+```yaml
+apiVersion: traefik.io/v1alpha1
+kind: TLSStore
+metadata:
+  name: default
+  namespace: traefik
+spec:
+  defaultCertificate:
+    secretName: traefik-cert-tls
+
+```
+
+
 ## [🚧 ] Manual deployment guide
 
 TODO: Add steps with middleware installation:
