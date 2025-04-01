@@ -10,7 +10,7 @@ spec:
       targetPort: 1050
   selector:
     app: metrics
-  type: LoadBalancer
+  type: {{ .Values.service_type }}
 ---
 apiVersion: apps/v1
 kind: Deployment

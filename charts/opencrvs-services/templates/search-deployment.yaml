@@ -10,7 +10,7 @@ spec:
       targetPort: 9090
   selector:
     app: search
-  type: LoadBalancer
+  type: {{ .Values.service_type }}
 ---
 apiVersion: apps/v1
 kind: Deployment

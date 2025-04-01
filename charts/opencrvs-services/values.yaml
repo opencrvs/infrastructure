@@ -29,6 +29,8 @@ hostname: farajaland.com
 # Developer mode flag.
 dev_mode: false
 
+service_type: ClusterIP
+
 # Global environment variables applied to
 # all OpenCRVS microservices (Kubernetes PODs).
 env:
@@ -58,7 +60,7 @@ config:
     CHECK_INVALID_TOKEN: true
   # Mapping for external secrets goes here:
   secrets: {}
-    
+
 countryconfig:
   image:
     name: opencrvs/ocrvs-countryconfig

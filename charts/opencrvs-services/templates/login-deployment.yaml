@@ -10,7 +10,7 @@ spec:
       targetPort: 80
   selector:
     app: login
-  type: LoadBalancer
+  type: {{ .Values.service_type }}
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
