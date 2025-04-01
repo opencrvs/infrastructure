@@ -1,0 +1,8 @@
+
+hostname: k8s.opencrvs.dev
+minio:
+  # Uncomment this section to add authentication for MinIO:
+  secrets:
+    minio-secret:
+    - MINIO_ROOT_USER
+    - MINIO_ROOT_PASSWORD

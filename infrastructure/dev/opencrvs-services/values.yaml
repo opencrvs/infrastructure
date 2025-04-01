@@ -1,0 +1,40 @@
+hostname: k8s.opencrvs.dev
+
+image:
+  # tag: develop
+  tag: 50b3e14
+
+countryconfig:
+  image:
+    # Replace countryconfig with farajaland to test data
+    name: opencrvs/ocrvs-farajaland
+    # name: opencrvs/ocrvs-countryconfig
+    # tag: develop
+    tag: ec53c12
+
+documents:
+# Uncomment this section to add authentication for MinIO:
+  secrets:
+    minio-secret:
+      - MINIO_ACCESS_KEY
+      - MINIO_BUCKET
+      - MINIO_SECRET_KEY
+
+gateway:
+  secrets:
+  # Uncomment this section to add authentication for MinIO:
+    minio-secret:
+    # TODO: Check if it is needed
+    - MINIO_BUCKET
+
+migration:
+  secrets:
+# Uncomment this section to add authentication for MinIO:
+    minio-secret:
+      - MINIO_ACCESS_KEY
+      - MINIO_BUCKET
+      - MINIO_SECRET_KEY
+
+data_seeder:
+  # Change to true to enable data seeder
+  enabled: true
