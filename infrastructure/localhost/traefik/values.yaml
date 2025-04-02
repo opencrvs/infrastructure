@@ -9,8 +9,8 @@ logs:
     enabled: true
 ingressRoute:
   dashboard:
-    enabled: true
-    entryPoints: ["web", "websecure"]
+    enabled: false
+    entryPoints: ["web"]
     matchRule: Host(`traefik.opencrvs.localhost`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
 # Be explicit that we only use CRDs, not ingress/gw support
 providers: 
@@ -25,12 +25,16 @@ service:
   single: false
   type: LoadBalancer
 
-
 ports:
   traefik:
     hostPort: 8080
   web:
+    asDefault: true
     hostPort: 8000
   websecure:
-    hostPort: 8443
-
+    asDefault: false
+    expose:
+      default: false
+    tls:
+      enabled: false
+tlsStore: {}

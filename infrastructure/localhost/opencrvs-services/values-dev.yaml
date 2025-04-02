@@ -24,4 +24,4 @@ countryconfig:
 ingress:
   ssl_enabled: false
 # On local environment services are exposed at NodePort as well and are available from Tilt
-service_type: NodePort
+service_type: LoadBalancer
