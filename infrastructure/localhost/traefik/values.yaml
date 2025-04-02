@@ -2,8 +2,8 @@
 namespaceOverride: "traefik"
 logs:
   general:
-    level: "DEBUG" # FIXME: Change to WARNING
-    format: "common" # FIXME: json in remote
+    level: "DEBUG"
+    format: "common"
   access:
     # -- To enable access logs
     enabled: true
