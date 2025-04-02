@@ -32,8 +32,7 @@ spec:
       port: 2525
     middlewares:
       - name: sts-and-basic-response-headers
-  # tls:
-  #   certResolver: myresolver
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -92,8 +91,8 @@ spec:
             items:
               - key: public-key.pem
                 path: public-key.pem
-            name: public-key
+            name: {{ .Release.Name }}-cert-tls
           name: public-key
         - secret:
-            secretName: private-key
+            secretName: {{ .Release.Name }}-key-tls
           name: private-key

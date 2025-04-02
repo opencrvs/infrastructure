@@ -41,7 +41,7 @@ spec:
               value: {{ .Values.minio.host | quote }}
             - name: MINIO_PORT
               value: {{ .Values.minio.port | quote }}
-            # TODO: MINIO
+            # TODO: MINIO: Check if we need http/https prefix here
             - name: MINIO_URL
               value: minio.{{ .Values.hostname }}
           {{- include "render-env-vars" (dict "service_name" "documents" "Values" .Values) }}
@@ -59,5 +59,5 @@ spec:
             items:
               - key: public-key.pem
                 path: public-key.pem
-            name: public-key
+            name: {{ .Release.Name }}-cert-tls
           name: public-key

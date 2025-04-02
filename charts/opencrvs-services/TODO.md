@@ -61,7 +61,9 @@ Automatically issue SSL secret for traefix, check possibility to issue valid SSL
 
 ...
 
-# Check
+# Data persistence
+
+Kubernetes helm chart doesn't have data persistence in case of uninstall
 
 - https://kubernetes.io/docs/concepts/storage/volumes/#image
 
@@ -76,3 +78,9 @@ Some services like login and client require extra attention at this point since 
 Some services just need proper configuration
 
 # Add minio-mc container
+
+TODO: Check if container is needed
+
+# Add common secret
+
+On github environment we have all secrets stored per environment, We could also store all secrets together in common secret, that will simplify configuration.

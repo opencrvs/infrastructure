@@ -53,7 +53,7 @@ spec:
           image: "ghcr.io/opencrvs/ocrvs-dashboards:{{ .Values.image.tag }}"
           env:
             - name: OPENCRVS_METABASE_SITE_URL
-              value: "http://metabase.{{ .Values.hostname }}"
+              value: {{ include "render-external-url" (dict "service_name" "metabase" "Values" .Values) }}
             - name: OPENCRVS_METABASE_MAP_URL
               value: "http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040/content/map.geojson"
             - name: OPENCRVS_METABASE_DB_HOST

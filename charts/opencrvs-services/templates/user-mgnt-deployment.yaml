@@ -65,5 +65,5 @@ spec:
             items:
               - key: public-key.pem
                 path: public-key.pem
-            name: public-key
+            name: {{ .Release.Name }}-cert-tls
           name: public-key

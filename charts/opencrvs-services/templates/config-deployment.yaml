@@ -32,10 +32,7 @@ spec:
       port: 2021
     middlewares:
       - name: sts-and-basic-response-headers
-{{- $http := "http" }}
-{{- if .Values.ingress.ssl_enabled }}
-{{- $http = "https" }}
-{{- end }}
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -62,7 +59,7 @@ spec:
             - name: FHIR_URL
               value: {{ .Values.fhir_url | quote }}
             - name: CLIENT_APP_URL
-              value: "{{ $http }}://register.{{ .Values.hostname }}"
+              value: {{ include "render-external-url" (dict "service_name" "register" "Values" .Values) }}
             - name: HOST
               value: 0.0.0.0
             - name: PORT
@@ -99,5 +96,5 @@ spec:
             items:
               - key: public-key.pem
                 path: public-key.pem
-            name: public-key
+            name: {{ .Release.Name }}-cert-tls
           name: public-key
