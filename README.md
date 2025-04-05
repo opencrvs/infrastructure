@@ -35,8 +35,12 @@ Ensure you have one of the following solutions installed on your laptop:
   - Enable host networking
   - Enable Kubernetes
   - Ensure docker-desktop is configured to use at least 16G of RAM
-- MicroK8s: https://microk8s.io/
-- Minikube: https://minikube.sigs.k8s.io/docs/
+- Minikube: https://minikube.sigs.k8s.io/docs/. For minikube linux (Ubuntu) users please ensure tunnel is running on localhost:
+  ```
+  minikube tunnel -c --bind-address='127.0.0.1'
+  ```
+**NOTE:** Any other Kubernetes solution for desktop should work as well. Please check to LoadBalancer and kubernetes services setup if you are not able to access service.
+
 
 You will also need the following tools for running the local development environment:
 - Git: https://git-scm.com/downloads
@@ -57,10 +61,6 @@ You need to clone the [opencrvs-core](https://github.com/opencrvs/opencrvs-core)
 3. Clone the OpenCRVS Core repository:
     ```bash
     git clone git@github.com:opencrvs/opencrvs-core.git
-    ```
-4. Clone the Infrastructure repository:
-    ```bash
-    git clone git@github.com:opencrvs/infrastructure.git
     ```
 5. Change directory to the OpenCRVS Core repository:
     ```bash
@@ -118,11 +118,11 @@ repositories/
     ```bash
     git clone git@github.com:<your-github-account>/<your-repository>.git
     ```
-
 4. Clone the Infrastructure repository:
     ```bash
     git clone git@github.com:opencrvs/infrastructure.git
     ```
+    **NOTE:** This step is optional, tilt should be able to checkout infrastructure directory
 5. Change directory to country config (your own) repository:
     
     For county config use:
@@ -132,10 +132,6 @@ repositories/
     For your own fork use:
     ```bash
     cd <your-repository>
-    ```
-6. [Temporary Step] Switch to the k8s-refresh branch:
-    ```bash
-    git checkout k8s-refresh
     ```
 7. Run Tilt:
     ```bash
