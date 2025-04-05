@@ -35,8 +35,9 @@ Ensure you have one of the following solutions installed on your laptop:
   - Enable host networking
   - Enable Kubernetes
   - Ensure docker-desktop is configured to use at least 16G of RAM
-- Minikube: https://minikube.sigs.k8s.io/docs/. For minikube linux (Ubuntu) users please ensure tunnel is running on localhost:
+- Minikube: https://minikube.sigs.k8s.io/docs/. For minikube linux (Ubuntu) users please ensure you gave unlimitted amount of memory and tunnel is running on localhost:
   ```
+  minikube start --memory=no-limits
   minikube tunnel -c --bind-address='127.0.0.1'
   ```
 **NOTE:** Any other Kubernetes solution for desktop should work as well. Please check to LoadBalancer and kubernetes services setup if you are not able to access service.
