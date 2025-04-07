@@ -1,16 +1,3 @@
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: documents
-  name: documents
-spec:
-  ports:
-    - port: 9050
-      targetPort: 9050
-  selector:
-    app: documents
-  type: {{ .Values.service_type }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -46,12 +33,13 @@ spec:
               value: minio.{{ .Values.hostname }}
           {{- include "render-env-vars" (dict "service_name" "documents" "Values" .Values) }}
           image: "ghcr.io/opencrvs/ocrvs-documents:{{ .Values.image.tag }}"
+          {{ include "resources-helper" (dict "service_name" "documents" "Values" .Values) | indent 10 }}
           volumeMounts:
             - mountPath: /secrets/public-key.pem
               name: public-key
               subPath: public-key.pem
           ports:
-            - containerPort: 9050
+            - containerPort: {{ .Values.documents.port }}
               protocol: TCP
       restartPolicy: Always
       volumes:
@@ -61,3 +49,9 @@ spec:
                 path: public-key.pem
             name: {{ .Release.Name }}-cert-tls
           name: public-key
+
+{{- include "service-helper" (dict "service_name" "documents" "Values" .Values) }}
+
+{{- include "hpa-helper" (dict "service_name" "documents" "Values" .Values) }}
+
+{{- include "pdb-helper" (dict "service_name" "documents" "Values" .Values) }}

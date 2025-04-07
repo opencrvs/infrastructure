@@ -1,16 +1,3 @@
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: events
-  name: events
-spec:
-  ports:
-    - port: 5555
-      targetPort: 5555
-  selector:
-    app: events
-  type: {{ .Values.service_type }}
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
@@ -29,7 +16,7 @@ spec:
     services:
     - name: events
       namespace: {{ .Release.Namespace }}
-      port: 5555
+      port: {{ .Values.events.port }}
     middlewares:
       - name: sts-and-basic-response-headers
 ---
@@ -72,7 +59,14 @@ spec:
             - name: MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/events
           {{- include "render-env-vars" (dict "service_name" "events" "Values" .Values) }}
+          {{ include "resources-helper" (dict "service_name" "events" "Values" .Values) | indent 10 }}
           ports:
-            - containerPort: 5555
+            - containerPort: {{ .Values.events.port }}
               protocol: TCP
       restartPolicy: Always
+
+{{- include "service-helper" (dict "service_name" "events" "Values" .Values) }}
+
+{{- include "hpa-helper" (dict "service_name" "events" "Values" .Values) }}
+
+{{- include "pdb-helper" (dict "service_name" "events" "Values" .Values) }}

@@ -1,16 +1,3 @@
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: dashboards
-  name: dashboards
-spec:
-  ports:
-    - port: 4444
-      targetPort: 4444
-  selector:
-    app: config
-  type: {{ .Values.service_type }}
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
@@ -29,7 +16,7 @@ spec:
     services:
     - name: dashboards
       namespace: {{ .Release.Namespace }}
-      port: 4444
+      port: {{ .Values.dashboards.port }}
     middlewares:
       - name: sts-and-basic-response-headers
 apiVersion: apps/v1
@@ -50,6 +37,7 @@ spec:
     spec:
       containers:
         - name: dashboards
+          {{ include "resources-helper" (dict "service_name" "dashboards" "Values" .Values) | indent 10 }}
           image: "ghcr.io/opencrvs/ocrvs-dashboards:{{ .Values.image.tag }}"
           env:
             - name: OPENCRVS_METABASE_SITE_URL
@@ -59,4 +47,13 @@ spec:
             - name: OPENCRVS_METABASE_DB_HOST
               value: {{ .Values.mongodb_host | quote }}
           {{- include "render-env-vars" (dict "service_name" "dashboards" "Values" .Values) }}
+          ports:
+            - containerPort: {{ .Values.dashboards.port }}
+              protocol: TCP
       restartPolicy: Always
+
+{{- include "service-helper" (dict "service_name" "dashboards" "Values" .Values) }}
+
+{{- include "hpa-helper" (dict "service_name" "dashboards" "Values" .Values) }}
+
+{{- include "pdb-helper" (dict "service_name" "dashboards" "Values" .Values) }}

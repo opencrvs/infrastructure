@@ -47,16 +47,43 @@ env:
   # Note: The SENTRY_DSN should be defined at the global level of environment variables.
   # SENTRY_DSN: https://...@o309867.ingest.sentry.io/....
 
+hpa:
+  minReplicas: 1
+  maxReplicas: 2
+  averageUtilization: 75
+
+
+resources:
+  memoryRequest: "256Mi"
+  cpuRequest: "250m"
+  memoryLimit: "1Gi"
+  cpuLimit: "500m"
+
+pdb:
+  minAvailable: 50%
+
+
 client:
   replicas: 1
+  port: 3000
+  container_port: 80
+
 auth:
   replicas: 1
+  port: 4040
+  hpa:
+    maxReplicas: 10
+
 components:
   replicas: 1
 
 # `config` Microservice configuration example:
 config:
   replicas: 1
+  port: 2021
+  hpa:
+    minReplicas: 1
+    maxReplicas: 1
   # Service level environment variables
   env:
     DOMAIN: "*"
@@ -69,6 +96,7 @@ countryconfig:
     name: opencrvs/ocrvs-countryconfig
     tag: latest
   replicas: 1
+  port: 3040
   env:
     ALERT_EMAIL: kibana-alerts-aaaafy3oysoklmlsqcjxad7rfi@opencrvsworkspace.slack.com
     CHECK_INVALID_TOKEN: true
@@ -87,6 +115,10 @@ countryconfig:
     SMTP_USERNAME: apikey
 dashboards:
   replicas: 1
+  port: 4444
+  hpa:
+    minReplicas: 1
+    maxReplicas: 1
   env:
     OPENCRVS_METABASE_ADMIN_EMAIL: ""
     OPENCRVS_METABASE_ADMIN_PASSWORD: ""
@@ -99,7 +131,11 @@ dashboards:
     OPENCRVS_METABASE_SITE_NAME: OpenCRVS Dashboards
     OPENCRVS_METABASE_ADMIN_EMAIL: user@opencrvs.org
     OPENCRVS_METABASE_ADMIN_PASSWORD: m3tabase
-
+  resources:
+    memoryRequest: "512Mi"
+    cpuRequest: "250m"
+    memoryLimit: "1Gi"
+    cpuLimit: "500m"
 data_seeder:
   enabled: false
   env:
@@ -107,44 +143,55 @@ data_seeder:
     ACTIVATE_USERS: "true"
 documents:
   replicas: 1
+  port: 9050
+
 gateway:
   replicas: 1
+  port: 7070
   env:
     CHECK_INVALID_TOKEN: "true"
     CONFIG_SMS_CODE_EXPIRY_SECONDS: "600"
     CONFIG_TOKEN_EXPIRY_SECONDS: "604800"
-
     MINIO_BUCKET: "ocrvs"
     COUNTRY: FAR
     DISABLE_RATE_LIMIT: "true"
     # # TODO: Check usage
     DOMAIN: "opencrvs.localhost"
-
     LANGUAGES: "en,fr"
 
 login:
   replicas: 1
-
+  port: 3020
+  container_port: 80
 metrics:
   replicas: 1
+  port: 1050
 
 notification:
   env:
     COUNTRY: bgd
   replicas: 1
+  port: 2020
+
 search:
   replicas: 1
+  port: 9090
 
-userMgnt:
+user_mgnt:
   replicas: 1
+  port: 3030
+  
 
 webhooks:
   replicas: 1
+  port: 2525
 
 workflow:
   replicas: 1
+  port: 5050
 
 events:
   replicas: 1
+  port: 5555
 
 scheduler: {}
