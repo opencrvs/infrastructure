@@ -34,3 +34,8 @@ variable "ip" {
   type = string
   default = null
 }
+
+variable "user_data" {
+  description = "Cloud-init user data script"
+  type        = string
+}

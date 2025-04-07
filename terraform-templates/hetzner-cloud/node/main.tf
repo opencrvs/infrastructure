@@ -13,5 +13,5 @@ resource "hcloud_server" "node" {
     # Here the worker nodes will use 10.0.1.1 to communicate with the master node
     ip         = var.ip
   }
-  user_data = file("${path.module}/cloud-init.yaml")
+  user_data = var.user_data
 }
