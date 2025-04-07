@@ -25,8 +25,6 @@ Follow up patterns:
      value: {{ .Values.elasticsearch_host | quote }}
    ```
 
-CERT_PUBLIC_KEY_PATH is common for almost all services
-
 Few examples of common variables:
 COUNTRY_CONFIG_URL
 USER_MANAGEMENT_URL

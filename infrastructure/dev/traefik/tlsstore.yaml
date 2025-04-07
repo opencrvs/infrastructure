@@ -6,3 +6,5 @@ metadata:
 spec:
   defaultCertificate:
     secretName: traefik-cert-tls
+  certificates:
+    - secretName: localhost-cert

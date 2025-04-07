@@ -5,7 +5,7 @@ metadata:
   namespace: traefik
 spec:
   # Secret names are always required.
-  secretName: traefik-cert-tls
+  secretName: localhost-cert
   issuerRef:
     name: cloudflare-issuer
     kind: ClusterIssuer
