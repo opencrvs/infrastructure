@@ -83,7 +83,6 @@ spec:
           image: minio/minio:RELEASE.2023-08-16T20-17-30Z.hotfix.a51234923
           # image: minio/minio:RELEASE.2025-03-12T18-04-18Z
           name: minio
-          {{- if or .Values.minio.secrets .Values.minio.env .Values.env }}
           env:
             - name: MINIO_BROWSER_REDIRECT_URL
               value: {{ include "render-external-url" (dict "service_name" "minio-console" "Values" .Values) }}
@@ -92,7 +91,6 @@ spec:
             - name: MINIO_API_CORS_ALLOW_ORIGIN
               value: '*'
           {{- include "render-env-vars" (dict "service_name" "minio" "Values" .Values) }}
-          {{- end }}
           ports:
             - containerPort: 3535
               protocol: TCP
