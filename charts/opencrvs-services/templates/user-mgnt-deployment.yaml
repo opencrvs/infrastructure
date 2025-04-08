@@ -36,7 +36,7 @@ spec:
             - name: MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/user-mgnt
             - name: COUNTRY_CONFIG_URL
-              value: {{ include "render-external-url" (dict "service_name" "user_mgnt" "Values" .Values) }}
+              value: {{ include "render-external-url" (dict "service_name" "user-mgnt" "Values" .Values) }}
           {{- include "render-env-vars" (dict "service_name" "user_mgnt" "Values" .Values) }}
           ports:
             - containerPort: {{ .Values.user_mgnt.port }}

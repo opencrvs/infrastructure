@@ -28,7 +28,9 @@ spec:
               value: {{ .Values.minio.host | quote }}
             - name: MINIO_PORT
               value: {{ .Values.minio.port | quote }}
-            # TODO: MINIO: Check if we need http/https prefix here
+            - name: MINIO_PROTOCOL
+              {{- $http_scheme := include "http-scheme" .}}
+              value: "{{ $http_scheme }}:"
             - name: MINIO_URL
               value: minio.{{ .Values.hostname }}
           {{- include "render-env-vars" (dict "service_name" "documents" "Values" .Values) }}

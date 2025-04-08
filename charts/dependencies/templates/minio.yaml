@@ -28,6 +28,12 @@ spec:
     services:
     - name: minio
       namespace: {{ .Release.Namespace }}
+      port: 3535
+  - match: 'Host(`minio-console.{{ .Values.hostname }}`) || Host(`{{ .Values.hostname }}`)'
+    kind: Rule
+    services:
+    - name: minio
+      namespace: {{ .Release.Namespace }}
       port: 3536
 ---
 apiVersion: v1
@@ -74,7 +80,8 @@ spec:
             - :3536
             - /data
           # image: quay.io/minio/minio:RELEASE.2023-09-16T01-01-47Z.fips
-          image: minio/minio:RELEASE.2025-03-12T18-04-18Z
+          image: minio/minio:RELEASE.2023-08-16T20-17-30Z.hotfix.a51234923
+          # image: minio/minio:RELEASE.2025-03-12T18-04-18Z
           name: minio
           {{- if or .Values.minio.secrets .Values.minio.env .Values.env }}
           env:

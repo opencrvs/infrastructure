@@ -39,12 +39,16 @@ Parameters:
   {{- end }}
 {{- end }}
 
+{{- define "http-scheme" -}}
+{{- printf "http" }}
+{{- if .Values.ingress.ssl_enabled }}
+{{- printf "https" }}
+{{- end }}
+{{- end }}
+
 {{- define "render-external-url" -}}
 {{- $service_name := .service_name }}
-{{- $http_scheme := "http" }}
-{{- if .Values.ingress.ssl_enabled }}
-  {{- $http_scheme = "https" }}
-{{- end }}
+{{- $http_scheme := include "http-scheme" . }}
 {{- printf "%s://%s.%s" $http_scheme $service_name .Values.hostname }}
 {{- end }}
 
@@ -71,6 +75,7 @@ spec:
 {{- end }}
 
 {{- define "hpa-helper" -}}
+{{- if .Values.hpa.enabled }}
 {{- $service_name := .service_name }}
 {{- $service_key_name := ( $service_name | replace "-" "_" ) }}
 {{- $global := .Values.hpa | default dict }}
@@ -101,7 +106,7 @@ spec:
           type: Utilization
           averageUtilization: {{ $averageUtilization }}
 {{- end }}
-
+{{- end }}
 {{- define "resources-helper" -}}
 {{- $service_name := .service_name }}
 {{- $service_key_name := ( $service_name | replace "-" "_" ) }}
