@@ -85,6 +85,12 @@ spec:
           name: minio
           {{- if or .Values.minio.secrets .Values.minio.env .Values.env }}
           env:
+            - name: MINIO_BROWSER_REDIRECT_URL
+              value: {{ include "render-external-url" (dict "service_name" "minio-console" "Values" .Values) }}
+            - name: MINIO_DOMAIN
+              value: {{ include "render-external-url" (dict "service_name" "minio" "Values" .Values) }}
+            - name: MINIO_API_CORS_ALLOW_ORIGIN
+              value: '*'
           {{- include "render-env-vars" (dict "service_name" "minio" "Values" .Values) }}
           {{- end }}
           ports:
