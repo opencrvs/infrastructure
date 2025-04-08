@@ -1,10 +1,3 @@
-minio:
-  env:
-    MINIO_BROWSER_REDIRECT_URL: http://minio-console.opencrvs.localhost
-    MINIO_DOMAIN: minio.opencrvs.localhost
-
-    MINIO_API_CORS_ALLOW_ORIGIN: '*'
-
 hostname: opencrvs.localhost
 
 ingress:
