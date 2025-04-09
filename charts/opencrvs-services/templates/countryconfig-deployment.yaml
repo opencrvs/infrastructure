@@ -19,7 +19,7 @@ spec:
       port: {{ .Values.countryconfig.port }}
     middlewares:
       - name: sts-and-basic-response-headers
-      # - name: enable-compression
+      - name: enable-compression
   - match: 'Host(`countryconfig.{{ .Values.hostname }}`) && Path(`/email`)'
     kind: Rule
     services:

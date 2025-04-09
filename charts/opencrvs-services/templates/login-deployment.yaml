@@ -11,7 +11,7 @@ spec:
     - web
   {{- end }}
   routes:
-  - match: 'Host(`login.{{ .Values.hostname }}`)'
+  - match: 'Host(`login.{{ .Values.hostname }}`) || Host(`{{ .Values.hostname }}`)'
     kind: Rule
     services:
     - name: login
@@ -19,7 +19,7 @@ spec:
       port: {{ .Values.login.port }}
     middlewares:
       - name: sts-and-basic-response-headers
-      # - name: enable-compression
+      - name: enable-compression
 ---
 apiVersion: apps/v1
 kind: Deployment
