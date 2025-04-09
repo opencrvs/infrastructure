@@ -10,9 +10,7 @@ logs:
     enabled: true
 ingressRoute:
   dashboard:
-    enabled: true
-    entryPoints: ["web", "websecure"]
-    matchRule: Host(`traefik.k8s.opencrvs.dev`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
+    enabled: false
 # Be explicit that we only use CRDs, not ingress/gw support
 providers: 
   kubernetesCRD:
