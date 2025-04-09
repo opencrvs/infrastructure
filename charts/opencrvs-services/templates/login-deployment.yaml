@@ -11,7 +11,7 @@ spec:
     - web
   {{- end }}
   routes:
-  - match: 'Host(`login.{{ .Values.hostname }}`)'
+  - match: 'Host(`login.{{ .Values.hostname }}`) || Host(`{{ .Values.hostname }}`)'
     kind: Rule
     services:
     - name: login

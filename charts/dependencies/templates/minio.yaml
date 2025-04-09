@@ -23,13 +23,13 @@ spec:
     - web
   {{- end }}
   routes:
-  - match: 'Host(`minio.{{ .Values.hostname }}`) || Host(`{{ .Values.hostname }}`)'
+  - match: 'Host(`minio.{{ .Values.hostname }}`)'
     kind: Rule
     services:
     - name: minio
       namespace: {{ .Release.Namespace }}
       port: 3535
-  - match: 'Host(`minio-console.{{ .Values.hostname }}`) || Host(`{{ .Values.hostname }}`)'
+  - match: 'Host(`minio-console.{{ .Values.hostname }}`)'
     kind: Rule
     services:
     - name: minio
