@@ -38,10 +38,18 @@ spec:
             - name: COUNTRY_CONFIG_URL
               value: {{ include "render-external-url" (dict "service_name" "user-mgnt" "Values" .Values) }}
           {{- include "render-env-vars" (dict "service_name" "user_mgnt" "Values" .Values) }}
+          {{ include "resources-helper" (dict "service_name" "user_mgnt" "Values" .Values) | indent 10 }}
           ports:
             - containerPort: {{ .Values.user_mgnt.port }}
               protocol: TCP
-          {{ include "resources-helper" (dict "service_name" "user_mgnt" "Values" .Values) | indent 10 }}
+          livenessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up x
+              port: {{ .Values.user_mgnt.port }}
+          readinessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up
+              port: {{ .Values.user_mgnt.port }}
           volumeMounts:
             - mountPath: /secrets/public-key.pem
               name: public-key

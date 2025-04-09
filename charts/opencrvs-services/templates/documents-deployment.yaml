@@ -16,7 +16,8 @@ spec:
         app: documents
     spec:
       containers:
-        - name: documents
+        - image: "ghcr.io/opencrvs/ocrvs-documents:{{ .Values.image.tag }}"
+          name: documents
           env:
             - name: COUNTRY_CONFIG_URL
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
@@ -34,15 +35,22 @@ spec:
             - name: MINIO_URL
               value: minio.{{ .Values.hostname }}
           {{- include "render-env-vars" (dict "service_name" "documents" "Values" .Values) }}
-          image: "ghcr.io/opencrvs/ocrvs-documents:{{ .Values.image.tag }}"
           {{ include "resources-helper" (dict "service_name" "documents" "Values" .Values) | indent 10 }}
+          ports:
+            - containerPort: {{ .Values.documents.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up x
+              port: {{ .Values.documents.port }}
+          readinessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up
+              port: {{ .Values.documents.port }}
           volumeMounts:
             - mountPath: /secrets/public-key.pem
               name: public-key
               subPath: public-key.pem
-          ports:
-            - containerPort: {{ .Values.documents.port }}
-              protocol: TCP
       restartPolicy: Always
       volumes:
         - configMap:

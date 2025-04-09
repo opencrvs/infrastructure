@@ -70,10 +70,11 @@ spec:
             - name: MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/application-config
           {{- include "render-env-vars" (dict "service_name" "config" "Values" .Values) }}
+          {{ include "resources-helper" (dict "service_name" "config" "Values" .Values) | indent 10 }}
           ports:
             - containerPort: {{ .Values.config.port }}
               protocol: TCP
-          {{ include "resources-helper" (dict "service_name" "config" "Values" .Values) | indent 10 }}
+          # TODO: Implement liveness and readiness probes
           volumeMounts:
             - mountPath: /secrets/public-key.pem
               name: public-key

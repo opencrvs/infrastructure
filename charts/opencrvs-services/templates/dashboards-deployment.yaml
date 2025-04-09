@@ -37,7 +37,6 @@ spec:
     spec:
       containers:
         - name: dashboards
-          {{ include "resources-helper" (dict "service_name" "dashboards" "Values" .Values) | indent 10 }}
           image: "ghcr.io/opencrvs/ocrvs-dashboards:{{ .Values.image.tag }}"
           env:
             - name: OPENCRVS_METABASE_SITE_URL
@@ -47,9 +46,11 @@ spec:
             - name: OPENCRVS_METABASE_DB_HOST
               value: {{ .Values.mongodb_host | quote }}
           {{- include "render-env-vars" (dict "service_name" "dashboards" "Values" .Values) }}
+          {{ include "resources-helper" (dict "service_name" "dashboards" "Values" .Values) | indent 10 }}
           ports:
             - containerPort: {{ .Values.dashboards.port }}
               protocol: TCP
+          # TODO: Add liveness and readiness probes
       restartPolicy: Always
 
 {{- include "service-helper" (dict "service_name" "dashboards" "Values" .Values) }}

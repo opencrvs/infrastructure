@@ -63,6 +63,7 @@ spec:
           ports:
             - containerPort: {{ .Values.events.port }}
               protocol: TCP
+          # TODO: Implement liveness and readiness probes
       restartPolicy: Always
 
 {{- include "service-helper" (dict "service_name" "events" "Values" .Values) }}

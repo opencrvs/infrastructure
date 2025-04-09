@@ -70,10 +70,18 @@ spec:
             - name: DOMAIN
               value: {{ .Values.hostname | quote }}
           {{- include "render-env-vars" (dict "service_name" "auth" "Values" .Values) }}
+          {{ include "resources-helper" (dict "service_name" "auth" "Values" .Values) | indent 10 }}
           ports:
             - containerPort: {{ .Values.auth.port }}
               protocol: TCP
-          {{ include "resources-helper" (dict "service_name" "auth" "Values" .Values) | indent 10 }}
+          livenessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up x
+              port: {{ .Values.auth.port }}
+          readinessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up
+              port: {{ .Values.auth.port }}
           volumeMounts:
             - mountPath: /secrets/public-key.pem
               name: public-key
@@ -81,10 +89,6 @@ spec:
             - mountPath: /secrets/private-key.pem
               name: private-key
               subPath: private-key.pem
-          readinessProbe:
-            httpGet:
-              path: /ping # FIXME: not real healthz, just checking if http server is up
-              port: 4040
       restartPolicy: Always
       volumes:
         - configMap:

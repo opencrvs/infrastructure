@@ -39,8 +39,14 @@ spec:
     spec:
       containers:
         - name: login
-          {{ include "resources-helper" (dict "service_name" "login" "Values" .Values) | indent 10 }}
           image: "ghcr.io/opencrvs/ocrvs-login:{{ .Values.image.tag }}"
+          env:
+            - name: CONTENT_SECURITY_POLICY_WILDCARD
+              value: "*.{{ .Values.hostname }}"
+            - name: COUNTRY_CONFIG_URL_INTERNAL
+              value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
+          {{- include "render-env-vars" (dict "service_name" "login" "Values" .Values) }}
+          {{ include "resources-helper" (dict "service_name" "login" "Values" .Values) | indent 10 }}
           ports:
             - containerPort: {{ .Values.login.container_port }}
               protocol: TCP
@@ -50,14 +56,12 @@ spec:
               # pod should be restarted once countryconfig is up
               path: /api/countryconfig/login-config.js
               port: {{ .Values.login.container_port }}
-            initialDelaySeconds: 10
-            periodSeconds: 5
-          env:
-            - name: CONTENT_SECURITY_POLICY_WILDCARD
-              value: "*.{{ .Values.hostname }}"
-            - name: COUNTRY_CONFIG_URL_INTERNAL
-              value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
-          {{- include "render-env-vars" (dict "service_name" "login" "Values" .Values) }}
+          readinessProbe:
+            httpGet:
+              # /api/countryconfig/login-config.js is external service proxied by nginx
+              # pod should be restarted once countryconfig is up
+              path: /api/countryconfig/login-config.js
+              port: {{ .Values.login.container_port }}
       restartPolicy: Always
 
 {{- include "service-helper" (dict "service_name" "login" "Values" .Values) }}

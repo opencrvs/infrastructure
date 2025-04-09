@@ -77,10 +77,22 @@ spec:
             - name: COUNTRY_CONFIG_URL
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
           {{- include "render-env-vars" (dict "service_name" "gateway" "Values" .Values) }}
+          {{ include "resources-helper" (dict "service_name" "gateway" "Values" .Values) | indent 10 }}
           ports:
             - containerPort: {{ .Values.gateway.port }}
               protocol: TCP
-          {{ include "resources-helper" (dict "service_name" "gateway" "Values" .Values) | indent 10 }}
+          livenessProbe:
+            initialDelaySeconds: 30
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up x
+              port: {{ .Values.gateway.port }}
+            timeoutSeconds: 5
+          readinessProbe:
+            initialDelaySeconds: 30
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up
+              port: {{ .Values.gateway.port }}
+            timeoutSeconds: 5
           volumeMounts:
             - mountPath: /secrets/public-key.pem
               name: public-key

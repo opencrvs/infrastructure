@@ -40,6 +40,7 @@ spec:
     spec:
       containers:
         - image: "ghcr.io/opencrvs/ocrvs-client:{{ .Values.image.tag }}"
+          name: client
           env:
             - name: CONTENT_SECURITY_POLICY_WILDCARD
               value: "*.{{ .Values.hostname }}"
@@ -47,31 +48,29 @@ spec:
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
             - name: GATEWAY_URL_INTERNAL
               value: http://gateway.{{ .Release.Namespace }}.svc.cluster.local:7070
-            # CHECK: Following variables are present on Dev environment
-            # "COUNTRY_CONFIG_URL
-            # "DECLARED_DECLARATION_SEARCH_QUERY_COUNT
-            # TODO: MINIO
+            - name: COUNTRY_CONFIG_URL
+              value: {{ include "render-external-url" (dict "service_name" "countryconfig" "Values" .Values) }}
             - name: MINIO_URL
               value: {{ include "render-external-url" (dict "service_name" "minio" "Values" .Values) }}
           {{- include "render-env-vars" (dict "service_name" "client" "Values" .Values) }}
+          {{ include "resources-helper" (dict "service_name" "client" "Values" .Values) | indent 10 }}
+          ports:
+            - containerPort: {{ .Values.client.container_port }}
+              protocol: TCP
           livenessProbe:
             httpGet:
               # /manifest.json is external service proxied by nginx on countryconfig
               # pod should be restarted once countryconfig is up
               path: /manifest.json
               port: {{ .Values.client.container_port }}
-            initialDelaySeconds: 10
             periodSeconds: 30
-          
-          name: client
-          ports:
-            - containerPort: {{ .Values.client.container_port }}
-              protocol: TCP
-          {{ include "resources-helper" (dict "service_name" "client" "Values" .Values) | indent 10 }}
           readinessProbe:
             httpGet:
-              path: /ping
+              # /manifest.json is external service proxied by nginx on countryconfig
+              # pod should be restarted once countryconfig is up
+              path: /manifest.json
               port: {{ .Values.client.container_port }}
+            periodSeconds: 30
       restartPolicy: Always
 
 {{- include "service-helper" (dict "service_name" "client" "Values" .Values) }}
