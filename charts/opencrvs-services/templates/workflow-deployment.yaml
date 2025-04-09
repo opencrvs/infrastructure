@@ -44,10 +44,18 @@ spec:
             - name: WEBHOOKS_URL
               value: http://webhooks.{{ .Release.Namespace }}.svc.cluster.local:2525/
           {{- include "render-env-vars" (dict "service_name" "workflow" "Values" .Values) }}
+          {{ include "resources-helper" (dict "service_name" "workflow" "Values" .Values) | indent 10 }}
           ports:
             - containerPort: {{ .Values.workflow.port }}
               protocol: TCP
-          {{ include "resources-helper" (dict "service_name" "workflow" "Values" .Values) | indent 10 }}
+          livenessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up x
+              port: {{ .Values.workflow.port }}
+          readinessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up
+              port: {{ .Values.workflow.port }}
           volumeMounts:
             - mountPath: /secrets/public-key.pem
               name: public-key

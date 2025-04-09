@@ -94,10 +94,11 @@ spec:
             - name: MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/user-mgnt
           {{- include "render-env-vars" (dict "service_name" "countryconfig" "Values" .Values) }}
+          {{ include "resources-helper" (dict "service_name" "countryconfig" "Values" .Values) | indent 10 }}
           ports:
             - containerPort: {{ .Values.countryconfig.port }}
               protocol: TCP
-          {{ include "resources-helper" (dict "service_name" "countryconfig" "Values" .Values) | indent 10 }}
+          # TODO: Implement liveness and readiness probes
           volumeMounts:
             - mountPath: /secrets/public-key.pem
               name: public-key

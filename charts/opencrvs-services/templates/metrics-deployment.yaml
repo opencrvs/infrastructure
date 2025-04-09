@@ -48,10 +48,20 @@ spec:
             - name: MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/metrics
           {{- include "render-env-vars" (dict "service_name" "metrics" "Values" .Values) }}
+          {{ include "resources-helper" (dict "service_name" "metrics" "Values" .Values) | indent 10 }}
           ports:
             - containerPort: {{ .Values.metrics.port }}
               protocol: TCP
-          {{ include "resources-helper" (dict "service_name" "metrics" "Values" .Values) | indent 10 }}
+          livenessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up x
+              port: {{ .Values.metrics.port }}
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up
+              port: {{ .Values.metrics.port }}
+            timeoutSeconds: 3
           volumeMounts:
             - mountPath: /secrets/public-key.pem
               name: public-key

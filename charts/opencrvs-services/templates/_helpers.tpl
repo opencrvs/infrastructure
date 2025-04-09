@@ -40,9 +40,10 @@ Parameters:
 {{- end }}
 
 {{- define "http-scheme" -}}
-{{- printf "http" }}
 {{- if .Values.ingress.ssl_enabled }}
 {{- printf "https" }}
+{{- else }}
+{{- printf "http" }}
 {{- end }}
 {{- end }}
 

@@ -18,7 +18,6 @@ spec:
       containers:
         - name: search
           image: "ghcr.io/opencrvs/ocrvs-search:{{ .Values.image.tag }}"
-          {{ include "resources-helper" (dict "service_name" "search" "Values" .Values) | indent 10 }}
           env:
             - name: FHIR_URL
               value: {{ .Values.fhir_url | quote }}
@@ -33,9 +32,18 @@ spec:
             - name: HEARTH_MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/hearth-dev
           {{- include "render-env-vars" (dict "service_name" "search" "Values" .Values) }}
+          {{ include "resources-helper" (dict "service_name" "search" "Values" .Values) | indent 10 }}
           ports:
             - containerPort: {{ .Values.search.port }}
               protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up x
+              port: {{ .Values.search.port }}
+          readinessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up
+              port: {{ .Values.search.port }}
           volumeMounts:
             - mountPath: /secrets/public-key.pem
               name: public-key
