@@ -2,7 +2,8 @@
 # You need to accept SSL Certificate for the first time for
 # the browser to trust the certificate.
 hostname: opencrvs.localhost
-
+hpa:
+  enabled: false
 # Define the environment variables for the OpenCRVS services.
 env:
   LOG_LEVEL: debug 
