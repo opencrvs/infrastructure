@@ -63,20 +63,21 @@ You need to clone the [opencrvs-core](https://github.com/opencrvs/opencrvs-core)
     ```bash
     git clone git@github.com:opencrvs/opencrvs-core.git
     ```
+4. Clone the Infrastructure repository:
+    ```bash
+    git clone git@github.com:opencrvs/infrastructure.git
+    ```
+    **NOTE:** This step is optional, tilt should be able to checkout infrastructure directory
 5. Change directory to the OpenCRVS Core repository:
     ```bash
     cd opencrvs-core
     ```
-6. [Temporary Step] Switch to the k8s-version branch:
-    ```bash
-    git checkout k8s-refresh
-    ```
-7. Run Tilt:
+6. Run Tilt:
     ```bash
     tilt up
     ```
-8. Navigate to [http://localhost:10350/](http://localhost:10350/)
-9. Once all container images are up and running your environment will be available at https://opencrvs.localhost
+7. Navigate to [http://localhost:10350/](http://localhost:10350/)
+8. Once all container images are up and running your environment will be available at https://opencrvs.localhost
 
 
 **NOTE:** On local environment you need manually access self signed certificate for the following URLs:
@@ -147,7 +148,7 @@ repositories/
 - https://register.opencrvs.localhost/ping
 - https://countryconfig.opencrvs.localhost/ping
 
-## Seed data
+## Reset database / Seed data
 
 1. Navigate to [http://localhost:10350/](http://localhost:10350/)
 2. Scroll to section `2.Data-tasks` and find resource `Reset database`
