@@ -65,16 +65,6 @@ Kubernetes helm chart doesn't have data persistence in case of uninstall
 
 - https://kubernetes.io/docs/concepts/storage/volumes/#image
 
-# Add Pod Disruption Budget
-
-If we would like to give people a way to deploy without downtime this option is mandatory
-
-# Liveness and readiness probes
-
-Some services like login and client require extra attention at this point since nginx proxy does cache IP address of downstream service.
-
-Some services just need proper configuration
-
 # Add minio-mc container
 
 TODO: Check if container is needed

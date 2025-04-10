@@ -66,11 +66,6 @@ Helm chart to deploy all OpenCRVS services on Kubernetes cluster.
             <td>Hostname for OpenCRVS application, without wildcard or subdomain. Example: hostname: opencrvs.localhost</td>
         </tr>
         <tr>
-            <td>dev_mode</td>
-            <td>false</td>
-            <td>Developer mode flag. TODO: Check the usage and purpose of this variable.</td>
-        </tr>
-        <tr>
             <td>env</td>
             <td>{}</td>
             <td>Global environment variables, each variable defined here is available to all workloads (service) deployed by helm chart. See example at [values.yaml](values.yaml)</td>
@@ -89,6 +84,61 @@ Helm chart to deploy all OpenCRVS services on Kubernetes cluster.
             <td>data_seeder.enabled</td>
             <td>true</td>
             <td>Seed data as post-install step, data seeder is executed only once while `helm install`. In some cases when data is already seeded, e/g upgrade, this value must be set to false. **Note**: default user is used for data seeding, it will fail anyway on database with non-default data.</td>
+        </tr>
+        <tr>
+            <td>hpa.enabled</td>
+            <td>true</td>
+            <td>Enable Horizontal Pod Autoscaler (HPA) configuration. Configuration is available per service as well, add <pre>&ltservice_name&gt.hpa.&ltkey&gt</pre></td>
+        </tr>
+        <tr>
+            <td>hpa.minReplicas</td>
+            <td>1</td>
+            <td>Minimal number of PODs per Kubernetes Deployment</td>
+        </tr>
+        <tr>
+            <td>hpa.maxReplicas</td>
+            <td>2</td>
+            <td>Maximum number of PODs per ReplicaSet</td>
+        </tr>
+        <tr>
+            <td>hpa.averageUtilization</td>
+            <td>75</td>
+            <td>Average CPU Utilization for autoscaler event (percentage)</td>
+        </tr>
+        <tr>
+            <td>pdb.enabled</td>
+            <td>true</td>
+            <td>Enable Pod Disruption Budget (PDB) configuration. Configuration is available per service as well, add <pre>&ltservice_name&gt.pdb.&ltkey&gt</td>
+        </tr>
+        <tr>
+            <td>pdb.minAvailable</td>
+            <td>50%</td>
+            <td>Number of PODs not available while deployment within ReplicaSet</td>
+        </tr>
+        <tr>
+            <td>resources</td>
+            <td>{}</td>
+            <td>Resources allocated to OpenCRVS microservices (Kubernetes PODs). Properties in this section could be defined per microservice as well.</td>
+        </tr>
+        <tr>
+            <td>resources.memoryRequest</td>
+            <td>{}</td>
+            <td>Memory requests defined per POD</td>
+        </tr>
+        <tr>
+            <td>resources.memoryLimit</td>
+            <td>{}</td>
+            <td>Memory limits defined per POD</td>
+        </tr>
+        <tr>
+            <td>resources.cpuRequest</td>
+            <td>{}</td>
+            <td>CPU requests defined per POD</td>
+        </tr>
+        <tr>
+            <td>resources.cpuLimit</td>
+            <td>{}</td>
+            <td>CPU limits defined per POD</td>
         </tr>
     </tbody>
 </table>
