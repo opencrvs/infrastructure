@@ -11,6 +11,11 @@
 # Run command:
 # kubectl create secret generic minio-secret --from-env-file=minio.env --namespace <opencrvs-namespace>
 
+resources:
+  memoryRequest: "512Mi"
+  cpuRequest: "500m"
+  memoryLimit: "1Gi"
+  cpuLimit: "2"
 
 hostname: k8s.opencrvs.dev
 

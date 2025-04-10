@@ -124,6 +124,7 @@ resources:
 {{- end }}
 
 {{- define "pdb-helper" -}}
+{{- if .Values.pdb.enabled }}
 {{- $service_name := .service_name }}
 {{- $service_key_name := ( $service_name | replace "-" "_" ) }}
 {{- $global := .Values.pdb }}
@@ -147,5 +148,6 @@ spec:
   {{- if $max_unavailable }}
   maxUnavailable: {{ $max_unavailable | quote }}
   {{- end }}
+{{- end }}
 {{- end }}
 {{- end }}

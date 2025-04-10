@@ -27,21 +27,39 @@ This repository is used to store infrastructure code for deploying OpenCRVS.
 
 ## Prerequisites
 
-Hardware requirements:
+### Hardware requirements
 - 16G RAM
+- 8 CPU (at least Intel 8th generation)
+- 100G free storage space
+
+### Software requirements
+
+#### Docker engine with Kubernetes cluster
 
 Ensure you have one of the following solutions installed on your laptop:
-- [**Recommended**]: Docker Desktop (with Kubernetes enabled): https://www.docker.com/products/docker-desktop/. Please check following:
+- **Recommended for MacOS**: Docker Desktop (with Kubernetes enabled): https://www.docker.com/products/docker-desktop/. Please check following:
   - Enable host networking
   - Enable Kubernetes
   - Ensure docker-desktop is configured to use at least 16G of RAM
-- Minikube: https://minikube.sigs.k8s.io/docs/. For minikube linux (Ubuntu) users please ensure you gave unlimitted amount of memory and tunnel is running on localhost:
-  ```
-  minikube start --memory=no-limits
-  minikube tunnel -c --bind-address='127.0.0.1'
-  ```
+  - Ensure Storage is set up at least 100G
+- **Recommended for Linux**: Minikube (with docker driver): https://minikube.sigs.k8s.io/docs/. **NOTE**: Docker support is still experimental for minikube, but it gives better performance in comparison to alternative solutions.
+  Additional settings for linux (Ubuntu) users:
+  - Add following values to /etc/sysctl.conf:
+    ```
+    fs.inotify.max_user_watches = 524288
+    fs.inotify.max_user_instances = 512
+    ```
+  - Start minikube with unlimited amount of memory:
+    ```
+    minikube start --memory=no-limits
+    ```
+  - Start load balancer (tunnel) on localhost:
+    ```
+    minikube tunnel -c --bind-address='127.0.0.1'
+    ```
 **NOTE:** Any other Kubernetes solution for desktop should work as well. Please check to LoadBalancer and kubernetes services setup if you are not able to access service.
 
+#### Additional utilities
 
 You will also need the following tools for running the local development environment:
 - Git: https://git-scm.com/downloads
@@ -77,15 +95,7 @@ You need to clone the [opencrvs-core](https://github.com/opencrvs/opencrvs-core)
     tilt up
     ```
 7. Navigate to [http://localhost:10350/](http://localhost:10350/)
-8. Once all container images are up and running your environment will be available at https://opencrvs.localhost
-
-
-**NOTE:** On local environment you need manually access self signed certificate for the following URLs:
-- https://login.opencrvs.localhost/
-- https://gateway.opencrvs.localhost/ping
-- https://register.opencrvs.localhost/ping
-- https://countryconfig.opencrvs.localhost/ping
-
+8. Once all container images are up and running your environment will be available at http://opencrvs.localhost
 
 ---
 
@@ -140,13 +150,7 @@ repositories/
     tilt up
     ```
 8. Navigate to [http://localhost:10350/](http://localhost:10350/)
-9. Once all container images are up and running your environment will be available at https://opencrvs.localhost
-
-**NOTE:** On local environment you need manually access self signed certificate for the following URLs:
-- https://login.opencrvs.localhost/
-- https://gateway.opencrvs.localhost/ping
-- https://register.opencrvs.localhost/ping
-- https://countryconfig.opencrvs.localhost/ping
+9. Once all container images are up and running your environment will be available at http://opencrvs.localhost
 
 ## Reset database / Seed data
 

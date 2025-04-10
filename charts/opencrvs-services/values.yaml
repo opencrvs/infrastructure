@@ -4,6 +4,15 @@
 # https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#configure-probes
 
 
+###############################################################################
+# Dependencies configuration
+###############################################################################
+# Please update values.yaml for your particular environment with correct values
+# Default values for dependencies are configured with considerations:
+# - All dependencies are deployed by dependencies helm chart
+# - Dependencies are deployed in opencrvs-deps-dev namespace
+
+
 # Elasticsearch configuration, including the hostname and port.
 # TODO: Consider defining the port as a separate variable.
 elasticsearch_host: elasticsearch.opencrvs-deps-dev.svc.cluster.local:9200
@@ -14,7 +23,6 @@ influxdb:
   port: 8086
   db: ocrvs
 
-# TODO: Add description for FHIR URL configuration.
 # FHIR URL Endpoint.
 fhir_url: http://hearth.opencrvs-deps-dev.svc.cluster.local:3447/fhir
 
@@ -27,21 +35,44 @@ redis_host: redis-0.redis.opencrvs-deps-dev.svc.cluster.local
 # MongoDB hostname configuration.
 mongodb_host: mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local
 
+###############################################################################
+# Application configuration
+###############################################################################
+
 # Hostname for OpenCRVS application, without wildcard or subdomain.
-# Example: hostname: opencrvs.localhost
-hostname: farajaland.com
+# All OpenCRVS services will be available under domain:
+hostname: farajaland.org
 
-# TODO: Check the usage and purpose of this variable.
-# Developer mode flag.
-dev_mode: false
-
+# Access OpenCRVS services at https://<hostname>/
+# For example, https://farajaland.org/
 ingress:
   ssl_enabled: true
 
+# See kubernetes documentation for more information on service types:
+# https://kubernetes.io/docs/concepts/services-networking/service/
 service_type: ClusterIP
 
+# Horizontal Pod Autoscaler (HPA) configuration:
+hpa:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 2
+  averageUtilization: 75
+
+# Pod Disruption Budget (PDB) configuration:
+pdb:
+  enabled: true
+  minAvailable: 50%
+
+# Resources allocated to OpenCRVS microservices (Kubernetes PODs):
+resources:
+  memoryRequest: "256Mi"
+  cpuRequest: "250m"
+  memoryLimit: "1Gi"
+  cpuLimit: "500m"
+
 # Global environment variables applied to
-# all OpenCRVS microservices (Kubernetes PODs).
+# all OpenCRVS microservices (Kubernetes PODs):
 env:
   QA_ENV: true
   NODE_ENV: production
@@ -53,22 +84,11 @@ env:
   # Note: The SENTRY_DSN should be defined at the global level of environment variables.
   # SENTRY_DSN: https://...@o309867.ingest.sentry.io/....
 
-hpa:
-  enabled: true
-  minReplicas: 1
-  maxReplicas: 2
-  averageUtilization: 75
+# OpenCRVS core image tag:
+image:
+  tag: develop
 
-
-resources:
-  memoryRequest: "256Mi"
-  cpuRequest: "250m"
-  memoryLimit: "1Gi"
-  cpuLimit: "500m"
-
-pdb:
-  minAvailable: 50%
-
+# Per service configuration:
 auth:
   replicas: 1
   port: 4040
@@ -94,12 +114,14 @@ config:
     DOMAIN: "*"
     CHECK_INVALID_TOKEN: true
   # Mapping for external secrets goes here:
+  # README.md for more details
   secrets: {}
 
 countryconfig:
   image:
+    # Replace this repository with your own image
     name: opencrvs/ocrvs-countryconfig
-    tag: latest
+    tag: develop
   replicas: 1
   port: 3040
   env:
@@ -141,11 +163,13 @@ dashboards:
     cpuRequest: "250m"
     memoryLimit: "1Gi"
     cpuLimit: "500m"
+
 data_seeder:
   enabled: false
   env:
     SUPER_USER_PASSWORD: "password"
     ACTIVATE_USERS: "true"
+
 documents:
   replicas: 1
   port: 9050
@@ -160,7 +184,6 @@ gateway:
     MINIO_BUCKET: "ocrvs"
     COUNTRY: FAR
     DISABLE_RATE_LIMIT: "true"
-    # # TODO: Check usage
     DOMAIN: "opencrvs.localhost"
     LANGUAGES: "en,fr"
 
@@ -168,6 +191,7 @@ login:
   replicas: 1
   port: 3020
   container_port: 80
+
 metrics:
   replicas: 1
   port: 1050
