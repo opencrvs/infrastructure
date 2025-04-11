@@ -8,7 +8,7 @@ spec:
   replicas: 1
   template:
     spec:
-      serviceAccountName: actions-runner-controller
+      serviceAccountName: opencrvs-runner
       repository: opencrvs/infrastructure
       image: ghcr.io/opencrvs/opencrvs-github-runner:latest
       labels:
