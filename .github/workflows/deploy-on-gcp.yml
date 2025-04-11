@@ -1,4 +1,4 @@
-name: Deploy on GCP
+name: Deploy on Kubernetes
 on:
     workflow_dispatch:
       inputs:
