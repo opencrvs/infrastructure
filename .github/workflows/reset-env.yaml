@@ -1,0 +1,31 @@
+name: Reset OpenCRVS on k8s
+on:
+    workflow_dispatch:
+      inputs:
+        environment:
+          description: "Target environment"
+          required: true
+          default: "dev"
+          type: choice
+          options:
+            - dev
+            - staging
+            - prod
+
+jobs:
+  reset:
+    env:
+      ENV: ${{ github.event.inputs.environment }}
+    runs-on: [self-hosted, gcp]
+    steps:
+        # FYI: Repository is needed only due to single file: infrastructure/dev/dependenciess/values.yaml
+        - name: Checkout repo
+          uses: actions/checkout@v4
+  
+        - name: Print deployment parameters
+          run: |
+            echo "Environment: $ENV"
+  
+        - name: Deploy with Helm
+          run: |
+            ./infrastructure/clear-all-data.k8s.sh
