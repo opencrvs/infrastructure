@@ -1,0 +1,57 @@
+name: Deploy on GCP
+on:
+    workflow_dispatch:
+      inputs:
+        core-image-tag:
+          description: "Tag of the core image"
+          required: true
+          default: "latest"
+        countryconfig-image-tag:
+          description: "Tag of the countryconfig image"
+          required: true
+          default: "latest"
+        environment:
+          description: "Target environment"
+          required: true
+          default: "dev"
+          type: choice
+          options:
+            - dev
+            - staging
+            - prod
+    # push:
+    #     branches: ["develop"]
+jobs:
+  deploy:
+    runs-on: [self-hosted, gcp]
+    # TEMPORARY COMMENTED
+    # environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      - name: Print deployment parameters
+        run: |
+          echo "Deploying core image: ${{ github.event.inputs.core-image-tag }}"
+          echo "Deploying countryconfig image: ${{ github.event.inputs.countryconfig-image-tag }}"
+          echo "Target environment: ${{ github.event.inputs.environment }}"
+      # FYI: Repository is needed only due to single file: infrastructure/dev/opencrvs-services/values.yaml
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set environment variables
+        run: |
+          export CORE_IMAGE_TAG="${{ github.event.inputs.core-image-tag }}"
+          export COUNTRYCONFIG_IMAGE_TAG="${{ github.event.inputs.countryconfig-image-tag }}"
+          export ENV="${{ github.event.inputs.environment }}"
+          echo "Environment: $ENV"
+          echo "Core Image: $CORE_IMAGE_TAG"
+          echo "Country Config Image: $COUNTRYCONFIG_IMAGE_TAG"
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services:0.0.1 \
+            --namespace "opencrvs-${ENV}" \
+            -f infrastructure/${ENV}/opencrvs-services/values.yaml \
+            --create-namespace \
+            --set core.image.tag="$CORE_IMAGE_TAG" \
+            --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
+            --set environment="$ENV"

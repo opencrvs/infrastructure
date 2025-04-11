@@ -1,0 +1,19 @@
+# runner-deployment.yaml
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: RunnerDeployment
+metadata:
+  name: opencrvs-infra-runner
+  namespace: actions-runner-system
+spec:
+  replicas: 1
+  template:
+    spec:
+      serviceAccountName: actions-runner-controller
+      repository: opencrvs/infrastructure
+      image: ghcr.io/opencrvs/opencrvs-github-runner:latest
+      labels:
+        - opencrvs
+        - gcp
+      env:
+        - name: DOCKER_ENABLED
+          value: "true"

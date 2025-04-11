@@ -2,9 +2,10 @@ name: Release Charts
 
 on:
   push:
-    branches:
-      - develop
-
+    branches: ["*"]
+    paths:
+      - charts/**  # Trigger when any chart changes
+      - .github/workflows/publish-charts.yml  # Trigger when this workflow file changes
 jobs:
   release:
     permissions:
