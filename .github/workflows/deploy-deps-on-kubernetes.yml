@@ -1,0 +1,39 @@
+name: Deploy on Kubernetes
+on:
+    workflow_dispatch:
+      inputs:
+        environment:
+          description: "Target environment"
+          required: true
+          default: "dev"
+          type: choice
+          options:
+            - dev
+            - staging
+            - prod
+    # push:
+    #     branches: ["develop"]
+jobs:
+  deploy:
+    env:
+      ENV: ${{ github.event.inputs.environment }}
+    runs-on: [self-hosted, gcp]
+    # TEMPORARY COMMENTED
+    # environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      # FYI: Repository is needed only due to single file: infrastructure/dev/dependenciess/values.yaml
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Print deployment parameters
+        run: |
+          echo "Environment: $ENV"
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-dependencies-chart:0.1.0 \
+            --namespace "opencrvs-deps-${ENV}" \
+            -f infrastructure/${ENV}/dependencies/values.yaml \
+            --create-namespace \
+            --set environment="$ENV"
