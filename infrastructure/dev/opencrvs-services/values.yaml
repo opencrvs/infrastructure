@@ -22,6 +22,7 @@ hostname: k8s.opencrvs.dev
 image:
   tag: develop
   # tag: 50b3e14
+# redis_host: my-keydb.opencrvs-deps-dev.svc.cluster.local
 
 countryconfig:
   image:
