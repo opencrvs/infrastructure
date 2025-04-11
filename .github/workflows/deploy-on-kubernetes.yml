@@ -1,4 +1,4 @@
-name: Deploy OpenCRVS on k8s
+name: Deploy Application on k8s
 on:
     workflow_dispatch:
       inputs:

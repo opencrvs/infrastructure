@@ -1,4 +1,4 @@
-name: Build and Push Custom Runner Image
+name: Build and Push Runner Image
 
 on:
   push:

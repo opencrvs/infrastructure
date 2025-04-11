@@ -1,4 +1,4 @@
-name: Reset OpenCRVS on k8s
+name: Reset Application on k8s
 on:
     workflow_dispatch:
       inputs:
