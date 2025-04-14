@@ -4,7 +4,7 @@ packages:
 users:
   - name: provision
     ssh-authorized-keys:
-    - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFjR+nT2gJDSz24v1m/Lr+MCIXh/iV0NXJ5dfZwW3EP+
+    - ${ssh_key}
     sudo: ALL=(ALL) NOPASSWD:ALL
     groups: sudo
     shell: /bin/bash

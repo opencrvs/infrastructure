@@ -6,7 +6,7 @@ variable "name" {
 variable "server_type" {
     description = "Type of the server"
     type        = string
-    default     = "cax11"
+    default     = "cpx41"
   
 }
 

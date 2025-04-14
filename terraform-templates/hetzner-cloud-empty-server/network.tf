@@ -1,6 +1,6 @@
 # Create a private network for the cluster
 resource "hcloud_network" "private_network" {
-  name     = "kubernetes-cluster"
+  name     = "${var.country_name}-private-network"
   ip_range = "10.0.0.0/16"
 }
 
