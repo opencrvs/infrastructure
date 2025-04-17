@@ -13,7 +13,7 @@
 
 resources:
   memoryRequest: "512Mi"
-  cpuRequest: "500m"
+  cpuRequest: "300m"
   memoryLimit: "1Gi"
   cpuLimit: "2"
 
@@ -22,7 +22,7 @@ hostname: k8s.opencrvs.dev
 image:
   tag: develop
   # tag: 50b3e14
-redis_host: my-keydb.opencrvs-deps-dev.svc.cluster.local
+redis_host: valkey-headless.opencrvs-deps-dev.svc.cluster.local
 
 countryconfig:
   image:
