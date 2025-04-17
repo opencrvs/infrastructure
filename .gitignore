@@ -6,3 +6,4 @@ dump.temporal.env
 *.tfstate.backup
 vars
 TODO.md
+.ssh

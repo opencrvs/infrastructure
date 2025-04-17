@@ -41,9 +41,11 @@ NAMESPACE="opencrvs-deps-dev"
 OPENCRVS_NAMESPACE="opencrvs-dev"
 MONGODB_HOST="mongodb"
 ELASTICSEARCH_HOST="elasticsearch"
+# MinIO configuration:
 MINIO_HOST="minio"
-MINIO_ROOT_USER=minioadmin
-MINIO_ROOT_PASSWORD=minioadmin
+MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
+# InfluxDB configuration:
 INFLUX_HOST="influxdb"
 MIGRATION_IMAGE_TAG="develop"
 DATASEED_IMAGE_TAG="develop"
@@ -181,7 +183,8 @@ echo "All data has been deleted"
 # Restart events by deleting pod
 #-----------------------------
 kubectl delete pod --namespace $OPENCRVS_NAMESPACE -lapp=events && EVENTS_RESTART=✅ || EVENTS_RESTART=❌
-
+# TODO: Add events service health check
+echo "Waiting for events service to wake up" && sleep 60
 # Run migration
 echo "================= 🕐 🕝 🕐 Running migration 🕐 🕝 🕐 ================="
 kubectl run migration-db-job --namespace $NAMESPACE \
@@ -192,12 +195,15 @@ kubectl run migration-db-job --namespace $NAMESPACE \
 --env="INFLUX_HOST=$INFLUX_HOST" \
 --env="INFLUX_PORT=8086" \
 --env="MINIO_HOST=$MINIO_HOST" \
+--env="MINIO_ACCESS_KEY=$MINIO_ROOT_USER" \
+--env="MINIO_SECRET_KEY=$MINIO_ROOT_PASSWORD" \
 --env="APPLICATION_CONFIG_MONGO_URL=mongodb://$HOST/application-config" \
 --env="USER_MGNT_MONGO_URL=mongodb://$HOST/user-mgnt" \
 --env="PERFORMANCE_MONGO_URL=mongodb://$HOST/performance" \
 --env="HEARTH_MONGO_URL=mongodb://$HOST/hearth-dev" \
 --env="OPENHIM_MONGO_URL=mongodb://$HOST/openhim-dev" \
 --env="DASHBOARD_MONGO_URL=mongodb://$HOST/performance" \
+--env="EVENTS_MONGO_URL=mongodb://$HOST/events" \
 --env="WAIT_HOSTS=$HOST:27017,$INFLUX_HOST:8086,$MINIO_HOST:3535,$ELASTICSEARCH_HOST:9200" \
 --env="MINIO_BUCKET=ocrvs" \
 --env="NODE_ENV=production" && MIGRATION_JOB=✅ || MIGRATION_JOB=❌

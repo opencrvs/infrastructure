@@ -13,7 +13,7 @@
 
 resources:
   memoryRequest: "512Mi"
-  cpuRequest: "500m"
+  cpuRequest: "300m"
   memoryLimit: "1Gi"
   cpuLimit: "2"
 
@@ -21,7 +21,6 @@ hostname: k8s.opencrvs.dev
 
 image:
   tag: develop
-  # tag: 50b3e14
 
 countryconfig:
   image:
@@ -29,8 +28,6 @@ countryconfig:
     name: opencrvs/ocrvs-farajaland
     # name: opencrvs/ocrvs-countryconfig
     tag: develop
-    # Farajaland working tag: ec53c12
-    # tag: ec53c12
 
 documents:
 # Uncomment this section to add authentication for MinIO:
