@@ -21,8 +21,6 @@ hostname: k8s.opencrvs.dev
 
 image:
   tag: develop
-  # tag: 50b3e14
-redis_host: valkey-headless.opencrvs-deps-dev.svc.cluster.local
 
 countryconfig:
   image:
@@ -30,8 +28,6 @@ countryconfig:
     name: opencrvs/ocrvs-farajaland
     # name: opencrvs/ocrvs-countryconfig
     tag: develop
-    # Farajaland working tag: ec53c12
-    # tag: ec53c12
 
 documents:
 # Uncomment this section to add authentication for MinIO:
