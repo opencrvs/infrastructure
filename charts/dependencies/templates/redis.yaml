@@ -1,3 +1,4 @@
+{{ if .Values.redis.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -30,14 +31,30 @@ spec:
         app: redis
     spec:
       containers:
-        - image: redis:5
-        # - image: valkey/valkey:8.1.0-alpine
+        - image: bitnami/valkey:latest
           name: redis
-          {{- if or .Values.redis.secrets .Values.redis.env .Values.env }}
           env:
-          {{- include "render-env-vars" (dict "service_name" "redis" "Values" .Values) }}
+          {{- if .Values.redis.acl.enabled }}
+            - name: VALKEY_ACLFILE
+              value: /opt/bitnami/valkey/mounted-etc/users.acl
+            - name: VALKEY_PASSWORD
+              value: "false"
           {{- end }}
+          {{- include "render-env-vars" (dict "service_name" "redis" "Values" .Values) }}
           ports:
             - containerPort: 6379
               protocol: TCP
+          {{- if .Values.redis.acl.enabled }}
+          volumeMounts:
+            - name: redis-opencrvs-acl
+              mountPath: /opt/bitnami/valkey/mounted-etc
+              # subPath: redis-acl.conf
+          {{- end }}
       restartPolicy: Always
+      volumes:
+        {{- if .Values.redis.acl.enabled }}
+        - name: redis-opencrvs-acl
+          secret:
+            secretName: redis-opencrvs-acl
+        {{- end }}
+{{- end }}

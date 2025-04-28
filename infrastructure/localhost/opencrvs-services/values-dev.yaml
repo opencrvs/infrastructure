@@ -32,6 +32,8 @@ pdb:
 env:
   LOG_LEVEL: debug 
   MINIO_BUCKET: "ocrvs"
+  # TODO: Store as a secret
+  REDIS_PASSWORD: password
 
 # OpenCRVS core image tag:
 image:

@@ -1,16 +1,39 @@
 
 mongodb:
+  enabled: true
   version: 4.4
 
-minio: {}
+minio:
+  enabled: true
 
-influxdb: {}
+influxdb:
+  enabled: true
 
-hearth: {}
+hearth:
+  enabled: true
 
-redis: {}
+redis:
+  enabled: true
+  # This will create a secret with the ACL file
+  # and set the VALKEY_ACLFILE environment variable
+  # NOTE: If you don't enable ACL, please set the password or disable authentication
+  # by setting ALLOW_EMPTY_PASSWORD to yes
+  acl:
+    # Enable ACL for Redis
+    enabled: true
+    # List of key for variables
+    # Key/value (username/password) pairs will be created for each key in the list
+    # E/g: GATEWAY_REDIS_USERNAME, GATEWAY_REDIS_PASSWORD
+    # Values will be stored in a secret named redis-opencrvs-users
+    # Use values from this secret in OpenCRVS services
+    users:
+    - GATEWAY
+    - WORKFLOW
+    - AUTH
+    - WEBHOOKS
 
-elasticsearch: {}
+elasticsearch:
+  enabled: true
 
 hostname: farajaland.dev
 
