@@ -21,6 +21,47 @@ Any particular service within this helm chart can be disabled by setting `<servi
 
 ### MongoDB
 
+### MinIO
+
+| Key | Default value | Description |
+|-|-|-|
+| enabled | true | Enable or disable minio service |
+| use_default_credentials | true | Default credentials for MinIO are username `minioadmin` and password `minioadmin`. |
+
+
+Setting `use_default_credentials` to `false` will generate strong password for MinIO.
+
+Default credentials for MinIO are username `minioadmin` and password `minioadmin`. We strongly recommend to set this value as `false` for production.
+
+Values are stored as a Kubernetes secret `minio-opencrvs-users` in dependencies namespace. Copy secret object as is into OpenCRVS application namespace to make it accessible by services:
+
+```
+DEPENDENCIES_NAMESPACE=<dependencies namespace>
+OPENCRVS_NAMESPACE=<OpenCRVS namespace>
+kubectl get secret minio-opencrvs-users -n $DEPENDENCIES_NAMESPACE -o yaml \
+  | sed "s#namespace: $DEPENDENCIES_NAMESPACE#namespace: $OPENCRVS_NAMESPACE#" \
+  | kubectl apply -n $OPENCRVS_NAMESPACE -f -
+```
+Don't forget to replace placeholders with appropriate namespaces.
+
+Example of Kubernetes secret:
+```
+$ kubectl get secret -oyaml -n opencrvs-dev minio-opencrvs-users | yq .data
+MINIO_ACCESS_KEY: RE...wMw==
+MINIO_ROOT_PASSWORD: dG...FU=
+MINIO_ROOT_USER: RE...wMw==
+MINIO_SECRET_KEY: dG...FU=
+```
+
+Reference secret values within `values.yaml`:
+```yaml
+documents:
+  secrets:
+    minio-secret:
+      - MINIO_ACCESS_KEY
+      - MINIO_SECRET_KEY
+```
+
 ### Elasticsearch
 
 ### InfluxDB
@@ -45,14 +86,52 @@ Redis service provides following ways for authentication:
 
 - Disabled: Set environment variable `ALLOW_EMPTY_PASSWORD=yes`, completely disable authentication, see official documentation for more details.
 - One password: Set environment variable `VALKEY_PASSWORD=<some secure password>`, default user password for authentication with full access
-- Fine gained: Set `acl.enabled` to `true` and Helm chart will configure everything else. See next section for more details
+- Fine-gained access: Set `acl.enabled` to `true` and Helm chart will configure everything else. See next section for more details
 
 #### Redis authorization (ACL)
 
-Behind the scenes Set environment variable `VALKEY_ACLFILE=<path to file>`, Access control list authentication and authorization, fine gained way to track access to redis instance.
+Behind the scenes helm chart generates random username and password for each OpenCRVS service:
+- auth
+- gateway
+- webhooks
+- workflow
 
-Recommented 
+Values are stored as a Kubernetes secret `redis-opencrvs-users` in dependencies namespace. Copy secret object as is into OpenCRVS application namespace to make it available:
+
+```
+DEPENDENCIES_NAMESPACE=<dependencies namespace>
+OPENCRVS_NAMESPACE=<OpenCRVS namespace>
+kubectl get secret redis-opencrvs-users -n $DEPENDENCIES_NAMESPACE -o yaml \
+  | sed "s#namespace: $DEPENDENCIES_NAMESPACE#namespace: $OPENCRVS_NAMESPACE#' \
+  | kubectl apply -n $OPENCRVS_NAMESPACE -f -
+```
+Don't forget to replace placeholders with appropriate namespaces.
+
+Example of Kubernetes secret:
+```
+$ kubectl get secret -oyaml -n opencrvs-dev redis-opencrvs-users | yq .data
+AUTH_REDIS_PASSWORD: cENqNVZ...52T2xqY01ubG4=
+AUTH_REDIS_USERNAME: T09MWV...0azgweg==
+DEFAULT_REDIS_PASSWORD: TmpkbE...BM3UzeHE=
+GATEWAY_REDIS_PASSWORD: UU94M...ZmlGdHc=
+GATEWAY_REDIS_USERNAME: UTJOW...BwcGFSeA==
+WEBHOOKS_REDIS_PASSWORD: Um...OYXc=
+WEBHOOKS_REDIS_USERNAME: ajJB...RFbQ==
+WORKFLOW_REDIS_PASSWORD: U1ZB...xRWUR2R0Q=
+WORKFLOW_REDIS_USERNAME: V0s...Mw==
+```
+
+Reference secret values within `values.yaml`:
+```yaml
+# auth example:
+auth:
+  secrets:
+    redis-opencrvs-users:
+      - AUTH_REDIS_PASSWORD:REDIS_PASSWORD
+      - AUTH_REDIS_USERNAME:REDIS_USERNAME
+```
+
+If you need any specific configuration for ACL (read-only, command limit, etc) please update [templates/redis-secrets.yaml](templates/redis-secrets.yaml).
 
 More details about ACL support can be found at https://valkey.io/topics/acl/
 
-If you need any specific configuration please update [templates/redis-secrets.yaml](templates/redis-secrets.yaml).

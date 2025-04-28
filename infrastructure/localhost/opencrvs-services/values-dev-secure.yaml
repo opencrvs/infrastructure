@@ -37,6 +37,11 @@ env:
 image:
   tag: develop
 
+documents:
+  secrets:
+    minio-secret:
+      - MINIO_ACCESS_KEY
+      - MINIO_SECRET_KEY
 
 countryconfig:
   image:
@@ -46,3 +51,16 @@ countryconfig:
     # tag: develop
     # tag: ec53c12
     tag: local
+
+migration:
+  secrets:
+    minio-secret:
+      - MINIO_ACCESS_KEY
+      - MINIO_BUCKET
+      - MINIO_SECRET_KEY
+
+webhooks:
+  secrets:
+    redis-opencrvs-users:
+      - WEBHOOKS_REDIS_PASSWORD:REDIS_PASSWORD
+      - WEBHOOKS_REDIS_USERNAME:REDIS_USERNAME

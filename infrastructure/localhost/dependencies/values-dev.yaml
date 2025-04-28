@@ -3,4 +3,9 @@ hostname: opencrvs.localhost
 ingress:
   ssl_enabled: false
 
-redis: {}
+redis:
+  env:
+    ALLOW_EMPTY_PASSWORD: "yes"
+
+minio:
+  use_default_credentials: false

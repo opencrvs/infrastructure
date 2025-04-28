@@ -1,16 +1,3 @@
-# TODO:
-# Before running any deployment don't forget to create kubernetes secret minio-secret
-# Example:
-# Create file minio.env with content:
-# MINIO_ACCESS_KEY=minioadmin
-# MINIO_SECRET_KEY=minioadmin
-# MINIO_BUCKET=ocrvs
-# MINIO_ROOT_USER=minioadmin
-# MINIO_ROOT_PASSWORD=minioadmin
-#
-# Run command:
-# kubectl create secret generic minio-secret --from-env-file=minio.env --namespace <opencrvs-namespace>
-
 resources:
   memoryRequest: "512Mi"
   cpuRequest: "300m"
@@ -30,11 +17,9 @@ countryconfig:
     tag: develop
 
 documents:
-# Uncomment this section to add authentication for MinIO:
   secrets:
     minio-secret:
       - MINIO_ACCESS_KEY
-      - MINIO_BUCKET
       - MINIO_SECRET_KEY
 
 gateway:
@@ -49,7 +34,6 @@ migration:
 # Uncomment this section to add authentication for MinIO:
     minio-secret:
       - MINIO_ACCESS_KEY
-      - MINIO_BUCKET
       - MINIO_SECRET_KEY
 
 data_seeder:
