@@ -13,7 +13,7 @@ List of deployed services:
 | hearth | opencrvs/hearth:1.1.0 | 3447 |  |
 | redis | bitnami/valkey:latest | 6379 | NOTE: Valkey is redis drop-in replacement, conforms Open Source and Free Software license. |
 
-All services are deployed within same namespace. By default security is turned off and default password or no-password access is used to access the service. Please check appropriate section for each service for more details.
+All services are deployed within the same namespace as StatefulSets with data persistence enabled. By default security is turned off and default password or no-password access is used to access the service. Please check appropriate section for each service for more details.
 
 Any particular service within this helm chart can be disabled by setting `<service_name>.enabled` flag to `false`. E/g Memorystore on Google Cloud Platform is replacement for Redis, instead running Redis container cloud native solution could be used.
 

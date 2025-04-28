@@ -4,8 +4,8 @@ ingress:
   ssl_enabled: false
 
 redis:
-  env:
-    ALLOW_EMPTY_PASSWORD: "yes"
+  acl:
+    enabled: true
 
 minio:
-  use_default_credentials: true
+  use_default_credentials: false
