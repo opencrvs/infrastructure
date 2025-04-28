@@ -76,17 +76,16 @@ OpenCRVS is using Bitnami package for Valkey https://hub.docker.com/r/bitnami/va
 |-|-|-|
 | enabled | true | Enable or disable redis service |
 | env | {} | Flat dictionary (key/value) of environment variables passed to docker container |
-| acl.enabled | false | Enable or disable ACL support |
-| acl.users | [] | List of users to be added to ACL |
+| auth_mode | disabled | Authentication mode, possible values `disabled`, `acl` or `password` |
 
 
 #### Redis authentication
 
-Redis service provides following ways for authentication:
+Redis service provides following ways for authentication (`credentials.enabled`):
 
-- Disabled: Set environment variable `ALLOW_EMPTY_PASSWORD=yes`, completely disable authentication, see official documentation for more details.
-- One password: Set environment variable `VALKEY_PASSWORD=<some secure password>`, default user password for authentication with full access
-- Fine-gained access: Set `acl.enabled` to `true` and Helm chart will configure everything else. See next section for more details
+- `disabled`: Authentication is disabled. Behind the scenes environment variable `ALLOW_EMPTY_PASSWORD` is set to `yes` inside Valkey container, check official documentation for more details.
+- `password`: Authentication is performed under one shared account `default`, Environment variable `VALKEY_PASSWORD=<random password>` is set inside container and stored as secret `redis-opencrvs-users`.
+- `acl`: Each OpenCRVS service has it's own username and password. See next section for more details.
 
 #### Redis authorization (ACL)
 
@@ -102,7 +101,7 @@ Values are stored as a Kubernetes secret `redis-opencrvs-users` in dependencies 
 DEPENDENCIES_NAMESPACE=<dependencies namespace>
 OPENCRVS_NAMESPACE=<OpenCRVS namespace>
 kubectl get secret redis-opencrvs-users -n $DEPENDENCIES_NAMESPACE -o yaml \
-  | sed "s#namespace: $DEPENDENCIES_NAMESPACE#namespace: $OPENCRVS_NAMESPACE#' \
+  | sed "s#namespace: $DEPENDENCIES_NAMESPACE#namespace: $OPENCRVS_NAMESPACE#" \
   | kubectl apply -n $OPENCRVS_NAMESPACE -f -
 ```
 Don't forget to replace placeholders with appropriate namespaces.

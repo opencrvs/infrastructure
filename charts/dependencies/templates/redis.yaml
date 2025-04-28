@@ -34,17 +34,26 @@ spec:
         - image: bitnami/valkey:latest
           name: redis
           env:
-          {{- if .Values.redis.acl.enabled }}
+          {{- if eq .Values.redis.auth_mode "acl" }}
             - name: VALKEY_ACLFILE
               value: /opt/bitnami/valkey/mounted-etc/users.acl
             - name: VALKEY_PASSWORD
               value: "false"
+          {{- else if eq .Values.redis.auth_mode "password" }}
+            - name: VALKEY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-opencrvs-users
+                  key: DEFAULT_REDIS_PASSWORD
+          {{- else }}
+            - name: ALLOW_EMPTY_PASSWORD
+              value: "yes"
           {{- end }}
           {{- include "render-env-vars" (dict "service_name" "redis" "Values" .Values) }}
           ports:
             - containerPort: 6379
               protocol: TCP
-          {{- if .Values.redis.acl.enabled }}
+          {{- if eq .Values.redis.auth_mode "acl" }}
           volumeMounts:
             - name: redis-opencrvs-acl
               mountPath: /opt/bitnami/valkey/mounted-etc
@@ -52,7 +61,7 @@ spec:
           {{- end }}
       restartPolicy: Always
       volumes:
-        {{- if .Values.redis.acl.enabled }}
+        {{- if eq .Values.redis.auth_mode "acl" }}
         - name: redis-opencrvs-acl
           secret:
             secretName: redis-opencrvs-acl

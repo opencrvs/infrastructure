@@ -1,20 +1,10 @@
-# TODO:
-# Before running any deployment don't forget to create kubernetes secret minio-secret
-# Example:
-# Create file minio.env with content:
-# MINIO_ACCESS_KEY=minioadmin
-# MINIO_SECRET_KEY=minioadmin
-# MINIO_BUCKET=ocrvs
-# MINIO_ROOT_USER=minioadmin
-# MINIO_ROOT_PASSWORD=minioadmin
-#
-# Run command:
-# kubectl create secret generic minio-secret --from-env-file=minio.env --namespace <opencrvs-dependencies-namespace>
-
 hostname: k8s.opencrvs.dev
+
 minio:
-  # Uncomment this section to add authentication for MinIO:
-  secrets:
-    minio-secret:
-    - MINIO_ROOT_USER
-    - MINIO_ROOT_PASSWORD
+  # TODO: Revisit naming convention
+  # use_default_credentials could be applied to redis and other services as well
+  use_default_credentials: false
+
+# redis:
+#   acl:
+#     enabled: true

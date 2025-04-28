@@ -22,12 +22,12 @@ documents:
       - MINIO_ACCESS_KEY
       - MINIO_SECRET_KEY
 
-gateway:
-  secrets:
-  # Uncomment this section to add authentication for MinIO:
-    minio-secret:
-    # TODO: Check if it is needed
-    - MINIO_BUCKET
+# gateway:
+  # secrets:
+  # # Uncomment this section to add authentication for MinIO:
+  #   minio-secret:
+  #   # TODO: Check if it is needed
+  #   - MINIO_BUCKET
 
 migration:
   secrets:

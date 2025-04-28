@@ -4,8 +4,7 @@ ingress:
   ssl_enabled: false
 
 redis:
-  acl:
-    enabled: true
+  auth_mode: password
 
 minio:
   # TODO: Revisit naming convention
