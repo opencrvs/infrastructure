@@ -56,7 +56,6 @@ migration:
   secrets:
     minio-secret:
       - MINIO_ACCESS_KEY
-      - MINIO_BUCKET
       - MINIO_SECRET_KEY
 
 webhooks:
