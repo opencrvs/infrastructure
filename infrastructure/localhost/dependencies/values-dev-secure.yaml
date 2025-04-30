@@ -1,10 +1,12 @@
-hostname: k8s.opencrvs.dev
+hostname: opencrvs.localhost
+
+ingress:
+  ssl_enabled: false
+
+redis:
+  auth_mode: password
 
 minio:
   # TODO: Revisit naming convention
   # use_default_credentials could be applied to redis and other services as well
   use_default_credentials: false
-
-# redis:
-#   acl:
-#     enabled: true

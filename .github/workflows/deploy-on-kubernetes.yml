@@ -41,7 +41,15 @@ jobs:
           echo "Environment: $ENV"
           echo "Core Image: $CORE_IMAGE_TAG"
           echo "Country Config Image: $COUNTRYCONFIG_IMAGE_TAG"
-
+      - name: Create namespace
+        run: |
+          kubectl create namespace opencrvs-${ENV} || echo "Namespace already exists"
+      - name: Copy secrets from dependencies into application namespace
+        run: |
+          kubectl get secret redis-opencrvs-users minio-opencrvs-users -n opencrvs-deps-${ENV} -o yaml \
+          | sed "s#namespace: opencrvs-deps-${ENV}#namespace: opencrvs-${ENV}#" \
+          | grep -v 'resourceVersion\\|uid\\|creationTimestamp' \
+          | kubectl replace -n opencrvs-${ENV} -f -
       - name: Deploy with Helm
         run: |
           helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services:0.0.1 \

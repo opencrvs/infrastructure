@@ -1,16 +1,30 @@
 
 mongodb:
+  enabled: true
   version: 4.4
 
-minio: {}
+minio:
+  enabled: true
+  use_default_credentials: true
 
-influxdb: {}
+influxdb:
+  enabled: true
 
-hearth: {}
+hearth:
+  enabled: true
 
-redis: {}
+redis:
+  enabled: true
+  auth_mode: disabled
+  # List of placeholders for OpenCRVS "users":
+  auth_users:
+    - GATEWAY
+    - WORKFLOW
+    - AUTH
+    - WEBHOOKS
 
-elasticsearch: {}
+elasticsearch:
+  enabled: true
 
 hostname: farajaland.dev
 
