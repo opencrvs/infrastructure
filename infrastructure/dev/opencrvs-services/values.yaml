@@ -18,21 +18,21 @@ countryconfig:
 
 documents:
   secrets:
-    minio-secret:
+    minio-opencrvs-users:
       - MINIO_ACCESS_KEY
       - MINIO_SECRET_KEY
 
 # gateway:
   # secrets:
   # # Uncomment this section to add authentication for MinIO:
-  #   minio-secret:
+  #   minio-opencrvs-users:
   #   # TODO: Check if it is needed
   #   - MINIO_BUCKET
 
 migration:
   secrets:
 # Uncomment this section to add authentication for MinIO:
-    minio-secret:
+    minio-opencrvs-users:
       - MINIO_ACCESS_KEY
       - MINIO_SECRET_KEY
 
