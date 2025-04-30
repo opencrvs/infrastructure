@@ -83,9 +83,9 @@ OpenCRVS is using Bitnami package for Valkey https://hub.docker.com/r/bitnami/va
 
 Redis service provides following ways for authentication (`credentials.enabled`):
 
-- `disabled`: Authentication is disabled. Behind the scenes environment variable `ALLOW_EMPTY_PASSWORD` is set to `yes` inside Valkey container, check official documentation for more details.
+- `disabled`: Option is preferred for local development. Authentication is disabled. Behind the scenes environment variable `ALLOW_EMPTY_PASSWORD` is set to `yes` inside Valkey container, check official documentation for more details.
 - `password`: Authentication is performed under one shared account `default`, Environment variable `VALKEY_PASSWORD=<random password>` is set inside container and stored as secret `redis-opencrvs-users`.
-- `acl`: Each OpenCRVS service has it's own username and password. See next section for more details.
+- `acl`: Option is preferred for production setup. Each OpenCRVS service has it's own username and password. See next section for more details.
 
 #### Redis authorization (ACL)
 
