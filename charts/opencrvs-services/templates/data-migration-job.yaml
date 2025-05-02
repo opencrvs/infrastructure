@@ -8,7 +8,7 @@ metadata:
     "helm.sh/hook-weight": "1" # Execute migration job before other jobs
   labels:
     app: migration
-  name: migration
+  name: data-migration
 spec:
   template:
     metadata:

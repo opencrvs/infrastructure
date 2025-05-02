@@ -57,6 +57,11 @@ migration:
     minio-opencrvs-users:
       - MINIO_ACCESS_KEY
       - MINIO_SECRET_KEY
+data_cleanup:
+  secrets:
+    minio-opencrvs-users:
+      - MINIO_ROOT_USER
+      - MINIO_ROOT_PASSWORD
 
 webhooks:
   secrets:

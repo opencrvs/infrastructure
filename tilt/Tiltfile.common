@@ -11,7 +11,7 @@ opensrvs_services = [
   'gateway',
   'login',
   'metrics', 
-  'migration', 
+  'data-migration', 
   'notification', 
   'scheduler', 
   'search', 
