@@ -218,6 +218,21 @@ Solution: restart nginx inside login container or delete login pod
 nginx -s reload
 ```
 
+### S3Error: The Access Key Id you provided does not exist in our records
+
+Log example:
+```
+$ /app/node_modules/.bin/migrate-mongo up --file ./build/dist/src/migrate-mongo-config-hearth.js
+ERROR: Could not migrate up 20230331182109-modify-minio-bucket-policy.js: The Access Key Id you provided does not exist in our records. S3Error: The Access Key Id you provided does not exist in our records.
+    at parseError (file:///app/node_modules/minio/dist/esm/internal/xml-parser.mjs:20:13)
+    at Module.parseResponseError (file:///app/node_modules/minio/dist/esm/internal/xml-parser.mjs:67:11)
+```
+
+Due to various reasons credentials may become out of sync between Dependencies and Application namespaces.
+
+If you see following issue on local development environment run `copy_secrets` resource on Tilt dashboard and delete failed PODs.
+
+If you see following issue on server environments sync secrets manually and delete failed PODs.
 
 ---
 
