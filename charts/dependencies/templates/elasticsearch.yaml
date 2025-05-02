@@ -1,3 +1,4 @@
+{{ if .Values.elasticsearch.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -82,6 +83,19 @@ spec:
               value: /data/backups/elasticsearch
             - name: xpack.security.enabled
               value: 'false'
+          {{- if not .Values.elasticsearch.use_default_credentials }}
+            - name: ELASTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-opencrvs-users
+                  key: ELASTIC_PASSWORD
+          {{- end }}
+          {{- if .Values.elasticsearch.secrets }}
+            {{- include "render-secrets" (dict "service_name" "elasticsearch" "Values" .Values) }}
+          {{- end }}
+          {{- if .Values.elasticsearch.env }}
+            {{- include "render-env-vars" (dict "service_name" "elasticsearch" "Values" .Values) }}
+          {{- end }}
           {{- if or .Values.elasticsearch.secrets .Values.elasticsearch.env .Values.env }}
           {{- include "render-env-vars" (dict "service_name" "elasticsearch" "Values" .Values) }}
           {{- end }}
@@ -110,3 +124,4 @@ spec:
         - name: elasticsearch-backup
           persistentVolumeClaim:
             claimName: elasticsearch-backup
+{{- end }}

@@ -39,7 +39,7 @@ image:
 
 documents:
   secrets:
-    minio-secret:
+    minio-opencrvs-users:
       - MINIO_ACCESS_KEY
       - MINIO_SECRET_KEY
 
@@ -54,7 +54,7 @@ countryconfig:
 
 migration:
   secrets:
-    minio-secret:
+    minio-opencrvs-users:
       - MINIO_ACCESS_KEY
       - MINIO_SECRET_KEY
 

@@ -25,6 +25,7 @@ redis:
 
 elasticsearch:
   enabled: true
+  use_default_credentials: true
 
 hostname: farajaland.dev
 
