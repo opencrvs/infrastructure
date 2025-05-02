@@ -24,6 +24,5 @@ jobs:
         - name: Cleanup environment
           run: |
             echo "Environment: $ENV"
-            which kubectl
-            whoami
-            kubectl get pods
+            which kubectl            
+            kubectl get pods -A

@@ -12,8 +12,7 @@ spec:
       repository: opencrvs/infrastructure
       image: ghcr.io/opencrvs/opencrvs-github-runner:latest
       labels:
-        - opencrvs
-        - gcp
+        - self-hosted
       env:
         - name: DOCKER_ENABLED
           value: "true"

@@ -1,4 +1,4 @@
-name: Deploy Dependencies on k8s
+name: Reset environment on Kubernetes
 on:
     workflow_dispatch:
       inputs:
