@@ -24,11 +24,6 @@ spec:
               value: "http://gateway.{{ .Release.Namespace }}.svc.cluster.local:7070"
             - name: COUNTRY_CONFIG_HOST
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
-
-            - name: ACTIVATE_USERS
-              value: "true"
-            - name: SUPER_USER_PASSWORD
-              value: password
-          {{- include "render-env-vars" (dict "service_name" "data_seeder" "Values" .Values) }}
+          {{- include "render-env-vars" (dict "service_name" "migration" "Values" .Values) }}
       restartPolicy: "OnFailure"
 {{- end }}
