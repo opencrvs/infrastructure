@@ -1,3 +1,5 @@
+# -*- mode: Python -*
+
 ######################################################
 # Add labels to resources
 opensrvs_services = [
