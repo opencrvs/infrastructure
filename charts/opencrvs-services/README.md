@@ -143,6 +143,28 @@ Helm chart to deploy all OpenCRVS services on Kubernetes cluster.
     </tbody>
 </table>
 
+# Environment variables
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Default</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tr>
+        <td>REDIS_USERNAME</td>
+        <td>N/A</td>
+        <td>Redis username. If not defined application will try to access redis without authentication.</td>
+    </tr>
+    <tr>
+        <td>REDIS_PASSWORD</td>
+        <td>N/A</td>
+        <td>Works by the same way as <code>REDIS_USERNAME</code></td>
+    </tr>
+</table>
+
 
 # Mapping secrets
 
