@@ -32,12 +32,12 @@ dependencies_namespace = 'opencrvs-deps-dev'
 # - Setup MinIO admin user and password
 # - Configure Redis users
 # - Sync passwords between dependencies and OpenCRVS services
-security_enabled = True
+security_enabled = False
 
 ############################################################
 # What common Tiltfile does?
 # - Group resources by label on UI: http://localhost:10350/
-include('../tilt/Tiltfile.common')
+include('./tilt/common.Tiltfile')
 
 # Load extensions for namespace and helm operations
 load('ext://namespace', 'namespace_create', 'namespace_inject')
@@ -79,26 +79,26 @@ namespace_create(opencrvs_namespace)
 helm_repo('traefik-repo', 'https://traefik.github.io/charts', labels=['Dependencies'])
 helm_resource(
   'traefik', 'traefik-repo/traefik', namespace='traefik', resource_deps=['traefik-repo'],
-  flags=['--values=../infrastructure/localhost/traefik/values.yaml'])
+  flags=['--values=./infrastructure/localhost/traefik/values.yaml'])
 
 
 if security_enabled:
-    deps_configuration_file = '../infrastructure/localhost/dependencies/values-dev-secure.yaml'
-    opencrvs_configuration_file = '../infrastructure/localhost/opencrvs-services/values-dev-secure.yaml'
+    deps_configuration_file = './infrastructure/localhost/dependencies/values-dev-secure.yaml'
+    opencrvs_configuration_file = './infrastructure/localhost/opencrvs-services/values-dev-secure.yaml'
 else:
-    deps_configuration_file = '../infrastructure/localhost/dependencies/values-dev.yaml'
-    opencrvs_configuration_file = '../infrastructure/localhost/opencrvs-services/values-dev.yaml'
+    deps_configuration_file = './infrastructure/localhost/dependencies/values-dev.yaml'
+    opencrvs_configuration_file = './infrastructure/localhost/opencrvs-services/values-dev.yaml'
 ######################################################
 # OpenCRVS Dependencies Deployment
 # NOTE: This helm chart can be deployed as helm release
-dependencies_chart_path = '../charts/dependencies'
+dependencies_chart_path = './charts/dependencies'
 k8s_yaml(helm(dependencies_chart_path,
   namespace=dependencies_namespace,
   values=[deps_configuration_file]))
 
 ######################################################
 # OpenCRVS Deployment
-opencrvs_chart_path = '../charts/opencrvs-services'
+opencrvs_chart_path = './charts/opencrvs-services'
 k8s_yaml(
   helm(opencrvs_chart_path,
        namespace=opencrvs_namespace,
@@ -130,8 +130,8 @@ if security_enabled:
 # - Restart Events service
 # - Run migration job, is part of helm install/upgrade post-deploy hook
 # - Seed data: is part of helm install post-deploy hook, but it is a manual task as well
-opencrvs_tools_chart_path = '../charts/opencrvs-tools'
-default_values_file = '-f ../charts/opencrvs-services/values.yaml'
+opencrvs_tools_chart_path = './charts/opencrvs-tools'
+default_values_file = '-f ./charts/opencrvs-services/values.yaml'
 cleanup_command = """
   kubectl delete job -n {0} data-cleanup;
   helm template {3} -f {1} --set data_cleanup.enabled=true -s templates/data-cleanup-job.yaml {2} | kubectl apply -n {0} -f -;

@@ -1,4 +1,4 @@
-# -*- mode: Python -*
+# -*- mode: Starlark -*
 
 ######################################################
 # Add labels to resources
@@ -35,6 +35,14 @@ dependencies = [
   'influxdb', 
   'redis',
 ]
+
+# OpenCRVS application has traefik CRDs IngressRoute
+# and Middleware, so we need to add traefik as dependency
+# to all workloads that use them
+traefik_deps = opensrvs_services
+traefik_deps.append('minio')
+for workload in traefik_deps:
+  k8s_resource(workload, resource_deps=['traefik'])
 
 tilt_label = '3.Dependencies'
 for workload in dependencies:
