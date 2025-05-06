@@ -37,7 +37,7 @@ security_enabled = False
 ############################################################
 # What common Tiltfile does?
 # - Group resources by label on UI: http://localhost:10350/
-include('./tilt/common.Tiltfile')
+include('./tilt/common.tilt')
 
 # Load extensions for namespace and helm operations
 load('ext://namespace', 'namespace_create', 'namespace_inject')
