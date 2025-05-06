@@ -131,7 +131,7 @@ if security_enabled:
 # - Run migration job, is part of helm install/upgrade post-deploy hook
 # - Seed data: is part of helm install post-deploy hook, but it is a manual task as well
 opencrvs_tools_chart_path = './charts/opencrvs-tools'
-
+default_values_file = './charts/opencrvs-services/values.yaml'
 cleanup_command = """
   kubectl delete job -n {0} data-cleanup;
   helm template -f {3} -f {1} --set data_cleanup.enabled=true -s templates/data-cleanup-job.yaml {2} | kubectl apply -n {0} -f -;
@@ -151,7 +151,7 @@ cleanup_command = """
   kubectl logs job/data-seeder -f --all-containers=true -n {0};
   kubectl wait --for=condition=complete job/data-seed -n {0} --timeout=600s;
   kubectl delete pod -n {0} -lapp=events;
-  """.format(opencrvs_namespace, opencrvs_configuration_file, opencrvs_tools_chart_path, opencrvs_configuration_file)
+  """.format(opencrvs_namespace, opencrvs_configuration_file, opencrvs_tools_chart_path, default_values_file)
 
 local_resource(
     'Reset database',
