@@ -1,0 +1,51 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    # FIXME: This is likely not gonna work as expected and is naive implementation
+    # see also https://github.com/opencrvs/opencrvs-core/issues/7451
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "1" # Execute migration job before other jobs
+  labels:
+    app: migration
+  name: data-migration
+spec:
+  template:
+    metadata:
+      labels:
+        app: migration
+    spec:
+      containers:
+        - name: migration
+          image: "ghcr.io/opencrvs/ocrvs-migration:{{ .Values.image.tag }}"
+          env:
+            - name: ES_HOST
+              value: {{ .Values.elasticsearch_host | quote }}
+            - name: SEARCH_URL
+              value: http://search.{{ .Release.Namespace }}.svc.cluster.local:9090/
+            - name: INFLUX_DB
+              value: {{ .Values.influxdb.db | quote }}
+            - name: INFLUX_HOST
+              value: {{ .Values.influxdb.host | quote }}
+            - name: INFLUX_PORT
+              value: {{ .Values.influxdb.port | quote }}
+            - name: MINIO_HOST
+              value: {{ .Values.minio.host | quote }}
+            - name: APPLICATION_CONFIG_MONGO_URL
+              value: mongodb://{{ .Values.mongodb_host }}/application-config
+            - name: USER_MGNT_MONGO_URL
+              value: mongodb://{{ .Values.mongodb_host }}/user-mgnt
+            - name: PERFORMANCE_MONGO_URL
+              value: mongodb://{{ .Values.mongodb_host }}/performance
+            - name: HEARTH_MONGO_URL
+              value: mongodb://{{ .Values.mongodb_host }}/hearth-dev
+            - name: OPENHIM_MONGO_URL
+              value: mongodb://{{ .Values.mongodb_host }}/openhim-dev
+            - name: DASHBOARD_MONGO_URL
+              value: mongodb://{{ .Values.mongodb_host }}/performance
+            - name: EVENTS_MONGO_URL
+              value: mongodb://{{ .Values.mongodb_host }}/events
+            - name: WAIT_HOSTS
+              value: "{{ .Values.mongodb_host }}:27017,{{ .Values.influxdb.host }}:{{ .Values.influxdb.port }},{{ .Values.minio.host }}:{{ .Values.minio.port }},{{ .Values.elasticsearch_host }}"
+          {{- include "render-env-vars" (dict "service_name" "migration" "Values" .Values) }}
+      restartPolicy: "OnFailure"

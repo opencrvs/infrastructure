@@ -170,6 +170,9 @@ data_seeder:
     SUPER_USER_PASSWORD: "password"
     ACTIVATE_USERS: "true"
 
+data_cleanup:
+  enabled: false
+
 documents:
   replicas: 1
   port: 9050
@@ -228,3 +231,4 @@ scheduler: {}
 migration:
   env:
     SUPER_USER_PASSWORD: "password"
+    ACTIVATE_USERS: "true"

@@ -7,12 +7,11 @@ Please note that not all features from the Docker Swarm solution are supported y
 
 - Data migration
 - Data seeding
+- Data cleanup
 
 **Limitations:**
 - Manual Helm installation and upgrade only
 - Manual initial user configuration for MinIO, MongoDB, Elasticsearch
-- No data reset feature available
-- Any kind of secrets (Logins and passwords, etc) should be created manually 
 
 ---
 
@@ -70,6 +69,16 @@ You will also need the following tools for running the local development environ
 **NOTE:** This guide does not cover the installation of these prerequisites.
 
 ---
+
+## For OpenCRVS DevOps
+
+1. Clone this repository
+2. If needed adjust values at `infrastructure/local`
+3. Navigate to `tilt`
+4. Run:
+   ```
+   tilt up
+   ```
 
 ## For OpenCRVS Core Developers
 
