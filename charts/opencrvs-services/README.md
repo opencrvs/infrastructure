@@ -143,29 +143,6 @@ Helm chart to deploy all OpenCRVS services on Kubernetes cluster.
     </tbody>
 </table>
 
-# Environment variables
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Default</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tr>
-        <td>REDIS_USERNAME</td>
-        <td>N/A</td>
-        <td>Redis username. If not defined application will try to access redis without authentication.</td>
-    </tr>
-    <tr>
-        <td>REDIS_PASSWORD</td>
-        <td>N/A</td>
-        <td>Works by the same way as <code>REDIS_USERNAME</code></td>
-    </tr>
-</table>
-
-
 # Mapping secrets
 
 Mapping needs to be added for particular service to access variable inside workload (service), e/g for `search` service to access ES_HOST following configuration is needed:
@@ -187,7 +164,7 @@ Summary:
 - `secret_key`, key (variable name) inside Kubernetes secret data property
 - `environment_variable`, environment variable name inside container. If `secret_key` value `environment_variable` are the same, last one can be omitted.
 
-**Step by step example**
+**Manually mapping secrets**
 
 Suppose we need to store ES_HOST variable as a secret and provide variable value to service `search`.
 
