@@ -43,6 +43,18 @@ documents:
       - MINIO_ACCESS_KEY
       - MINIO_SECRET_KEY
 
+auth:
+  secrets:
+    redis-opencrvs-users:
+      - AUTH_REDIS_PASSWORD:REDIS_PASSWORD
+      - AUTH_REDIS_USERNAME:REDIS_USERNAME
+    
+gateway:
+  secrets:
+    redis-opencrvs-users:
+      - GATEWAY_REDIS_PASSWORD:REDIS_PASSWORD
+      - GATEWAY_REDIS_USERNAME:REDIS_USERNAME
+
 countryconfig:
   image:
     # Replace countryconfig with farajaland to test data
@@ -68,3 +80,9 @@ webhooks:
     redis-opencrvs-users:
       - WEBHOOKS_REDIS_PASSWORD:REDIS_PASSWORD
       - WEBHOOKS_REDIS_USERNAME:REDIS_USERNAME
+
+workflow:
+  secrets:
+    redis-opencrvs-users:
+      - WORKFLOW_REDIS_PASSWORD:REDIS_PASSWORD
+      - WORKFLOW_REDIS_USERNAME:REDIS_USERNAME
