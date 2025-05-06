@@ -74,11 +74,13 @@ You will also need the following tools for running the local development environ
 
 1. Clone this repository
 2. If needed adjust values at `infrastructure/local`
-3. Navigate to `tilt`
-4. Run:
+3. Run:
    ```
    tilt up
    ```
+4. Navigate to [http://localhost:10350/](http://localhost:10350/)
+5. Once all container images are up and running your environment will be available at http://opencrvs.localhost
+
 
 ## For OpenCRVS Core Developers
 
