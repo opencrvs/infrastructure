@@ -33,13 +33,9 @@ COUNTRY_CONFIG_URL_INTERNAL
 Variable with mutations: MONGO_URL
 
 
-# Publish helm charts
-
-We are starting development, but helm charts already exist and once we setup server environment there will be need to have repository.
-
 # Add github workflows for kubernetes
 
-1. Add workflow for kubernetes deployment
+1. [DONE] Add workflow for kubernetes deployment
    - github actions
    - helm deployment
 2. Add workflow for kubernetes data seed
