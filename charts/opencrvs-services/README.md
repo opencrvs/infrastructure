@@ -207,8 +207,26 @@ TODO
 
 TODO
 
-## Seed environment data
+## Migration
 
+Data migration is executed as post-deployment hook by Helm, however sometimes it's needed to execute data migration manually.
+
+Helm allows to render and run particular data migration template by running following command:
+```
+helm template -f <path to environment values file> \
+    -s templates/data-migration-job.yaml \
+    oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -f -
+```
+
+As a result of execution migration job will be created.
+
+Use kubectl to check logs:
+```
+kubectl logs job/data-migration -f
+```
+
+
+## Seed environment data
 
 Data seed is part of helm post-install hook by Helm, but needs to be manually enabled before first deployment by setting flag at environment values file:
 ```yaml
@@ -231,26 +249,7 @@ Use kubectl to check logs:
 kubectl logs job/data-seed -f
 ```
 
-## Migration
-
-Data migration is executed as post-deployment hook by Helm, however sometimes it's needed to execute data migration manually.
-
-Helm allows to render and run particular data migration template by running following command:
-```
-helm template -f <path to environment values file> \
-    -s templates/data-migration-job.yaml \
-    oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -f -
-```
-
-As a result of execution migration job will be created.
-
-Use kubectl to check logs:
-```
-kubectl logs job/data-migration -f
-```
-
 ## Cleanup environment
-
 
 Environment cleanup is distractive operation and should not be started on production. Data cleanup job is a part of OpenCRVS helm chart, but is not included into helm install/upgrade pre/post deployment hooks.
 
