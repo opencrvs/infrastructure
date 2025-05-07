@@ -210,7 +210,7 @@ TODO
 ## Seed environment data
 
 
-Data seed is part of helm post-install process, but needs to be manually enabled before first deployment by setting flag at environment values file:
+Data seed is part of helm post-install hook by Helm, but needs to be manually enabled before first deployment by setting flag at environment values file:
 ```yaml
 data_seed:
   enabled: true
@@ -233,7 +233,7 @@ kubectl logs job/data-seed -f
 
 ## Migration
 
-Data migration is executed as part of post-deployment steps by Helm, however sometimes it's needed to execute data migration manually.
+Data migration is executed as post-deployment hook by Helm, however sometimes it's needed to execute data migration manually.
 
 Helm allows to render and run particular data migration template by running following command:
 ```
