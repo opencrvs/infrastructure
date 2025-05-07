@@ -1,5 +1,0 @@
-apiVersion: v2
-name: opencrvs-tools
-description: OpenCRVS Tools
-type: application
-version: 0.0.1

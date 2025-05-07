@@ -1,4 +1,4 @@
-{{- if .Values.data_seeder.enabled }}
+{{- if .Values.data_seed.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -6,16 +6,16 @@ metadata:
     "helm.sh/hook": post-install
     "helm.sh/hook-weight": "5"
   labels:
-    app: data-seeder
-  name: data-seeder
+    app: data-seed
+  name: data-seed
 spec:
   template:
     metadata:
       labels:
-        app: data-seeder
+        app: data-seed
     spec:
       containers:
-        - name: data-seeder
+        - name: data-seed
           image: "ghcr.io/opencrvs/ocrvs-data-seeder:{{ .Values.image.tag }}"
           env:
             - name: AUTH_HOST

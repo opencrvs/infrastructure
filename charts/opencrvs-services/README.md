@@ -196,3 +196,25 @@ Suppose we need to store ES_HOST variable as a secret and provide variable value
     ...
     ```
 4. Redeploy service with `helm upgrade`
+
+# Data maintenance jobs
+
+## Backup
+
+TODO
+
+## Restore
+
+TODO
+
+## Seed environment data
+
+TODO: Add documentation
+
+## Migration
+
+TODO: Add documentation
+
+## Cleanup environment
+
+TODO: Add documentation

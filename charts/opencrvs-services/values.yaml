@@ -170,8 +170,6 @@ data_seeder:
     SUPER_USER_PASSWORD: "password"
     ACTIVATE_USERS: "true"
 
-data_cleanup:
-  enabled: false
 
 documents:
   replicas: 1
@@ -228,11 +226,28 @@ events:
 
 scheduler: {}
 
-migration:
+# One Time Jobs configuration:
+data_cleanup:
+  # TODO: Add more restrictive flag to avoid someone running this job by mistake
+  enabled: false
+
+data_migration:
+  enabled: false
+  env:
+    SUPER_USER_PASSWORD: "password"
+
+data_seeder:
+  enabled: false
   env:
     SUPER_USER_PASSWORD: "password"
     ACTIVATE_USERS: "true"
-data_seed:
-  env:
-    SUPER_USER_PASSWORD: "password"
-    ACTIVATE_USERS: "true"
+
+# TODO: Implement this job
+data_backup:
+  enabled: false
+  schedule: "0 0 * * *"
+
+# TODO: Implement this job
+data_restore:
+  enabled: false
+  schedule: "0 0 * * *"
