@@ -1,3 +1,13 @@
+elasticsearch_host: elasticsearch.opencrvs-deps-demo.svc.cluster.local:9200
+influxdb:
+  host: influxdb-0.influxdb.opencrvs-deps-demo.svc.cluster.local
+fhir_url: http://hearth.opencrvs-deps-demo.svc.cluster.local:3447/fhir
+
+minio:
+  host: minio-0.minio.opencrvs-deps-demo.svc.cluster.local
+redis_host: redis-0.redis.opencrvs-deps-demo.svc.cluster.local
+mongodb_host: mongodb-0.mongodb.opencrvs-deps-demo.svc.cluster.local
+
 resources:
   memoryRequest: "512Mi"
   cpuRequest: "300m"
