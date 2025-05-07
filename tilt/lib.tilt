@@ -39,6 +39,7 @@ def copy_secrets(dependencies_namespace, opencrvs_namespace):
     k8s_resource(
         new_name="deps-secrets",
         objects=["{}:secret".format(secret) for secret in secrets_to_copy],
+        labels=['3.Dependencies']
     )
     local_resource(
       "Copy secrets",
