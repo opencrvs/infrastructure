@@ -1,4 +1,17 @@
-# -*- mode: Starlark -*
+
+# Load extensions for namespace and helm operations
+load('ext://namespace', 'namespace_create', 'namespace_inject')
+load('ext://helm_resource', 'helm_resource', 'helm_repo')
+
+namespace_create('traefik')
+# Install Traefik GW
+helm_repo('traefik-repo', 'https://traefik.github.io/charts', labels=['3.Dependencies'])
+helm_resource(
+  'traefik', 'traefik-repo/traefik', namespace='traefik', resource_deps=['traefik-repo'],
+  flags=['--values=../infrastructure/localhost/traefik/values.yaml'])
+
+
+
 
 ######################################################
 # Add labels to resources
@@ -69,8 +82,6 @@ More information are available at https://github.com/opencrvs/infrastructure
 ====================================================================================
 """
 
-local_resource('README.md', cmd='awk "/For OpenCRVS Core Developers/{flag=1; next} /For OpenCRVS Country Config Developers/{flag=0} flag" ../README.md', labels=['0.Readme'])
-
 def format_reset_environment_command(opencrvs_namespace, opencrvs_configuration_file, opencrvs_tools_chart_path, default_values_file):
     """
     Build command to reset the environment
@@ -100,3 +111,45 @@ def format_reset_environment_command(opencrvs_namespace, opencrvs_configuration_
       kubectl wait --for=condition=complete job/data-seed -n {0} --timeout=600s;
       kubectl delete pod -n {0} -lapp=events;
       """.format(opencrvs_namespace, opencrvs_configuration_file, opencrvs_tools_chart_path, default_values_file)
+
+def copy_secrets(dependencies_namespace, opencrvs_namespace):
+
+    secrets_to_copy = [
+        "elasticsearch-opencrvs-users",
+        "redis-opencrvs-users",
+        "minio-opencrvs-users"
+    ]
+    local_resource(
+      "Copy secrets",
+      cmd="""kubectl get secret {2} -n {0} -o yaml \
+             | sed "s#namespace: {0}#namespace: {1}#" | grep -v 'resourceVersion\\|uid\\|creationTimestamp' \
+             | kubectl apply -n {1} -f -""".format(dependencies_namespace, opencrvs_namespace, " ".join(secrets_to_copy)),
+      resource_deps=["minio", "redis", "traefik"],
+      labels=['2.Data-tasks'])
+
+def reset_environment(
+        opencrvs_namespace,
+        opencrvs_configuration_file
+):
+    """
+    Data management tasks:
+    - Reset database: This task is not part of helm deployment to avoid accidental data loss
+    - Restart Events service
+    - Run migration job, is part of helm install/upgrade post-deploy hook
+    - Seed data: is part of helm install post-deploy hook, but it is a manual task as well
+    """
+    default_values_file = '../infrastructure/charts/opencrvs-services/values.yaml'
+    opencrvs_tools_chart_path = '../infrastructure/charts/opencrvs-tools'
+
+    local_resource(
+        'Reset database',
+        labels=['2.Data-tasks'],
+        auto_init=False,
+        cmd=format_reset_environment_command(
+            opencrvs_namespace,
+            opencrvs_configuration_file,
+            opencrvs_tools_chart_path,
+            default_values_file
+        ),
+        trigger_mode=TRIGGER_MODE_MANUAL,
+    )
