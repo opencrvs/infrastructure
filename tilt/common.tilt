@@ -2,6 +2,8 @@
 
 ######################################################
 # Add labels to resources
+tilt_label = '1.OpenCRVS'
+
 opensrvs_services = [
   'auth', 
   'config',
@@ -22,10 +24,11 @@ opensrvs_services = [
   'workflow'
 ]
 
-tilt_label = '1.OpenCRVS'
+
 for workload in opensrvs_services:
   k8s_resource(workload, labels=[tilt_label])
 
+tilt_label = '3.Dependencies'
 dependencies = [
   'traefik',
   'elasticsearch',
@@ -36,15 +39,27 @@ dependencies = [
   'redis',
 ]
 
+
 # OpenCRVS application has traefik CRDs IngressRoute
 # and Middleware, so we need to add traefik as dependency
 # to all workloads that use them
-traefik_deps = opensrvs_services
-traefik_deps.append('minio')
-for workload in traefik_deps:
-  k8s_resource(workload, resource_deps=['traefik'])
+traefik_deps = [
+  'auth', 
+  'config',
+  'client',
+  'countryconfig',
+  'events',
+  'gateway',
+  'login',
+  'webhooks',
+  'minio',
+]
+traefik_ingress_objects = ["{}-route:ingressroute".format(dep) for dep in traefik_deps]
+traefik_middleware_objects = ["sts-and-basic-response-headers:middleware", "enable-compression:middleware", "block-internal-routes:middleware"]
+k8s_resource(objects=traefik_ingress_objects, new_name='traefik-ingress-routes', resource_deps=['traefik'], labels=[tilt_label])
+k8s_resource(objects=traefik_middleware_objects, new_name='traefik-middleware', resource_deps=['traefik'], labels=[tilt_label])
 
-tilt_label = '3.Dependencies'
+
 for workload in dependencies:
   k8s_resource(workload, labels=[tilt_label])
 
@@ -55,3 +70,33 @@ More information are available at https://github.com/opencrvs/infrastructure
 """
 
 local_resource('README.md', cmd='awk "/For OpenCRVS Core Developers/{flag=1; next} /For OpenCRVS Country Config Developers/{flag=0} flag" ../README.md', labels=['0.Readme'])
+
+def format_reset_environment_command(opencrvs_namespace, opencrvs_configuration_file, opencrvs_tools_chart_path, default_values_file):
+    """
+    Build command to reset the environment
+    :param opencrvs_namespace: OpenCRVS namespace
+    :param opencrvs_configuration_file: OpenCRVS configuration file for helm with environment variables
+    :param opencrvs_tools_chart_path: OpenCRVS tools chart path
+    :param default_values_file: OpenCRVS default values file
+    :return: Command to reset the environment
+    """
+    return """
+      kubectl delete job -n {0} data-cleanup;
+      helm template -f {3} -f {1} --set data_cleanup.enabled=true -s templates/data-cleanup-job.yaml {2} | kubectl apply -n {0} -f -;
+      sleep 10;
+      kubectl logs job/data-cleanup -f --all-containers=true -n {0};
+      kubectl wait --for=condition=complete job/data-cleanup -n {0} --timeout=600s;
+      kubectl delete pod -n {0} -lapp=events;
+      sleep 30;
+      kubectl delete job -n {0} data-migration;
+      helm template -f {3} -f {1} -s templates/data-migration-job.yaml {2} | kubectl apply -n {0} -f -;
+      sleep 10;
+      kubectl logs job/data-migration -f --all-containers=true -n {0};
+      kubectl wait --for=condition=complete job/data-migration -n {0} --timeout=600s;
+      kubectl delete job -n {0} data-seed;
+      helm template -f {3} -f {1} --set data_seed.enabled=true -s templates/data-seed-job.yaml {2} | kubectl apply -n {0} -f -;
+      sleep 10;
+      kubectl logs job/data-seed -f --all-containers=true -n {0};
+      kubectl wait --for=condition=complete job/data-seed -n {0} --timeout=600s;
+      kubectl delete pod -n {0} -lapp=events;
+      """.format(opencrvs_namespace, opencrvs_configuration_file, opencrvs_tools_chart_path, default_values_file)
