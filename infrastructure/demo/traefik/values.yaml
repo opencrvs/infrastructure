@@ -3,7 +3,7 @@ namespaceOverride: "traefik"
 logs:
   general:
     # "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "PANIC"
-    level: "WARN"
+    level: "INFO"
     format: "common" # FIXME: json in remote
   access:
     # -- To enable access logs

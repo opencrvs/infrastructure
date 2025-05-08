@@ -1,6 +1,8 @@
-Run
+helm upgrade --install traefik traefik-repo/traefik --namespace traefik --create-namespace -f values.yaml
+
 kubectl apply -f  wildcard-certificate.yaml
-helm install traefik traefik-repo/traefik --namespace traefik --create-namespace -f values.yaml
+
+# Wait few minutes
 
 kubectl apply -f tlsstore.yaml
 
