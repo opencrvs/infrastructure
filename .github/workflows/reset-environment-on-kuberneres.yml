@@ -14,7 +14,7 @@ jobs:
   deploy:
     env:
       ENV: ${{ github.event.inputs.environment }}
-    runs-on: [self-hosted, gcp]
+    runs-on: [self-hosted]
     # TEMPORARY COMMENTED
     # environment: ${{ github.event.inputs.environment }}
     steps:

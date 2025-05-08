@@ -1,0 +1,29 @@
+name: Info job
+on:
+    workflow_dispatch:
+      inputs:
+        environment:
+          description: "Target environment"
+          required: true
+          default: "demo"
+          type: choice
+          options:
+            - dev
+            - demo
+jobs:
+  deploy:
+    env:
+      ENV: ${{ github.event.inputs.environment }}
+    runs-on: [self-hosted]
+    # TEMPORARY COMMENTED
+    # environment: ${{ github.event.inputs.environment }}
+    steps:
+        # FYI: Repository is needed only due to single file: infrastructure/dev/dependenciess/values.yaml
+        - name: Checkout repo
+          uses: actions/checkout@v4
+        - name: Cleanup environment
+          run: |
+            echo "Environment: $ENV"
+            which kubectl
+            whoami
+            kubectl get pods
