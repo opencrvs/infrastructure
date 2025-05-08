@@ -7,12 +7,11 @@ Please note that not all features from the Docker Swarm solution are supported y
 
 - Data migration
 - Data seeding
+- Data cleanup
 
 **Limitations:**
 - Manual Helm installation and upgrade only
 - Manual initial user configuration for MinIO, MongoDB, Elasticsearch
-- No data reset feature available
-- Any kind of secrets (Logins and passwords, etc) should be created manually 
 
 ---
 
@@ -70,6 +69,18 @@ You will also need the following tools for running the local development environ
 **NOTE:** This guide does not cover the installation of these prerequisites.
 
 ---
+
+## For OpenCRVS DevOps
+
+1. Clone this repository
+2. If needed adjust values at `infrastructure/local`
+3. Run:
+   ```
+   tilt up
+   ```
+4. Navigate to [http://localhost:10350/](http://localhost:10350/)
+5. Once all container images are up and running your environment will be available at http://opencrvs.localhost
+
 
 ## For OpenCRVS Core Developers
 
@@ -218,6 +229,24 @@ Solution: restart nginx inside login container or delete login pod
 nginx -s reload
 ```
 
+**NOTE:** On AWS server may not respond due to Security group blocking rules. Check AWS Security groups and allow http traffic on port 80 between nodes.
+
+
+### S3Error: The Access Key Id you provided does not exist in our records
+
+Log example:
+```
+$ /app/node_modules/.bin/migrate-mongo up --file ./build/dist/src/migrate-mongo-config-hearth.js
+ERROR: Could not migrate up 20230331182109-modify-minio-bucket-policy.js: The Access Key Id you provided does not exist in our records. S3Error: The Access Key Id you provided does not exist in our records.
+    at parseError (file:///app/node_modules/minio/dist/esm/internal/xml-parser.mjs:20:13)
+    at Module.parseResponseError (file:///app/node_modules/minio/dist/esm/internal/xml-parser.mjs:67:11)
+```
+
+Due to various reasons credentials may become out of sync between Dependencies and Application namespaces.
+
+If you see following issue on local development environment run `copy_secrets` resource on Tilt dashboard and delete failed PODs.
+
+If you see following issue on server environments sync secrets manually and delete failed PODs.
 
 ---
 

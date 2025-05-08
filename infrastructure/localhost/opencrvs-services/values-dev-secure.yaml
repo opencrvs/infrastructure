@@ -39,9 +39,21 @@ image:
 
 documents:
   secrets:
-    minio-secret:
+    minio-opencrvs-users:
       - MINIO_ACCESS_KEY
       - MINIO_SECRET_KEY
+
+auth:
+  secrets:
+    redis-opencrvs-users:
+      - AUTH_REDIS_PASSWORD:REDIS_PASSWORD
+      - AUTH_REDIS_USERNAME:REDIS_USERNAME
+    
+gateway:
+  secrets:
+    redis-opencrvs-users:
+      - GATEWAY_REDIS_PASSWORD:REDIS_PASSWORD
+      - GATEWAY_REDIS_USERNAME:REDIS_USERNAME
 
 countryconfig:
   image:
@@ -54,12 +66,33 @@ countryconfig:
 
 migration:
   secrets:
-    minio-secret:
+    minio-opencrvs-users:
       - MINIO_ACCESS_KEY
       - MINIO_SECRET_KEY
+data_cleanup:
+  secrets:
+    minio-opencrvs-users:
+      - MINIO_ROOT_USER
+      - MINIO_ROOT_PASSWORD
+
+data_seed:
+  env:
+    SUPER_USER_PASSWORD: "password"
+    ACTIVATE_USERS: "true"
+  secrets:
+    minio-opencrvs-users:
+      - MINIO_ROOT_USER
+      - MINIO_ROOT_PASSWORD
+
 
 webhooks:
   secrets:
     redis-opencrvs-users:
       - WEBHOOKS_REDIS_PASSWORD:REDIS_PASSWORD
       - WEBHOOKS_REDIS_USERNAME:REDIS_USERNAME
+
+workflow:
+  secrets:
+    redis-opencrvs-users:
+      - WORKFLOW_REDIS_PASSWORD:REDIS_PASSWORD
+      - WORKFLOW_REDIS_USERNAME:REDIS_USERNAME

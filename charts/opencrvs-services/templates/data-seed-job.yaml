@@ -1,21 +1,21 @@
-{{- if .Values.data_seeder.enabled }}
+{{- if .Values.data_seed.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
   annotations:
     "helm.sh/hook": post-install
-    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-weight": "5"
   labels:
-    app: data-seeder
-  name: data-seeder
+    app: data-seed
+  name: data-seed
 spec:
   template:
     metadata:
       labels:
-        app: data-seeder
+        app: data-seed
     spec:
       containers:
-        - name: data-seeder
+        - name: data-seed
           image: "ghcr.io/opencrvs/ocrvs-data-seeder:{{ .Values.image.tag }}"
           env:
             - name: AUTH_HOST
@@ -24,6 +24,6 @@ spec:
               value: "http://gateway.{{ .Release.Namespace }}.svc.cluster.local:7070"
             - name: COUNTRY_CONFIG_HOST
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
-          {{- include "render-env-vars" (dict "service_name" "data_seeder" "Values" .Values) }}
+          {{- include "render-env-vars" (dict "service_name" "data_seed" "Values" .Values) }}
       restartPolicy: "OnFailure"
 {{- end }}

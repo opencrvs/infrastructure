@@ -1,4 +1,9 @@
 
+# FIXME: Tiltfile deploys helm chart as template. There is no way to track existing secrets on the cluster.
+# This flag was introduced to avoid secrets update (mutation) on every file change within chart directory.
+# For OpenCRVS developers there is no need to deploy dependencies helm chart as template.
+chart_dev_mode: true
+
 mongodb:
   enabled: true
   version: 4.4
@@ -25,6 +30,7 @@ redis:
 
 elasticsearch:
   enabled: true
+  use_default_credentials: true
 
 hostname: farajaland.dev
 

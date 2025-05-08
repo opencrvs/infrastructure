@@ -5,19 +5,17 @@ on:
         environment:
           description: "Target environment"
           required: true
-          default: "dev"
+          default: "demo"
           type: choice
           options:
             - dev
-            - staging
-            - prod
-    # push:
-    #     branches: ["develop"]
+            - demo
 jobs:
   deploy:
     env:
       ENV: ${{ github.event.inputs.environment }}
-    runs-on: [self-hosted, gcp]
+    # TODO: Add option to choose between self-hosted and default runners
+    runs-on: [self-hosted]
     # TEMPORARY COMMENTED
     # environment: ${{ github.event.inputs.environment }}
 

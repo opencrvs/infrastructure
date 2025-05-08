@@ -1,31 +1,29 @@
-name: Reset Application on k8s
+name: Info job
 on:
     workflow_dispatch:
       inputs:
         environment:
           description: "Target environment"
           required: true
-          default: "dev"
+          default: "demo"
           type: choice
           options:
             - dev
-            - staging
-            - prod
-
+            - demo
 jobs:
-  reset:
+  deploy:
     env:
       ENV: ${{ github.event.inputs.environment }}
-    runs-on: [self-hosted, gcp]
+    runs-on: [self-hosted]
+    # TEMPORARY COMMENTED
+    # environment: ${{ github.event.inputs.environment }}
     steps:
         # FYI: Repository is needed only due to single file: infrastructure/dev/dependenciess/values.yaml
         - name: Checkout repo
           uses: actions/checkout@v4
-  
-        - name: Print deployment parameters
+        - name: Cleanup environment
           run: |
             echo "Environment: $ENV"
-  
-        - name: Deploy with Helm
-          run: |
-            ./infrastructure/clear-all-data.k8s.sh
+            which kubectl
+            whoami
+            kubectl get pods

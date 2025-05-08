@@ -11,7 +11,7 @@ List of deployed services:
 | influxdb | minio/minio:RELEASE.2023-08-16T20-17-30Z.hotfix.a51234923 | influxdb:1.8.10 | 8086 |  |
 | elasticsearch | docker.elastic.co/elasticsearch/elasticsearch:8.16.4 | 9200 |  |
 | hearth | opencrvs/hearth:1.1.0 | 3447 |  |
-| redis | bitnami/valkey:latest | 6379 | NOTE: Valkey is redis drop-in replacement, conforms Open Source and Free Software license. |
+| redis | bitnami/redis:latest | 6379 |  |
 
 All services are deployed within the same namespace as StatefulSets with data persistence enabled. By default security is turned off and default password or no-password access is used to access the service. Please check appropriate section for each service for more details.
 
@@ -70,7 +70,7 @@ documents:
 
 ### Redis
 
-OpenCRVS is using Bitnami package for Valkey https://hub.docker.com/r/bitnami/valkey due to better security and performance optimization. Please check there full list of available options
+OpenCRVS is using Bitnami package for Redis https://hub.docker.com/r/bitnami/redis due to better security and performance optimization. Please check there full list of available options
 
 | Key | Default value | Description |
 |-|-|-|
@@ -83,8 +83,8 @@ OpenCRVS is using Bitnami package for Valkey https://hub.docker.com/r/bitnami/va
 
 Redis service provides following ways for authentication (`credentials.enabled`):
 
-- `disabled`: Option is preferred for local development. Authentication is disabled. Behind the scenes environment variable `ALLOW_EMPTY_PASSWORD` is set to `yes` inside Valkey container, check official documentation for more details.
-- `password`: Authentication is performed under one shared account `default`, Environment variable `VALKEY_PASSWORD=<random password>` is set inside container and stored as secret `redis-opencrvs-users`.
+- `disabled`: Option is preferred for local development. Authentication is disabled. Behind the scenes environment variable `ALLOW_EMPTY_PASSWORD` is set to `yes` inside Redis container, check official documentation for more details.
+- `password`: Authentication is performed under one shared account `default`, Environment variable `REDIS_PASSWORD=<random password>` is set inside container and stored as secret `redis-opencrvs-users`.
 - `acl`: Option is preferred for production setup. Each OpenCRVS service has it's own username and password. See next section for more details.
 
 #### Redis authorization (ACL)
@@ -132,5 +132,5 @@ auth:
 
 If you need any specific configuration for ACL (read-only, command limit, etc) please update [templates/redis-secrets.yaml](templates/redis-secrets.yaml).
 
-More details about ACL support can be found at https://valkey.io/topics/acl/
+More details about ACL support can be found at https://redis.io/docs/latest/operate/oss_and_stack/management/security/acl/
 

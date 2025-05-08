@@ -1,0 +1,83 @@
+
+# Load extensions for namespace and helm operations
+load('ext://namespace', 'namespace_create', 'namespace_inject')
+load('ext://helm_resource', 'helm_resource', 'helm_repo')
+
+namespace_create('traefik')
+# Install Traefik GW
+helm_repo('traefik-repo', 'https://traefik.github.io/charts', labels=['3.Dependencies'])
+helm_resource(
+  'traefik', 'traefik-repo/traefik', namespace='traefik', resource_deps=['traefik-repo'],
+  flags=['--values=../infrastructure/localhost/traefik/values.yaml'])
+
+
+
+
+######################################################
+# Add labels to resources
+tilt_label = '1.OpenCRVS'
+
+opensrvs_services = [
+  'auth', 
+  'config',
+  'client',
+  'countryconfig',
+  'dashboards', 
+  'documents', 
+  'events',
+  'gateway',
+  'login',
+  'metrics', 
+  'data-migration', 
+  'notification', 
+  'scheduler', 
+  'search', 
+  'user-mgnt', 
+  'webhooks', 
+  'workflow'
+]
+
+
+for workload in opensrvs_services:
+  k8s_resource(workload, labels=[tilt_label])
+
+tilt_label = '3.Dependencies'
+dependencies = [
+  'traefik',
+  'elasticsearch',
+  'hearth',
+  'mongodb',
+  'minio', 
+  'influxdb', 
+  'redis',
+]
+
+
+# OpenCRVS application has traefik CRDs IngressRoute
+# and Middleware, so we need to add traefik as dependency
+# to all workloads that use them
+traefik_deps = [
+  'auth', 
+  'config',
+  'client',
+  'countryconfig',
+  'events',
+  'gateway',
+  'login',
+  'webhooks',
+  'minio',
+]
+traefik_ingress_objects = ["{}-route:ingressroute".format(dep) for dep in traefik_deps]
+traefik_middleware_objects = ["sts-and-basic-response-headers:middleware", "enable-compression:middleware", "block-internal-routes:middleware"]
+k8s_resource(objects=traefik_ingress_objects, new_name='traefik-ingress-routes', resource_deps=['traefik'], labels=[tilt_label])
+k8s_resource(objects=traefik_middleware_objects, new_name='traefik-middleware', resource_deps=['traefik'], labels=[tilt_label])
+
+
+for workload in dependencies:
+  k8s_resource(workload, labels=[tilt_label])
+
+readme_header = """
+====================================================================================
+More information are available at https://github.com/opencrvs/infrastructure
+====================================================================================
+"""

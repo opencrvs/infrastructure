@@ -143,7 +143,6 @@ Helm chart to deploy all OpenCRVS services on Kubernetes cluster.
     </tbody>
 </table>
 
-
 # Mapping secrets
 
 Mapping needs to be added for particular service to access variable inside workload (service), e/g for `search` service to access ES_HOST following configuration is needed:
@@ -165,7 +164,7 @@ Summary:
 - `secret_key`, key (variable name) inside Kubernetes secret data property
 - `environment_variable`, environment variable name inside container. If `secret_key` value `environment_variable` are the same, last one can be omitted.
 
-**Step by step example**
+**Manually mapping secrets**
 
 Suppose we need to store ES_HOST variable as a secret and provide variable value to service `search`.
 
@@ -197,3 +196,74 @@ Suppose we need to store ES_HOST variable as a secret and provide variable value
     ...
     ```
 4. Redeploy service with `helm upgrade`
+
+# Data maintenance jobs
+
+## Backup
+
+TODO
+
+## Restore
+
+TODO
+
+## Migration
+
+Data migration is executed as post-deployment hook by Helm, however sometimes it's needed to execute data migration manually.
+
+Helm allows to render and run particular data migration template by running following command:
+```
+helm template -f <path to environment values file> \
+    -s templates/data-migration-job.yaml \
+    oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -f -
+```
+
+As a result of execution migration job will be created.
+
+Use kubectl to check logs:
+```
+kubectl logs job/data-migration -f
+```
+
+
+## Seed environment data
+
+Data seed is part of helm post-install hook by Helm, but needs to be manually enabled before first deployment by setting flag at environment values file:
+```yaml
+data_seed:
+  enabled: true
+```
+
+Helm allows to render and run particular data seed template by running following command:
+```
+helm template -f <path to environment values file> \
+    --set data_seed.enabled=true \
+    -s templates/data-seed-job.yaml \
+    oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -f -
+```
+
+As a result of execution data seed job will be created.
+
+Use kubectl to check logs:
+```
+kubectl logs job/data-seed -f
+```
+
+## Cleanup environment
+
+Environment cleanup is distractive operation and should not be started on production. Data cleanup job is a part of OpenCRVS helm chart, but is not included into helm install/upgrade pre/post deployment hooks.
+
+Helm allows to render and run particular data cleanup template by running following command:
+```
+helm template -f <path to environment values file> \
+    --set data_cleanup.enabled=true \
+    -s templates/data-cleanup-job.yaml \
+    oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -f -
+```
+
+As a result of execution data cleanup job will be created.
+
+Use kubectl to check logs:
+```
+kubectl logs job/data-cleanup -f --all-containers=true
+```

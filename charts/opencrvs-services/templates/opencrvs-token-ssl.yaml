@@ -1,10 +1,13 @@
 {{- $ca := genCA "opensearchca" 4096 }}
 {{- $cn := printf "auth.%s.svc.cluster.local" .Release.Namespace }}
 {{- $cert := genSignedCert $cn nil (list $cn) 4096 $ca }}
+{{- $secret_name := printf "%s-key-tls" .Release.Name }}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace $secret_name }}
+{{- if not $secret }}
 apiVersion: v1
 kind: Secret
 metadata:
-  name: {{ .Release.Name }}-key-tls
+  name: {{ $secret_name }}
 type: Opaque
 data:
   "private-key.pem": {{ $cert.Key | b64enc | toYaml | indent 4}}
@@ -15,3 +18,4 @@ metadata:
   name: {{ .Release.Name }}-cert-tls
 data:
   "public-key.pem": {{ $cert.Cert | toYaml | indent 4}}
+{{- end }}
