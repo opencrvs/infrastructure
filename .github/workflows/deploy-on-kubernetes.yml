@@ -27,7 +27,7 @@ jobs:
       ENV: ${{ github.event.inputs.environment }}
       CORE_IMAGE_TAG: ${{ github.event.inputs.core-image-tag }}
       COUNTRYCONFIG_IMAGE_TAG: ${{ github.event.inputs.countryconfig-image-tag }}
-    runs-on: [self-hosted, gcp]
+    runs-on: [self-hosted]
     # TEMPORARY COMMENTED
     # environment: ${{ github.event.inputs.environment }}
 

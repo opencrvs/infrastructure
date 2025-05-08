@@ -24,7 +24,6 @@ jobs:
           uses: actions/checkout@v4
         - name: Cleanup environment
           run: |
-            
             helm template -f infrastructure/${ENV}/opencrvs-services/values.yaml \
                 --set data_cleanup.enabled=true \
                 -s templates/data-cleanup-job.yaml \
