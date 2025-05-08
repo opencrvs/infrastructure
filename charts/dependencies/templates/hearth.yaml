@@ -42,7 +42,7 @@ spec:
             - name: logger__level
               value: warn
             - name: mongodb__url
-              value: mongodb://mongodb.opencrvs-deps-dev.svc.cluster.local/hearth-dev
+              value: mongodb://mongodb.{{ .Release.Namespace }}.svc.cluster.local/hearth-dev
             - name: server__fhirVersion
               value: stu3
           {{- if or .Values.hearth.secrets .Values.hearth.env .Values.env }}

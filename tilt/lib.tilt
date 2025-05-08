@@ -22,6 +22,8 @@ def format_reset_environment_command(opencrvs_namespace, opencrvs_configuration_
       kubectl logs job/data-migration -f -n {0};
       kubectl wait --for=condition=complete job/data-migration -n {0} --timeout=600s;
       kubectl delete job -n {0} data-seed;
+      kubectl delete pod -n {0} -lapp=events;
+      sleep 30;
       helm template -f {1} --set data_seed.enabled=true -s templates/data-seed-job.yaml {2} | kubectl apply -n {0} -f -;
       sleep 10;
       kubectl logs job/data-seed -f -n {0};

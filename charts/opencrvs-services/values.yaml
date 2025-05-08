@@ -184,7 +184,6 @@ gateway:
     MINIO_BUCKET: "ocrvs"
     COUNTRY: FAR
     DISABLE_RATE_LIMIT: "true"
-    DOMAIN: "opencrvs.localhost"
     LANGUAGES: "en,fr"
 
 login:
