@@ -5,12 +5,11 @@ on:
         environment:
           description: "Target environment"
           required: true
-          default: "dev"
+          default: "demo"
           type: choice
           options:
             - dev
-            - staging
-            - prod
+            - demo
 jobs:
   deploy:
     env:
