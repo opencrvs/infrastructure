@@ -229,6 +229,9 @@ Solution: restart nginx inside login container or delete login pod
 nginx -s reload
 ```
 
+**NOTE:** On AWS server may not respond due to Security group blocking rules. Check AWS Security groups and allow http traffic on port 80 between nodes.
+
+
 ### S3Error: The Access Key Id you provided does not exist in our records
 
 Log example:

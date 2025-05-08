@@ -1,0 +1,45 @@
+name: Deploy Dependencies on k8s
+on:
+    workflow_dispatch:
+      inputs:
+        environment:
+          description: "Target environment"
+          required: true
+          default: "dev"
+          type: choice
+          options:
+            - dev
+            - staging
+            - prod
+jobs:
+  deploy:
+    env:
+      ENV: ${{ github.event.inputs.environment }}
+    runs-on: [self-hosted, gcp]
+    # TEMPORARY COMMENTED
+    # environment: ${{ github.event.inputs.environment }}
+    steps:
+        # FYI: Repository is needed only due to single file: infrastructure/dev/dependenciess/values.yaml
+        - name: Checkout repo
+          uses: actions/checkout@v4
+        - name: Cleanup environment
+          run: |
+            
+            helm template -f infrastructure/${ENV}/opencrvs-services/values.yaml \
+                --set data_cleanup.enabled=true \
+                -s templates/data-cleanup-job.yaml \
+                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -f -n opencrvs-${ENV} -
+            kubectl logs job/data-cleanup -f -n opencrvs-${ENV};
+        - name: Migration
+          run: |
+            helm template -f infrastructure/${ENV}/opencrvs-services/values.yaml \
+                -s templates/data-migration-job.yaml \
+                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -f -n opencrvs-${ENV} -
+            kubectl logs job/data-migration -f -n opencrvs-${ENV};
+        - name: Seeding data
+          run: |
+            helm template  -f infrastructure/${ENV}/opencrvs-services/values.yaml \
+                --set data_seed.enabled=true \
+                -s templates/data-seed-job.yaml \
+                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -f -n opencrvs-${ENV} -
+            kubectl logs job/data-seed -f -n opencrvs-${ENV};
