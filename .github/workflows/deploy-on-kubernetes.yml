@@ -58,7 +58,7 @@ jobs:
           done
       - name: Deploy with Helm
         run: |
-          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services:0.0.1 \
+          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
             --namespace "opencrvs-${ENV}" \
             -f infrastructure/${ENV}/opencrvs-services/values.yaml \
             --create-namespace \
