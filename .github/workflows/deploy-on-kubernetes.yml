@@ -63,6 +63,6 @@ jobs:
             --namespace "opencrvs-${ENV}" \
             -f infrastructure/${ENV}/opencrvs-services/values.yaml \
             --create-namespace \
-            --set core.image.tag="$CORE_IMAGE_TAG" \
+            --set image.tag="$CORE_IMAGE_TAG" \
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set environment="$ENV"
