@@ -18,7 +18,7 @@ include('./tilt/common.tilt')
 # One of working combination is:
 # - core: da3ab7b
 # - opencrvs/ocrvs-farajaland: efc9b7a
-core_images_tag = "develop"
+core_images_tag = "da3ab7b"
 
 # Countryconfig/Farajaland image repository and tag
 # Usually image repository value (countryconfig_image_name) is your repository on DockerHub
@@ -28,7 +28,7 @@ core_images_tag = "develop"
 countryconfig_image_name="opencrvs/ocrvs-farajaland"
 # If you would like to start with sample countryconfig image, please use:
 # countryconfig_image_name="opencrvs/ocrvs-countryconfig"
-countryconfig_image_tag="develop"
+countryconfig_image_tag="efc9b7a"
 
 # Namespaces:
 # - opencrvs-deps-dev, dependencies namespace

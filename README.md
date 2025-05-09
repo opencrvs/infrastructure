@@ -38,20 +38,33 @@ Once you make sure your development environment is ready for running OpenCRVS we
 
 ---
 
-**NOTE:** This guide does not cover the installation of these prerequisites.
+**NOTE:**
+- This guide does not cover the installation of these prerequisites.
+- OpenCRVS team has limited capacity to test different configurations. Feel free to submit an issue on GitHub if something doesn't work in your hardware or software setup.
 
 ---
 
-#### Docker engine with Kubernetes cluster
+### Docker engine with Kubernetes cluster
 
-Ensure you have one of the following solutions installed on your laptop:
-- **Recommended for MacOS**: Docker Desktop (with Kubernetes enabled): https://www.docker.com/products/docker-desktop/. Please check following:
-  - Enable host networking
-  - Enable Kubernetes
-  - Ensure docker-desktop is configured to use at least 16G of RAM
+#### Docker Desktop (with Kubernetes enabled)
+
+Docker desktop with Kubernetes enabled is recommended for development environment on MacOS and Windows. Get more details how to install docker desktop on official website https://www.docker.com/products/docker-desktop/.
+
+Additional configuration for Docker desktop:
+  - Enable host networking to be able access http://opencrvs.localhost, otherwise you will need to configure additional tools like proxy.
+  - Enable Kubernetes and configure kubectl with correct context
+  - Ensure docker-desktop is configured to use at least 12G or more RAM
   - Ensure Storage is set up at least 100G
-- **Recommended for Linux**: Minikube (with docker driver): https://minikube.sigs.k8s.io/docs/. **NOTE**: Docker support is still experimental for minikube, but it gives better performance in comparison to alternative solutions.
-  Additional settings for linux (Ubuntu) users:
+
+#### Minikube
+
+Minikube (with docker driver) is recommended way to run Kubernetes on linux. However docker engine is still required for Tilt. Please check official documentation on https://minikube.sigs.k8s.io/docs/.
+
+**NOTE**: 
+- Docker support is still experimental for minikube, but it gives better performance in comparison to alternative solutions.
+
+
+Additional settings for linux (Ubuntu) users:
   - Add following values to /etc/sysctl.conf:
     ```
     fs.inotify.max_user_watches = 524288
@@ -65,6 +78,9 @@ Ensure you have one of the following solutions installed on your laptop:
     ```
     minikube tunnel -c --bind-address='127.0.0.1'
     ```
+
+---
+
 **NOTE:** Any other Kubernetes solution for desktop should work as well. Please check to LoadBalancer and kubernetes services setup if you are not able to access service.
 
 ---
@@ -174,6 +190,14 @@ See screenshot for more information:
 ![](doc/images/seed-data-on-local-env.png)
 
 ## Common issues
+
+### Your session has expired. Please login again.
+
+This issue often appear on local development environment.
+Easiest way to solve the issue:
+```
+kubectl delete pod --all -n opencrvs-dev
+```
 
 ### Container start is failing with ImagePullBackOff
 
