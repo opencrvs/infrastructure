@@ -1,5 +1,5 @@
 name: Deploy Application on k8s
-run-name: "Deploy OpenCRVS on k8s (core: ${{ github.event.inputs.core-image-tag }}, countryconfig: ${{ github.event.inputs.countryconfig-image-tag }})"
+run-name: "Deploy OpenCRVS on k8s (core: ${{ github.event.inputs.core-image-tag }}, country: ${{ github.event.inputs.countryconfig-image-tag }})"
 on:
     workflow_dispatch:
       inputs:
