@@ -33,7 +33,7 @@ traefik_deps = [
   'webhooks',
   'minio',
 ]
-
+k8s_resource("traefik", labels=[traefik_tilt_label])
 # Add labels to traefik resources
 traefik_ingress_objects = ["{}-route:ingressroute".format(dep) for dep in traefik_deps]
 traefik_middleware_objects = ["sts-and-basic-response-headers:middleware", "enable-compression:middleware", "block-internal-routes:middleware"]
@@ -54,7 +54,6 @@ k8s_resource(
 # Add labels to resources to OpenCRVS services
 tilt_label = '3.Dependencies'
 dependencies = [
-  'traefik',
   'elasticsearch',
   'hearth',
   'mongodb',
