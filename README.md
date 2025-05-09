@@ -1,17 +1,7 @@
 
 # 🚧 Work in Progress
 
-Please note that not all features from the Docker Swarm solution are supported yet.
-
-**Implemented features**
-
-- Data migration
-- Data seeding
-- Data cleanup
-
-**Limitations:**
-- Manual Helm installation and upgrade only
-- Manual initial user configuration for MinIO, MongoDB, Elasticsearch
+Please note that not all features from the Docker Swarm solution are supported yet and not all pipelines are implemented
 
 ---
 
@@ -21,8 +11,12 @@ This repository is used to store infrastructure code for deploying OpenCRVS.
 
 ---
 
-
 # Developing OpenCRVS with Kubernetes
+
+Kubernetes is the easiest option to run OpenCRVS locally on your PC or Laptop and test all features and functionality.
+Before running make sure all hardware and software requirements are met.
+
+Once you make sure your development environment is ready for running OpenCRVS we are recommending you start from "For OpenCRVS DevOps" configuration and get familiar with all tools used to deploy OpenCRVS locally (tilt, kubectl, helm). In that particular configuration all docker images are pulled from our registry and OpenCRVS application is starting with Falajaland demo data. No additional actions are needed from your side.
 
 ## Prerequisites
 
@@ -32,6 +26,21 @@ This repository is used to store infrastructure code for deploying OpenCRVS.
 - 100G free storage space
 
 ### Software requirements
+
+| Tool       | Description |
+| ---------- | ----------- |
+| Docker     | Docker engine and command-line tool for building images. [Learn more](https://www.docker.com/)|
+| Kubernetes | For macOS and Windows users, we recommend Docker Desktop with Kubernetes; for Linux users, we recommend Minikube. More information about setting up Kubernetes can be found in the [Docker engine with Kubernetes cluster](#docker-engine-with-kubernetes-cluster) section. |
+| Git        | Git command-line tool for checking out code. [Download Git](https://git-scm.com/downloads). |
+| kubectl    | Kubernetes command-line tool. [Documentation](https://kubernetes.io/docs/tasks/tools/). |
+| helm       | Helm, a template engine for managing Kubernetes manifests. [Learn more](https://helm.sh/). |
+| tilt       | Tilt for live development of Kubernetes applications. [Learn more](https://tilt.dev/). |
+
+---
+
+**NOTE:** This guide does not cover the installation of these prerequisites.
+
+---
 
 #### Docker engine with Kubernetes cluster
 
@@ -58,28 +67,20 @@ Ensure you have one of the following solutions installed on your laptop:
     ```
 **NOTE:** Any other Kubernetes solution for desktop should work as well. Please check to LoadBalancer and kubernetes services setup if you are not able to access service.
 
-#### Additional utilities
-
-You will also need the following tools for running the local development environment:
-- Git: https://git-scm.com/downloads
-- Helm: https://helm.sh/
-- Kubectl: https://kubernetes.io/docs/tasks/tools/
-- Tilt: https://tilt.dev/
-
-**NOTE:** This guide does not cover the installation of these prerequisites.
-
 ---
 
 ## For OpenCRVS DevOps
 
-1. Clone this repository
-2. If needed adjust values at `infrastructure/local`
-3. Run:
+1. Clone this repository:
+   ```
+   git clone https://github.com/opencrvs/infrastructure.git
+   ```
+2. Run:
    ```
    tilt up
    ```
-4. Navigate to [http://localhost:10350/](http://localhost:10350/)
-5. Once all container images are up and running your environment will be available at http://opencrvs.localhost
+3. Navigate to [http://localhost:10350/](http://localhost:10350/)
+4. Once all container images are up and running your environment will be available at http://opencrvs.localhost
 
 
 ## For OpenCRVS Core Developers

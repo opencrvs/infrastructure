@@ -65,6 +65,15 @@ Kubernetes helm chart doesn't have data persistence in case of uninstall
 
 TODO: Check if container is needed
 
-# Add common secret
+# Add authentication and authorization for OpenCRVS and dependencies
 
-On github environment we have all secrets stored per environment, We could also store all secrets together in common secret, that will simplify configuration.
+Common way to share users between components implemented for redis and MinIO, same approach could be applied to elasticsearch and mongodb.
+
+
+# Change nginx based container default port
+
+On AWS traffic is not allowed for containers on port 80.
+
+client and login containers are using port 80 as default.
+
+Node security group should be modified to allow traffic.
