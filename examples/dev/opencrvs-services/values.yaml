@@ -1,0 +1,59 @@
+
+
+hostname: opencrvs.example.com
+
+image:
+  tag: 1.8.0
+
+countryconfig:
+  image:
+    name: opencrvs/ocrvs-farajaland
+    tag: 1.8.0
+
+
+resources:
+  memoryRequest: "512Mi"
+  cpuRequest: "300m"
+  memoryLimit: "1Gi"
+  cpuLimit: "2"
+
+documents:
+  secrets:
+    minio-opencrvs-users:
+      - MINIO_ACCESS_KEY
+      - MINIO_SECRET_KEY
+
+auth:
+  secrets:
+    redis-opencrvs-users:
+      - AUTH_REDIS_PASSWORD:REDIS_PASSWORD
+      - AUTH_REDIS_USERNAME:REDIS_USERNAME
+gateway:
+  secrets:
+    redis-opencrvs-users:
+      - GATEWAY_REDIS_PASSWORD:REDIS_PASSWORD
+      - GATEWAY_REDIS_USERNAME:REDIS_USERNAME
+
+webhooks:
+  secrets:
+    redis-opencrvs-users:
+      - WEBHOOKS_REDIS_PASSWORD:REDIS_PASSWORD
+      - WEBHOOKS_REDIS_USERNAME:REDIS_USERNAME
+
+workflow:
+  secrets:
+    redis-opencrvs-users:
+      - WORKFLOW_REDIS_PASSWORD:REDIS_PASSWORD
+      - WORKFLOW_REDIS_USERNAME:REDIS_USERNAME
+
+migration:
+  secrets:
+    minio-opencrvs-users:
+      - MINIO_ACCESS_KEY
+      - MINIO_SECRET_KEY
+
+data_cleanup:
+  secrets:
+    minio-opencrvs-users:
+      - MINIO_ROOT_USER
+      - MINIO_ROOT_PASSWORD

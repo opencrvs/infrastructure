@@ -1,13 +1,17 @@
 
 # 🚧 Work in Progress
 
+> [!NOTE]
+> # 🚧 Work in Progress
+> All scripts within this repository are relevant to OpenCRVS version 1.8.0
+
 Please note that not all features from the Docker Swarm solution are supported yet and not all pipelines are implemented
 
 ---
 
 # General Information
 
-This repository is used to store infrastructure code for deploying OpenCRVS.
+Guidelines to run OpenCRVS as 
 
 ---
 
@@ -300,6 +304,9 @@ If you see following issue on server environments sync secrets manually and dele
 
 # Running OpenCRVS on Kubernetes
 
+ > [!NOTE]
+ > 🚧 Work in Progress
+
 ## Prerequisites for Kubernetes Cluster
 
 ### Storage
@@ -373,41 +380,52 @@ spec:
 
 ```
 
+## Deployment
 
-## [🚧 ] Manual deployment guide
+Before moving forward with current section please make sure Traefik is installed and valid wildcard certificate is issued.
 
-TODO: Add steps with middleware installation:
-- traefik
-- dependencies
-
-
-1. Clone this repository
-    ```bash
-    git clone https://github.com/opencrvs/infrastructure.git
+Prepare configuration:
+1. Navigate to [Infrastructure examples](./examples)
+2. Copy desired configuration to your laptop. You should get directory structure like:
     ```
-2. Create yaml file with custom values for your installation:
-   ```yaml
-   # Kubernetes load balancer domain used by traefik as entrypoint
-   hostname: <you domain>
-   # OpenCRVS Core image tag
-   image:
-     tag: develop
-   # Your country image repository and tag
-   countryconfig:
-     image:
-       name: opencrvs/ocrvs-countryconfig
-       tag: develop
-   ```
-   **NOTE:** Please refer to [opencrvs-services/README.md](charts/opencrvs-services/README.md) for full list of options.
-3. Install OpenCRVS:
-   ```
-   helm install opencrvs charts/opencrvs-services
-   ```
-   **NOTE:** Data seed will run only on `install`, don't use `update --install` for first installation or run data-seeder manually.
+    cert-manager
+    dependencies
+    opencrvs-services
+    README.md
+    traefik
+    ```
+3. Adjust default values for dependencies chart at `dependencies/values.yaml`. Check [Dependencies helm chart documentation](./charts/dependencies/README.md)
+4. Deploy dependencies:
+    ```
+    ENV=dev
+    helm upgrade --install opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart \
+            --namespace "opencrvs-deps-${ENV}" \
+            -f dependencies/values.yaml \
+            --create-namespace
+    ```
+5. Adjust default values for OpenCRVS chart at `opencrvs-services/values.yaml`. Check [OpenCRVS helm chart documentation](./charts/opencrvs-services/README.md)
+6. Deploy OpenCRVS:
+    ```
+    ENV=dev
+    helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
+            --namespace "opencrvs-${ENV}" \
+            -f opencrvs-services/values.yaml \
+            --create-namespace
+    ```
 
-# [🚧  Coming soon] Server environment migration
+## Validate deployment
 
-TODO: Migration from docker swarm to kubernetes guide
+1. Switch context to OpenCRVS dependencies namespace and make sure all pods are up and running.
+2. Switch context to OpenCRVS application namespace and make sure all pods are up and running
+3. Make sure data migration job completed successfully:
+   ```
+   kubectl logs jobs/data-migration
+   ```
+
+4. Make sure initial data seed job completed successfully:
+   ```
+   kubectl logs jobs/data-seed
+   ```
 
 # Useful Links
 
