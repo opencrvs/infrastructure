@@ -1,17 +1,7 @@
 
 # 🚧 Work in Progress
 
-Please note that not all features from the Docker Swarm solution are supported yet.
-
-**Implemented features**
-
-- Data migration
-- Data seeding
-- Data cleanup
-
-**Limitations:**
-- Manual Helm installation and upgrade only
-- Manual initial user configuration for MinIO, MongoDB, Elasticsearch
+Please note that not all features from the Docker Swarm solution are supported yet and not all pipelines are implemented
 
 ---
 
@@ -21,8 +11,12 @@ This repository is used to store infrastructure code for deploying OpenCRVS.
 
 ---
 
-
 # Developing OpenCRVS with Kubernetes
+
+Kubernetes is the easiest option to run OpenCRVS locally on your PC or Laptop and test all features and functionality.
+Before running make sure all hardware and software requirements are met.
+
+Once you make sure your development environment is ready for running OpenCRVS we are recommending you start from "For OpenCRVS DevOps" configuration and get familiar with all tools used to deploy OpenCRVS locally (tilt, kubectl, helm). In that particular configuration all docker images are pulled from our registry and OpenCRVS application is starting with Falajaland demo data. No additional actions are needed from your side.
 
 ## Prerequisites
 
@@ -33,16 +27,44 @@ This repository is used to store infrastructure code for deploying OpenCRVS.
 
 ### Software requirements
 
-#### Docker engine with Kubernetes cluster
+| Tool       | Description |
+| ---------- | ----------- |
+| Docker     | Docker engine and command-line tool for building images. [Learn more](https://www.docker.com/)|
+| Kubernetes | For macOS and Windows users, we recommend Docker Desktop with Kubernetes; for Linux users, we recommend Minikube. More information about setting up Kubernetes can be found in the [Docker engine with Kubernetes cluster](#docker-engine-with-kubernetes-cluster) section. |
+| Git        | Git command-line tool for checking out code. [Download Git](https://git-scm.com/downloads). |
+| kubectl    | Kubernetes command-line tool. [Documentation](https://kubernetes.io/docs/tasks/tools/). |
+| helm       | Helm, a template engine for managing Kubernetes manifests. [Learn more](https://helm.sh/). |
+| tilt       | Tilt for live development of Kubernetes applications. [Learn more](https://tilt.dev/). |
 
-Ensure you have one of the following solutions installed on your laptop:
-- **Recommended for MacOS**: Docker Desktop (with Kubernetes enabled): https://www.docker.com/products/docker-desktop/. Please check following:
-  - Enable host networking
-  - Enable Kubernetes
-  - Ensure docker-desktop is configured to use at least 16G of RAM
+---
+
+**NOTE:**
+- This guide does not cover the installation of these prerequisites.
+- OpenCRVS team has limited capacity to test different configurations. Feel free to submit an issue on GitHub if something doesn't work in your hardware or software setup.
+
+---
+
+### Docker engine with Kubernetes cluster
+
+#### Docker Desktop (with Kubernetes enabled)
+
+Docker desktop with Kubernetes enabled is recommended for development environment on MacOS and Windows. Get more details how to install docker desktop on official website https://www.docker.com/products/docker-desktop/.
+
+Additional configuration for Docker desktop:
+  - Enable host networking to be able access http://opencrvs.localhost, otherwise you will need to configure additional tools like proxy.
+  - Enable Kubernetes and configure kubectl with correct context
+  - Ensure docker-desktop is configured to use at least 12G or more RAM
   - Ensure Storage is set up at least 100G
-- **Recommended for Linux**: Minikube (with docker driver): https://minikube.sigs.k8s.io/docs/. **NOTE**: Docker support is still experimental for minikube, but it gives better performance in comparison to alternative solutions.
-  Additional settings for linux (Ubuntu) users:
+
+#### Minikube
+
+Minikube (with docker driver) is recommended way to run Kubernetes on linux. However docker engine is still required for Tilt. Please check official documentation on https://minikube.sigs.k8s.io/docs/.
+
+**NOTE**: 
+- Docker support is still experimental for minikube, but it gives better performance in comparison to alternative solutions.
+
+
+Additional settings for linux (Ubuntu) users:
   - Add following values to /etc/sysctl.conf:
     ```
     fs.inotify.max_user_watches = 524288
@@ -56,59 +78,37 @@ Ensure you have one of the following solutions installed on your laptop:
     ```
     minikube tunnel -c --bind-address='127.0.0.1'
     ```
-**NOTE:** Any other Kubernetes solution for desktop should work as well. Please check to LoadBalancer and kubernetes services setup if you are not able to access service.
-
-#### Additional utilities
-
-You will also need the following tools for running the local development environment:
-- Git: https://git-scm.com/downloads
-- Helm: https://helm.sh/
-- Kubectl: https://kubernetes.io/docs/tasks/tools/
-- Tilt: https://tilt.dev/
-
-**NOTE:** This guide does not cover the installation of these prerequisites.
 
 ---
+
+**NOTE:** Any other Kubernetes solution for desktop should work as well. Please check to LoadBalancer and kubernetes services setup if you are not able to access service.
+
+---
+
+# Running OpenCRVS locally
+
+The OpenCRVS team uses [Tilt](https://tilt.dev/) to manage the local development environment. Depending on your role and development needs, the following configurations (Tiltfiles) are available:
+
+
+- [DevOps developers](#for-opencrvs-devops), This basic configuration is designed for Helm chart development. Tilt uses official OpenCRVS release images along with the Farajaland demo data. Docker images are pulled from the OpenCRVS container registry.
+- [Country config developers](#for-opencrvs-country-config-developers), In this setup, OpenCRVS Core images are pulled from the OpenCRVS container registry. The Country Config image is built locally using Tilt's live update feature, so your code changes are reflected almost immediately. Typically, you’ll be working with your own fork of the Country Config repository.
+- [Core developers](#for-opencrvs-core-developers), This configuration builds OpenCRVS Core images locally with live updates enabled, allowing near-instant reflection of code changes. By default, the Country Config image is pulled from the OpenCRVS container registry. If you maintain your own fork of the Country Config repository and container registry, you should update the Tiltfile to use your own registry.
+
 
 ## For OpenCRVS DevOps
 
-1. Clone this repository
-2. If needed adjust values at `infrastructure/local`
-3. Run:
+1. Clone this repository:
+   ```
+   git clone https://github.com/opencrvs/infrastructure.git
+   ```
+2. Run:
    ```
    tilt up
    ```
-4. Navigate to [http://localhost:10350/](http://localhost:10350/)
+3. Navigate to [http://localhost:10350/](http://localhost:10350/)
+4. Run [Data seed](#initial-data-seeding-with-tilt) resource
 5. Once all container images are up and running your environment will be available at http://opencrvs.localhost
 
-
-## For OpenCRVS Core Developers
-
-You need to clone the [opencrvs-core](https://github.com/opencrvs/opencrvs-core) and [infrastructure](https://github.com/opencrvs/infrastructure) repositories. If these repositories are already on your laptop, ensure they are in the same folder.
-
-1. Create a new folder or use an existing folder to store the repositories.
-2. Open a terminal (command line) and navigate to the folder.
-3. Clone the OpenCRVS Core repository:
-    ```bash
-    git clone git@github.com:opencrvs/opencrvs-core.git
-    ```
-4. Clone the Infrastructure repository:
-    ```bash
-    git clone git@github.com:opencrvs/infrastructure.git
-    ```
-    **NOTE:** This step is optional, tilt should be able to checkout infrastructure directory
-5. Change directory to the OpenCRVS Core repository:
-    ```bash
-    cd opencrvs-core
-    ```
-6. Run Tilt:
-    ```bash
-    tilt up
-    ```
-7. Navigate to [http://localhost:10350/](http://localhost:10350/)
-8. Once all container images are up and running your environment will be available at http://opencrvs.localhost
-
----
 
 ## For OpenCRVS Country Config Developers
 
@@ -161,18 +161,66 @@ repositories/
     tilt up
     ```
 8. Navigate to [http://localhost:10350/](http://localhost:10350/)
+9. Run [Data seed](#initial-data-seeding-with-tilt) resource.
+10. Once all container images are up and running your environment will be available at http://opencrvs.localhost
+
+
+## For OpenCRVS Core Developers
+
+You need to clone the [opencrvs-core](https://github.com/opencrvs/opencrvs-core) and [infrastructure](https://github.com/opencrvs/infrastructure) repositories. If these repositories are already on your laptop, ensure they are in the same folder.
+
+1. Create a new folder or use an existing folder to store the repositories.
+2. Open a terminal (command line) and navigate to the folder.
+3. Clone the OpenCRVS Core repository:
+    ```bash
+    git clone git@github.com:opencrvs/opencrvs-core.git
+    ```
+4. Clone the Infrastructure repository:
+    ```bash
+    git clone git@github.com:opencrvs/infrastructure.git
+    ```
+    **NOTE:** This step is optional, tilt should be able to checkout infrastructure directory
+5. Change directory to the OpenCRVS Core repository:
+    ```bash
+    cd opencrvs-core
+    ```
+6. Run Tilt:
+    ```bash
+    tilt up
+    ```
+7. Navigate to [http://localhost:10350/](http://localhost:10350/)
+8. Run [Data seed](#initial-data-seeding-with-tilt) resource.
 9. Once all container images are up and running your environment will be available at http://opencrvs.localhost
 
-## Reset database / Seed data
+---
+
+## Initial data seeding with tilt
+
+This task should run only once on fresh environment after environment installation.
 
 1. Navigate to [http://localhost:10350/](http://localhost:10350/)
 2. Scroll to section `2.Data-tasks` and find resource `Reset database`
 3. Run resource using reload button
+   ![](doc/images/seed-data.png)
+4. Once data seeding completed you will be able to login using default credentials, see [4.1.4 Log in to OpenCRVS locally](https://documentation.opencrvs.org/setup/3.-installation/3.1-set-up-a-development-environment/3.1.4-log-in-to-opencrvs-locally)
 
-See screenshot for more information:
-![](doc/images/seed-data-on-local-env.png)
+## Reset database and Seed data with tilt
+
+1. Navigate to [http://localhost:10350/](http://localhost:10350/)
+2. Scroll to section `2.Data-tasks` and find resource `Reset database`
+3. Run resource using reload button
+   ![](doc/images/reset-data.png)
+4. Once data reset completed you will be able to login using default credentials, see [4.1.4 Log in to OpenCRVS locally](https://documentation.opencrvs.org/setup/3.-installation/3.1-set-up-a-development-environment/3.1.4-log-in-to-opencrvs-locally).
 
 ## Common issues
+
+### Your session has expired. Please login again.
+
+This issue often appear on local development environment.
+Easiest way to solve the issue:
+```
+kubectl delete pod --all -n opencrvs-dev
+```
 
 ### Container start is failing with ImagePullBackOff
 
