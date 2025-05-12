@@ -87,10 +87,13 @@ Additional settings for linux (Ubuntu) users:
 
 # Running OpenCRVS locally
 
-OpenCRVS team is using [Tilt](https://tilt.dev/) to manage development environment. Depending on your needs following configurations (Tiltfiles) are available:
-- [DevOps developers](#for-opencrvs-devops), basic configuration for Helm charts development, in this configuration tilt uses OpenCRVS release images and Farajaland demo data. Docker images are pulled from OpenCRVS container registry.
-- [Country config](#for-opencrvs-country-config-developers), OpenCRVS Core images are pulled from OpenCRVS image registry. Country config image is build on using live updates, your code changes are reflected almost immediately. Usually in this configuration you have your own fork of Country config repository.
-- [Core developers](#for-opencrvs-core-developers), OpenCRVS Core images are build using live updates, your code changes are reflected almost immediately. Country config image is pulled from OpenCRVS container registry in default configuration. If you already have your own fork of Country config repository and container registry, please reconfigure Tiltfile to use your own registry.
+The OpenCRVS team uses [Tilt](https://tilt.dev/) to manage the local development environment. Depending on your role and development needs, the following configurations (Tiltfiles) are available:
+
+
+- [DevOps developers](#for-opencrvs-devops), This basic configuration is designed for Helm chart development. Tilt uses official OpenCRVS release images along with the Farajaland demo data. Docker images are pulled from the OpenCRVS container registry.
+- [Country config developers](#for-opencrvs-country-config-developers), In this setup, OpenCRVS Core images are pulled from the OpenCRVS container registry. The Country Config image is built locally using Tilt's live update feature, so your code changes are reflected almost immediately. Typically, you’ll be working with your own fork of the Country Config repository.
+- [Core developers](#for-opencrvs-core-developers), This configuration builds OpenCRVS Core images locally with live updates enabled, allowing near-instant reflection of code changes. By default, the Country Config image is pulled from the OpenCRVS container registry. If you maintain your own fork of the Country Config repository and container registry, you should update the Tiltfile to use your own registry.
+
 
 ## For OpenCRVS DevOps
 
@@ -103,7 +106,8 @@ OpenCRVS team is using [Tilt](https://tilt.dev/) to manage development environme
    tilt up
    ```
 3. Navigate to [http://localhost:10350/](http://localhost:10350/)
-4. Once all container images are up and running your environment will be available at http://opencrvs.localhost
+4. Run [Data seed](#initial-data-seeding-with-tilt) resource
+5. Once all container images are up and running your environment will be available at http://opencrvs.localhost
 
 
 ## For OpenCRVS Country Config Developers
@@ -157,7 +161,8 @@ repositories/
     tilt up
     ```
 8. Navigate to [http://localhost:10350/](http://localhost:10350/)
-9. Once all container images are up and running your environment will be available at http://opencrvs.localhost
+9. Run [Data seed](#initial-data-seeding-with-tilt) resource.
+10. Once all container images are up and running your environment will be available at http://opencrvs.localhost
 
 
 ## For OpenCRVS Core Developers
@@ -184,7 +189,8 @@ You need to clone the [opencrvs-core](https://github.com/opencrvs/opencrvs-core)
     tilt up
     ```
 7. Navigate to [http://localhost:10350/](http://localhost:10350/)
-8. Once all container images are up and running your environment will be available at http://opencrvs.localhost
+8. Run [Data seed](#initial-data-seeding-with-tilt) resource.
+9. Once all container images are up and running your environment will be available at http://opencrvs.localhost
 
 ---
 
