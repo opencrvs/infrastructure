@@ -37,8 +37,8 @@ spec:
   selector:
     matchLabels:
       app: mongodb
-  strategy:
-    type: Recreate
+  # strategy:
+  #   type: Recreate
   template:
     metadata:
       labels:
@@ -46,9 +46,18 @@ spec:
     spec:
       containers:
         - image: mongo:4.4
-          {{- if or .Values.mongodb.secrets .Values.mongodb.env .Values.env }}
+          {{- if not .Values.mongodb.use_default_credentials }}
           env:
-          {{- include "render-env-vars" (dict "service_name" "mongodb" "Values" .Values) }}
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-admin-user
+                  key: MONGODB_ADMIN_USER
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-admin-user
+                  key: MONGODB_ADMIN_PASSWORD
           {{- end }}
           name: mongodb
           ports:
@@ -58,10 +67,6 @@ spec:
             - mountPath: /data/db
               name: mongodb-data
       restartPolicy: Always
-      # volumes:
-      #   - name: mongodb-data
-      #     hostPath:
-      #       path: /data/db
       volumes:
         - name: mongodb-data
           persistentVolumeClaim:

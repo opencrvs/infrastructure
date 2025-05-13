@@ -19,9 +19,14 @@ spec:
             - |
               echo "Running mongo cleanup script..."
               DATABASES=("hearth-dev" "openhim-dev" "user-mgnt" "application-config" "metrics" "performance")
+              if [ ! -z ${MONGODB_ADMIN_USER+x} ] && [ ! -z ${MONGODB_ADMIN_PASSWORD+x} ]; then
+                AUTH="--username $MONGODB_ADMIN_USER --password $MONGODB_ADMIN_PASSWORD --authenticationDatabase admin";
+              else
+                AUTH="";
+              fi
               for DB in "${DATABASES[@]}"; do
                 echo "Dropping database: $DB"
-                mongo --host $MONGO_HOST --eval "db.getSiblingDB('$DB').dropDatabase()"
+                mongo $AUTH --host $MONGO_HOST --eval "db.getSiblingDB('$DB').dropDatabase()"
               done
               echo "Cleanup complete!"
           env:

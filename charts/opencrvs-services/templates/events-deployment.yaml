@@ -52,12 +52,14 @@ spec:
               value: "events"
             - name: USER_MANAGEMENT_URL
               value: "http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/"
+          {{- if .Values.mongodb_noauth }}
             - name: USER_MGNT_MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/user-mgnt
             - name: EVENTS_MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/events
             - name: MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/events
+          {{- end }}
           {{- include "render-env-vars" (dict "service_name" "events" "Values" .Values) }}
           {{ include "resources-helper" (dict "service_name" "events" "Values" .Values) | indent 10 }}
           ports:

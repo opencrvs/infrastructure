@@ -41,12 +41,14 @@ spec:
               value: {{ .Values.influxdb.host | quote }}
             - name: INFLUX_PORT
               value: {{ .Values.influxdb.port | quote }}
+          {{- if .Values.mongodb_noauth }}
             - name: DASHBOARD_MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/performance
             - name: HEARTH_MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/hearth-dev
             - name: MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/metrics
+          {{- end }}
           {{- include "render-env-vars" (dict "service_name" "metrics" "Values" .Values) }}
           {{ include "resources-helper" (dict "service_name" "metrics" "Values" .Values) | indent 10 }}
           ports:

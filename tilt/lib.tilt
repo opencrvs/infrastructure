@@ -11,21 +11,21 @@ def format_reset_environment_command(opencrvs_namespace, opencrvs_configuration_
     return """
       kubectl delete job -n {0} data-cleanup;
       helm template -f {1} --set data_cleanup.enabled=true -s templates/data-cleanup-job.yaml --namespace {0} {2} | kubectl apply -n {0} -f -;
-      sleep 10;
+      sleep 30;
       kubectl logs job/data-cleanup -f --all-containers=true -n {0};
       kubectl wait --for=condition=complete job/data-cleanup -n {0} --timeout=600s;
       kubectl delete pod -n {0} -lapp=events;
-      sleep 30;
+      kubectl wait --for=condition=ready pod -n {0} -lapp=events;
       kubectl delete job -n {0} data-migration;
       helm template -f {1} -s templates/data-migration-job.yaml --namespace {0} {2} | kubectl apply -n {0} -f -;
-      sleep 10;
+      sleep 30;
       kubectl logs job/data-migration -f -n {0};
       kubectl wait --for=condition=complete job/data-migration -n {0} --timeout=600s;
       kubectl delete job -n {0} data-seed;
       kubectl delete pod -n {0} -lapp=events;
-      sleep 30;
+      kubectl wait --for=condition=complete pod -n {0} -lapp=events;
       helm template -f {1} --set data_seed.enabled=true -s templates/data-seed-job.yaml --namespace {0} {2} | kubectl apply -n {0} -f -;
-      sleep 10;
+      sleep 30;
       kubectl logs job/data-seed -f -n {0};
       kubectl wait --for=condition=complete job/data-seed -n {0} --timeout=600s;
       kubectl delete pod -n {0} -lapp=events;
@@ -54,7 +54,9 @@ def copy_secrets(dependencies_namespace, opencrvs_namespace):
     secrets_to_copy = [
         "elasticsearch-opencrvs-users",
         "redis-opencrvs-users",
-        "minio-opencrvs-users"
+        "minio-opencrvs-users",
+        "mongodb-urls",
+        "mongodb-admin-user",
     ]
     k8s_resource(
         new_name="deps-secrets",

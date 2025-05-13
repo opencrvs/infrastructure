@@ -89,10 +89,12 @@ spec:
               value: "http://auth.{{ .Release.Namespace }}.svc.cluster.local:4040"
             - name: CONFIRM_REGISTRATION_URL
               value: http://workflow.{{ .Release.Namespace }}.svc.cluster.local:5050/confirm/registration
+          {{- if .Values.mongodb_noauth }}
             - name: CONFIG_MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/application-config
             - name: MONGO_URL
-              value: mongodb://{{ .Values.mongodb_host }}/user-mgnt
+              value: mongodb://{{ .Values.mongodb_host }}/user-
+          {{- end }}
           {{- include "render-env-vars" (dict "service_name" "countryconfig" "Values" .Values) }}
           {{ include "resources-helper" (dict "service_name" "countryconfig" "Values" .Values) | indent 10 }}
           ports:
