@@ -7,7 +7,38 @@ chart_dev_mode: true
 mongodb:
   enabled: true
   version: 4.4
-
+  use_default_credentials: true
+  databases:
+    - prefix: USER_MGNT
+      db: user-mgnt
+      user: user-mgnt
+    - prefix: HEARTH
+      db: hearth-dev
+      user: hearth
+      roles: "[{ role: 'readWrite', db: 'hearth' }, { role: 'readWrite', db: 'performance' }, { role: 'readWrite', db: 'hearth-dev' }]"
+    - prefix: CONFIG
+      db: application-config
+      user: config
+    - prefix: PERFORMANCE
+      db: performance
+      user: performance
+    - prefix: METRICS
+      db: metrics
+      user: metrics
+    - prefix: OPENHIM
+      db: openhim-dev
+      user: openhim
+      roles: "[{ role: 'readWrite', db: 'openhim' }, { role: 'readWrite', db: 'openhim-dev' }]"
+    - prefix: WEBHOOKS
+      db: webhooks
+      user: webhooks
+    - prefix: NOTIFICATION
+      db: notification
+      user: notification
+    - prefix: EVENTS
+      db: events
+      user: events
+      roles: "[{ role: 'readWrite', db: 'events' }, {role: 'read', db: 'user-mgnt'}]"
 minio:
   enabled: true
   use_default_credentials: true

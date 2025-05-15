@@ -33,10 +33,18 @@ env:
   LOG_LEVEL: debug 
   MINIO_BUCKET: "ocrvs"
 
+# By default authentication is disabled on mongodb container
+# In secure configuration each container should be authorized separately
+mongodb_noauth: false
+  
 # OpenCRVS core image tag:
 image:
   tag: develop
-
+config:
+  secrets:
+    mongodb-urls:
+      - HEARTH_MONGO_URL
+      - CONFIG_MONGO_URL:MONGO_URL
 documents:
   secrets:
     minio-opencrvs-users:
@@ -48,13 +56,29 @@ auth:
     redis-opencrvs-users:
       - AUTH_REDIS_PASSWORD:REDIS_PASSWORD
       - AUTH_REDIS_USERNAME:REDIS_USERNAME
-    
+user_mgnt:
+  secrets:
+    mongodb-urls:
+      - USER_MGNT_MONGO_URL:MONGO_URL
 gateway:
   secrets:
     redis-opencrvs-users:
       - GATEWAY_REDIS_PASSWORD:REDIS_PASSWORD
       - GATEWAY_REDIS_USERNAME:REDIS_USERNAME
-
+events:
+  secrets:
+    mongodb-urls:
+      - USER_MGNT_MONGO_URL
+      - EVENTS_MONGO_URL
+      - EVENTS_MONGO_URL:MONGO_URL
+notification:
+  secrets:
+    mongodb-urls:
+      - NOTIFICATION_MONGO_URL:MONGO_URL
+search:
+  secrets:
+    mongodb-urls:
+      - HEARTH_MONGO_URL
 countryconfig:
   image:
     # Replace countryconfig with farajaland to test data
@@ -63,18 +87,41 @@ countryconfig:
     # tag: develop
     # tag: ec53c12
     tag: local
-
+  secrets:
+    mongodb-urls:
+      - CONFIG_MONGO_URL
+      - USER_MGNT_MONGO_URL:MONGO_URL
+scheduler:
+  secrets:
+    mongodb-urls:
+      - OPENHIM_MONGO_URL
+metrics:
+  secrets:
+    mongodb-urls:
+      - METRICS_MONGO_URL:DASHBOARD_MONGO_URL
+      - HEARTH_MONGO_URL
+      - METRICS_MONGO_URL:MONGO_URL
 migration:
   secrets:
     minio-opencrvs-users:
       - MINIO_ACCESS_KEY
       - MINIO_SECRET_KEY
+    mongodb-urls:
+      - CONFIG_MONGO_URL:APPLICATION_CONFIG_MONGO_URL
+      - USER_MGNT_MONGO_URL
+      - PERFORMANCE_MONGO_URL
+      - HEARTH_MONGO_URL
+      - OPENHIM_MONGO_URL
+      - METRICS_MONGO_URL:DASHBOARD_MONGO_URL
+      - EVENTS_MONGO_URL
 data_cleanup:
   secrets:
     minio-opencrvs-users:
       - MINIO_ROOT_USER
       - MINIO_ROOT_PASSWORD
-
+    mongodb-admin-user:
+      - MONGODB_ADMIN_USER
+      - MONGODB_ADMIN_PASSWORD
 data_seed:
   env:
     SUPER_USER_PASSWORD: "password"
@@ -90,7 +137,8 @@ webhooks:
     redis-opencrvs-users:
       - WEBHOOKS_REDIS_PASSWORD:REDIS_PASSWORD
       - WEBHOOKS_REDIS_USERNAME:REDIS_USERNAME
-
+    mongodb-urls:
+      - WEBHOOKS_MONGO_URL:MONGO_URL
 workflow:
   secrets:
     redis-opencrvs-users:

@@ -31,6 +31,7 @@ spec:
               value: {{ .Values.influxdb.port | quote }}
             - name: MINIO_HOST
               value: {{ .Values.minio.host | quote }}
+          {{- if .Values.mongodb_noauth }}
             - name: APPLICATION_CONFIG_MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/application-config
             - name: USER_MGNT_MONGO_URL
@@ -45,6 +46,7 @@ spec:
               value: mongodb://{{ .Values.mongodb_host }}/performance
             - name: EVENTS_MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/events
+          {{- end }}
             - name: WAIT_HOSTS
               value: "{{ .Values.mongodb_host }}:27017,{{ .Values.influxdb.host }}:{{ .Values.influxdb.port }},{{ .Values.minio.host }}:{{ .Values.minio.port }},{{ .Values.elasticsearch_host }}"
           {{- include "render-env-vars" (dict "service_name" "migration" "Values" .Values) }}

@@ -41,7 +41,7 @@ opencrvs_namespace = 'opencrvs-dev'
 # - Setup MinIO admin user and password
 # - Configure Redis users
 # - Sync passwords between dependencies and OpenCRVS services
-security_enabled = False
+security_enabled = True
 
 # If your machine is powerful feel free to change parallel updates from default 3
 # Be careful repositories like npm, yarn, pip, etc. could have rate limits
@@ -100,6 +100,6 @@ reset_environment(opencrvs_namespace, opencrvs_configuration_file)
 seed_data(opencrvs_namespace, opencrvs_configuration_file)
 
 if security_enabled:
-    copy_secrets(opencrvs_namespace, dependencies_namespace)
+    copy_secrets(dependencies_namespace, opencrvs_namespace)
 
 print("✅ Tiltfile configuration loaded successfully.")

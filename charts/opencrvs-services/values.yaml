@@ -33,7 +33,8 @@ minio:
 redis_host: redis-0.redis.opencrvs-deps-dev.svc.cluster.local
 # MongoDB hostname configuration.
 mongodb_host: mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local
-
+# If set to true then skipp authentication
+mongodb_noauth: true
 ###############################################################################
 # Application configuration
 ###############################################################################
@@ -158,7 +159,7 @@ dashboards:
     OPENCRVS_METABASE_ADMIN_EMAIL: user@opencrvs.org
     OPENCRVS_METABASE_ADMIN_PASSWORD: m3tabase
   resources:
-    memoryRequest: "512Mi"
+    memoryRequest: "1Gi"
     cpuRequest: "250m"
     memoryLimit: "1Gi"
     cpuLimit: "500m"

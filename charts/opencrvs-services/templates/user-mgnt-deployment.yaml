@@ -33,8 +33,10 @@ spec:
               value: http://notification.{{ .Release.Namespace }}.svc.cluster.local:2020/
             - name: DOCUMENTS_URL
               value: http://documents.{{ .Release.Namespace }}.svc.cluster.local:9050
+          {{- if .Values.mongodb_noauth }}
             - name: MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/user-mgnt
+          {{- end }}
             - name: COUNTRY_CONFIG_URL
               value: {{ include "render-external-url" (dict "service_name" "user-mgnt" "Values" .Values) }}
           {{- include "render-env-vars" (dict "service_name" "user_mgnt" "Values" .Values) }}

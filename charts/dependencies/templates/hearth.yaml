@@ -42,7 +42,15 @@ spec:
             - name: logger__level
               value: warn
             - name: mongodb__url
+          # FIXME: If you use external mongodb, please update this part to reference correct secret
+          {{- if .Values.mongodb.use_default_credentials }}
               value: mongodb://mongodb.{{ .Release.Namespace }}.svc.cluster.local/hearth-dev
+          {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-urls
+                  key: HEARTH_MONGO_URL
+          {{- end }}
             - name: server__fhirVersion
               value: stu3
           {{- if or .Values.hearth.secrets .Values.hearth.env .Values.env }}

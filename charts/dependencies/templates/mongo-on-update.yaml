@@ -1,0 +1,83 @@
+# TODO: Move as pre-deploy hook to opencrvs-service
+# Change will allow to manage external database
+{{- if not .Values.mongodb.use_default_credentials }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
+  labels:
+    app: mongo-on-deploy
+  name: mongo-on-deploy
+spec:
+  template:
+    metadata:
+      labels:
+        app: mongo-on-deploy
+    spec:
+      containers:
+        - name: mongo-on-deploy
+          command: ["/bin/bash", "/on-deploy.sh"]
+          image: "mongo:4.4"
+          env:
+            - name: MONGODB_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-admin-user
+                  key: MONGODB_ADMIN_USER
+            - name: MONGODB_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-admin-user
+                  key: MONGODB_ADMIN_PASSWORD
+          {{- range .Values.mongodb.databases }}
+            - name: {{ .prefix }}_MONGODB_DB
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-opencrvs-users
+                  key: {{ .prefix }}_MONGODB_DB
+            - name: {{ .prefix }}_MONGODB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-opencrvs-users
+                  key: {{ .prefix }}_MONGODB_USER
+            - name: {{ .prefix }}_MONGODB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-opencrvs-users
+                  key: {{ .prefix }}_MONGODB_PASSWORD
+          {{- if .roles }}
+            - name: {{ .prefix }}_MONGODB_ROLES
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-opencrvs-users
+                  key: {{ .prefix }}_MONGODB_ROLES
+          {{- end }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /on-deploy.sh
+              name: mongo-on-update-script
+              subPath: on-deploy.sh
+      volumes:
+        - name: mongo-on-update-script
+          configMap:
+            name: mongo-on-update-script
+      restartPolicy: "OnFailure"
+  {{- end }}
+  # mongo-on-update:
+  #   image: mongo:4.4
+  #   command: bash /on-deploy.sh
+  #   configs:
+
+  #       target: /on-deploy.sh
+
+  #     # If this doesn't get run successfully, both the replica set in mongo and
+  #     # the user schema remains uninitialized.
+  #     restart_policy:
+  #       condition: on-failure
+  #       delay: 10s
+  #   environment:
+  #     - REPLICAS=1
+  #     - MONGODB_ADMIN_USER=${MONGODB_ADMIN_USER}
+  #     - MONGODB_ADMIN_PASSWORD=${MONGODB_ADMIN_PASSWORD}

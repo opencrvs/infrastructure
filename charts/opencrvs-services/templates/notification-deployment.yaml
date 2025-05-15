@@ -29,8 +29,10 @@ spec:
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
             - name: USER_MANAGEMENT_URL
               value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/
+          {{- if .Values.mongodb_noauth }}
             - name: MONGO_URL
               value: mongodb://{{ .Values.mongodb_host }}/notification
+          {{- end }}
           {{- include "render-env-vars" (dict "service_name" "notification" "Values" .Values) }}
           {{ include "resources-helper" (dict "service_name" "notification" "Values" .Values) | indent 10 }}
           ports:
