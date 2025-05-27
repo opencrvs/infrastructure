@@ -65,19 +65,3 @@ spec:
             name: mongo-on-update-script
       restartPolicy: "OnFailure"
   {{- end }}
-  # mongo-on-update:
-  #   image: mongo:4.4
-  #   command: bash /on-deploy.sh
-  #   configs:
-
-  #       target: /on-deploy.sh
-
-  #     # If this doesn't get run successfully, both the replica set in mongo and
-  #     # the user schema remains uninitialized.
-  #     restart_policy:
-  #       condition: on-failure
-  #       delay: 10s
-  #   environment:
-  #     - REPLICAS=1
-  #     - MONGODB_ADMIN_USER=${MONGODB_ADMIN_USER}
-  #     - MONGODB_ADMIN_PASSWORD=${MONGODB_ADMIN_PASSWORD}

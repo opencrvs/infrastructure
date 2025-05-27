@@ -47,7 +47,7 @@ spec:
             - name: DOCUMENTS_URL
               value: "http://documents.{{ .Release.Namespace }}.svc.cluster.local:9050"
             - name: ES_URL
-              value: "http://{{ .Values.elasticsearch_host }}"  # TODO: Add username and password
+              value: "http://{{ .Values.elasticsearch.host }}:{{ .Values.elasticsearch.port }}"  # TODO: Add username and password
             - name: ES_INDEX_PREFIX
               value: "events"
             - name: USER_MANAGEMENT_URL

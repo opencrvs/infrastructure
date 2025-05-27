@@ -20,7 +20,7 @@ spec:
           image: "ghcr.io/opencrvs/ocrvs-migration:{{ .Values.image.tag }}"
           env:
             - name: ES_HOST
-              value: {{ .Values.elasticsearch_host | quote }}
+              value: "{{ .Values.elasticsearch.host }}:{{ .Values.elasticsearch.port }}"
             - name: SEARCH_URL
               value: http://search.{{ .Release.Namespace }}.svc.cluster.local:9090/
             - name: INFLUX_DB
@@ -48,6 +48,6 @@ spec:
               value: mongodb://{{ .Values.mongodb_host }}/events
           {{- end }}
             - name: WAIT_HOSTS
-              value: "{{ .Values.mongodb_host }}:27017,{{ .Values.influxdb.host }}:{{ .Values.influxdb.port }},{{ .Values.minio.host }}:{{ .Values.minio.port }},{{ .Values.elasticsearch_host }}"
+              value: "{{ .Values.mongodb_host }}:27017,{{ .Values.influxdb.host }}:{{ .Values.influxdb.port }},{{ .Values.minio.host }}:{{ .Values.minio.port }},{{ .Values.elasticsearch.host }}:{{ .Values.elasticsearch.port }}"
           {{- include "render-env-vars" (dict "service_name" "migration" "Values" .Values) }}
       restartPolicy: "OnFailure"

@@ -90,12 +90,6 @@ spec:
                   name: elasticsearch-opencrvs-users
                   key: ELASTIC_PASSWORD
           {{- end }}
-          {{- if .Values.elasticsearch.secrets }}
-            {{- include "render-secrets" (dict "service_name" "elasticsearch" "Values" .Values) }}
-          {{- end }}
-          {{- if .Values.elasticsearch.env }}
-            {{- include "render-env-vars" (dict "service_name" "elasticsearch" "Values" .Values) }}
-          {{- end }}
           {{- if or .Values.elasticsearch.secrets .Values.elasticsearch.env .Values.env }}
           {{- include "render-env-vars" (dict "service_name" "elasticsearch" "Values" .Values) }}
           {{- end }}
