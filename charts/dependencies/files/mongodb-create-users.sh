@@ -11,6 +11,9 @@
 # This file is run on each deployment with the sole purpose of updating
 # passwords of MongoDB users to passwords given to this service as environment varibles
 
+NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+HOST="mongodb-0.mongodb.${NAMESPACE}.svc.cluster.local"
+
 mongo_credentials() {
     if [ ! -z ${MONGODB_ADMIN_USER+x} ] || [ ! -z ${MONGODB_ADMIN_PASSWORD+x} ]; then
     echo "--username $MONGODB_ADMIN_USER --password $MONGODB_ADMIN_PASSWORD --authenticationDatabase admin";
@@ -20,13 +23,12 @@ mongo_credentials() {
 }
 
 # Wait for MongoDB to be ready
-
 MAX_RETRIES=12
 DELAY=10  # seconds
 ATTEMPT=1
 while [[ $ATTEMPT -le $MAX_RETRIES ]]; do
   echo "🔄 Attempt $ATTEMPT to connect..."
-  if mongo --host $HOST $(mongo_credentials) --eval 'db.runCommand({ connectionStatus: 1 })'; then
+  if mongo --host $HOST $(mongo_credentials) --quiet --eval 'db.runCommand({ connectionStatus: 1 })'; then
     echo "✅ Connection was initiated successfully."
     break
   elif [[ $ATTEMPT -eq $MAX_RETRIES ]]; then
@@ -39,11 +41,6 @@ while [[ $ATTEMPT -le $MAX_RETRIES ]]; do
   ((ATTEMPT++))
 done
 
-
-NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
-echo NAMESPACE:$NAMESPACE
-HOST="mongodb-0.mongodb.${NAMESPACE}.svc.cluster.local"
-echo "Database: $HOST"
 function checkIfUserExists {
     local user=$1
     local JSON="{\"user\": \"$user\"}"
@@ -52,9 +49,7 @@ function checkIfUserExists {
 }
 
 # Rotate passwords to match the ones given to this script or create new users
-echo "==============================================================="
-echo "Creating new users or updating passwords"
-echo "==============================================================="
+
 function update_credentials() {
 db=$1
 user=$2
@@ -64,7 +59,7 @@ if [ -z "$roles" ]
 then
   roles="[{ role: 'readWrite', db: '$db' }]"
 fi
-echo "db: $db, user: $user, password: $password, roles: $roles"
+echo "db: $db, user: $user, roles: $roles"
 
 user_exists=$(echo $(checkIfUserExists "$user"))
 if [[ $user_exists != "FOUND" ]]; then
@@ -89,8 +84,13 @@ EOF
 fi
 }
 
+echo """
+===============================================================
+Creating new users and updating passwords
+===============================================================
+"""
 PREFIXES=( $(env | grep -oP "[A-Z_]+_MONGODB_USER" | sed 's/_MONGODB_USER//' | sort) )
-echo "Prefixes: ${PREFIXES[@]}"
+echo "MongoDB Prefixes loaded from environment variables: ${PREFIXES[@]}"
 for prefix in ${PREFIXES[@]}
 do
   db_var=${prefix}_MONGODB_DB

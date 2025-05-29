@@ -42,7 +42,7 @@ spec:
           image: "ghcr.io/opencrvs/ocrvs-webhooks:{{ .Values.image.tag }}"
           env:
             - name: FHIR_URL
-              value: {{ .Values.fhir_url | quote }}
+              value: {{ .Values.fhir_url | quote | default "http://hearth:3447/fhir" }}
             - name: REDIS_HOST
               value: {{ .Values.redis_host | quote }}
             - name: QA_ENV

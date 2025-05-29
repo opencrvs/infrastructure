@@ -20,7 +20,7 @@ spec:
           name: metrics
           env:
             - name: FHIR_URL
-              value: {{ .Values.fhir_url | quote }}
+              value: {{ .Values.fhir_url | quote | default "http://hearth:3447/fhir" }}
             - name: METRICS_PORT  # Similar to PORT (Check if it's the same?)
               value: "1050"
             - name: CERT_PUBLIC_KEY_PATH

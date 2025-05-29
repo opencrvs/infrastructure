@@ -37,7 +37,7 @@ Helm chart to deploy all OpenCRVS services on Kubernetes cluster.
         </tr>
         <tr>
             <td>fhir_url</td>
-            <td>http://hearth.opencrvs-deps-dev.svc.cluster.local:3447/fhir</td>
+            <td>http://hearth:3447/fhir</td>
             <td>FHIR URL Endpoint. TODO: Add description for FHIR URL configuration.</td>
         </tr>
         <tr>
@@ -140,6 +140,17 @@ Helm chart to deploy all OpenCRVS services on Kubernetes cluster.
             <td>{}</td>
             <td>CPU limits defined per POD</td>
         </tr>
+        <tr>
+            <td>dashboards.use_default_credentials</td>
+            <td>true</td>
+            <td>Use default OpenCRVS password or generate random</td>
+        </tr>
+        <tr>
+            <td>dashboards.admin_email</td>
+            <td>user@opencrvs.org</td>
+            <td>Use default OpenCRVS login/password or generate random values</td>
+        </tr>
+        
     </tbody>
 </table>
 

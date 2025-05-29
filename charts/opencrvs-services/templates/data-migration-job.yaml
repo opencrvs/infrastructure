@@ -19,8 +19,10 @@ spec:
         - name: migration
           image: "ghcr.io/opencrvs/ocrvs-migration:{{ .Values.image.tag }}"
           env:
+          {{- if .Values.elasticsearch.noauth }}
             - name: ES_HOST
               value: "{{ .Values.elasticsearch.host }}:{{ .Values.elasticsearch.port }}"
+          {{- end }}
             - name: SEARCH_URL
               value: http://search.{{ .Release.Namespace }}.svc.cluster.local:9090/
             - name: INFLUX_DB

@@ -19,6 +19,7 @@ spec:
       port: {{ .Values.dashboards.port }}
     middlewares:
       - name: sts-and-basic-response-headers
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -45,6 +46,18 @@ spec:
               value: "http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040/content/map.geojson"
             - name: OPENCRVS_METABASE_DB_HOST
               value: {{ .Values.mongodb_host | quote }}
+            - name: OPENCRVS_METABASE_ADMIN_EMAIL
+              value: {{ .Values.dashboards.admin_email | quote | default "user@opencrvs.org" }}
+          {{- if .Values.dashboards.use_default_credentials }}
+            - name: OPENCRVS_METABASE_ADMIN_PASSWORD
+              value: m3tabase
+          {{- else }}
+            - name: OPENCRVS_METABASE_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dashboards-admin-user
+                  key: OPENCRVS_METABASE_ADMIN_PASSWORD
+          {{- end }}
           {{- include "render-env-vars" (dict "service_name" "dashboards" "Values" .Values) }}
           {{ include "resources-helper" (dict "service_name" "dashboards" "Values" .Values) | indent 10 }}
           ports:

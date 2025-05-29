@@ -65,8 +65,10 @@ spec:
                 curl -sS -XDELETE http://$ELASTICSEARCH_HOST/$index
               done
           env:
+          {{- if .Values.elasticsearch.noauth }}
             - name: ELASTICSEARCH_HOST
               value: "{{ .Values.elasticsearch.host }}:{{ .Values.elasticsearch.port }}"
+          {{- end }}
           {{- include "render-env-vars" (dict "service_name" "data_cleanup" "Values" .Values) }}
         - name: cleanup-influxdb
           image: "appropriate/curl"
