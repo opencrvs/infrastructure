@@ -64,6 +64,7 @@ mongodb:
       roles: "[{ role: 'readWrite', db: 'events' }, {role: 'read', db: 'user-mgnt'}]"
 
 
+# Elasticsearch Configuration
 elasticsearch:
   # Enable Elasticsearch deployment.
   enabled: true
