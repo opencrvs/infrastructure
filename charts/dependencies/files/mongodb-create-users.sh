@@ -18,6 +18,28 @@ mongo_credentials() {
     echo "";
     fi
 }
+
+# Wait for MongoDB to be ready
+
+MAX_RETRIES=12
+DELAY=10  # seconds
+ATTEMPT=1
+while [[ $ATTEMPT -le $MAX_RETRIES ]]; do
+  echo "🔄 Attempt $ATTEMPT to connect..."
+  if mongo --host $HOST $(mongo_credentials) --eval 'db.runCommand({ connectionStatus: 1 })'; then
+    echo "✅ Connection was initiated successfully."
+    break
+  elif [[ $ATTEMPT -eq $MAX_RETRIES ]]; then
+    echo "❌ Failed to initiate connection after $MAX_RETRIES attempts."
+    exit 1
+  fi
+
+  echo "⏳ Failed to initiate connection. Retrying in $DELAY seconds..."
+  sleep $DELAY
+  ((ATTEMPT++))
+done
+
+
 NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
 echo NAMESPACE:$NAMESPACE
 HOST="mongodb-0.mongodb.${NAMESPACE}.svc.cluster.local"

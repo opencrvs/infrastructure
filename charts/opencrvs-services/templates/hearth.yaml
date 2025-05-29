@@ -43,8 +43,8 @@ spec:
               value: warn
             - name: mongodb__url
           # FIXME: If you use external mongodb, please update this part to reference correct secret
-          {{- if .Values.mongodb.use_default_credentials }}
-              value: mongodb://mongodb.{{ .Release.Namespace }}.svc.cluster.local/hearth-dev
+          {{- if .Values.mongodb_noauth }}
+              value: mongodb://{{ .Values.mongodb_host }}/hearth-dev
           {{- else }}
               valueFrom:
                 secretKeyRef:

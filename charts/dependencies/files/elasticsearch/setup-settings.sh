@@ -19,5 +19,6 @@ echo "-------- $(date) --------"
 log 'Waiting for availability of Elasticsearch'
 wait_for_elasticsearch
 
-log "Updating replicas for Elasticsearch"
-ensure_settings "{\"index\":{\"number_of_replicas\":0}}"
+# FIXME: Temporarily disabled, since it is not needed for the current setup.
+# log "Updating replicas for Elasticsearch"
+# ensure_settings "{\"index\":{\"number_of_replicas\":0}}"

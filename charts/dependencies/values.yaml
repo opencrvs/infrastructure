@@ -125,6 +125,3 @@ redis:
 
 influxdb:
   enabled: true
-
-hearth:
-  enabled: true

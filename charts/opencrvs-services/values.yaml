@@ -71,6 +71,9 @@ resources:
   memoryLimit: "1Gi"
   cpuLimit: "500m"
 
+hearth:
+  enabled: true
+
 # Global environment variables applied to
 # all OpenCRVS microservices (Kubernetes PODs):
 env:
