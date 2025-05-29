@@ -40,9 +40,10 @@ mongodb_noauth: false
 elasticsearch:
   credentials:
     secret: elasticsearch-opencrvs-users
-# OpenCRVS core image tag:
+
 image:
   tag: develop
+
 config:
   secrets:
     mongodb-urls:

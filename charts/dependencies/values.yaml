@@ -127,5 +127,3 @@ influxdb:
 
 hearth:
   enabled: true
-
-
