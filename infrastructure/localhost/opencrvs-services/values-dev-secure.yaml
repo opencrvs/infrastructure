@@ -37,6 +37,9 @@ env:
 # In secure configuration each container should be authorized separately
 mongodb_noauth: false
   
+elasticsearch:
+  credentials:
+    secret: elasticsearch-opencrvs-users
 # OpenCRVS core image tag:
 image:
   tag: develop

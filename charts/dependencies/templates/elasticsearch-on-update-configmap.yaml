@@ -1,0 +1,13 @@
+{{- if not .Values.elasticsearch.use_default_credentials }}
+apiVersion: v1
+data:
+{{- range $path, $file := .Files.Glob "files/elasticsearch/*" }}
+    {{ base $path }}: |
+{{ toString $file | indent 8 }}
+{{- end }}
+kind: ConfigMap
+metadata:
+  labels:
+    app: elasticsearch
+  name: elasticsearch-on-update-script
+{{- end }}

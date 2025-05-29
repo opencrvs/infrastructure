@@ -1,14 +1,37 @@
 
+hostname: farajaland.dev
+
+# Access to Dependencies like MinIO is done via Traefik IngressRoutes
+ingress:
+  # Enable SSL for IngressRoutes.
+  ssl_enabled: true
+
 # FIXME: Tiltfile deploys helm chart as template. There is no way to track existing secrets on the cluster.
 # This flag was introduced to avoid secrets update (mutation) on every file change within chart directory.
 # For OpenCRVS developers there is no need to deploy dependencies helm chart as template.
 chart_dev_mode: true
 
 mongodb:
+  # Enable MongoDB deployment.
   enabled: true
+  # MongoDB docker image version to use: https://hub.docker.com/_/mongo
   version: 4.4
+  # By default MongoDB is deployed without authentication enabled.
   use_default_credentials: true
+  # MongoDB databases and users to create, if `use_default_credentials` is set to `false`.
   databases:
+    # prefix: <PLACEHOLDER> to generate variable names:
+    # - <PLACEHOLDER>_DB, database name from `db` field
+    # - <PLACEHOLDER>_MONGODB_USER, user name from `user` field
+    # - <PLACEHOLDER>_MONGODB_PASSWORD, random password for user
+    # - <PLACEHOLDER>_MONGODB_ROLES, roles for user in JSON format
+    # db: Name of MongoDB database to create.
+    # user: Name of MongoDB user to create and attach to database.
+    # roles: JSON string with roles to assign to user.
+    #        If not provided, then user is created with `readWrite` role on the database.
+    #        If roles are provided, please add explicitly `readWrite` role for the database.
+    #        For example:
+    #        [{ role: 'readWrite', db: 'hearth' }, ...]
     - prefix: USER_MGNT
       db: user-mgnt
       user: user-mgnt
@@ -39,9 +62,65 @@ mongodb:
       db: events
       user: events
       roles: "[{ role: 'readWrite', db: 'events' }, {role: 'read', db: 'user-mgnt'}]"
-minio:
+
+
+elasticsearch:
+  # Enable Elasticsearch deployment.
   enabled: true
+  # By default Elasticsearch is deployed without authentication enabled.
   use_default_credentials: true
+  # List of users to create and grant authorization to Elasticsearch.
+  # Column separated pair of placeholder and user name, <PLACEHOLDER>:<USERNAME>
+  # Placeholders are converted to variables:
+  # - <PLACEHOLDER>_ELASTIC_USERNAME
+  # - <PLACEHOLDER>_ELASTIC_PASSWORD
+  # If <USERNAME> is not provided, then random username is generated.
+  # Password is always generated randomly.
+  # Values are stored in secret named `elasticsearch-opencrvs-users`.
+  auth_users:
+    - SEARCH
+    - KIBANA_USER
+    - KIBANA_SYSTEM:kibana_system
+    - METRICBEAT:beats_system
+    - APM:apm_system
+
+minio:
+  # Enable MinIO deployment.
+  enabled: true
+  # minio defaults to minioadmin and minioadmin as the access key and secret key respectively.
+  # MinIO strongly discourages use of the default credentials regardless of deployment environment.
+  # Check official documentation for more details:
+  # https://min.io/docs/minio/linux/administration/identity-access-management/minio-user-management.html
+  use_default_credentials: true
+  # If set to `false`, then MinIO will be deployed with authentication enabled.
+  # Secret with random credentials will be created with name `minio-opencrvs-users`.
+  # Secret will contain following variables:
+  # - MINIO_ACCESS_KEY
+  # - MINIO_SECRET_KEY
+  # - MINIO_ROOT_USER, same as MINIO_ACCESS_KEY
+  # - MINIO_ROOT_PASSWORD, same as MINIO_SECRET_KEY
+
+redis:
+  # Enable Redis deployment.
+  # Redis is built on top of bitnami/redis docker image:
+  # https://hub.docker.com/r/bitnami/redis
+  enabled: true
+  # By default Redis is deployed without authentication enabled.
+  # auth_mode:
+  #   - disabled: no authentication
+  #   - password: use password authentication
+  #   - acl: use ACL authentication
+  auth_mode: disabled
+  # List of placeholders for OpenCRVS users:
+  # Each placeholder is converted to a variables:
+  # - <PLACEHOLDER>_REDIS_USERNAME
+  # - <PLACEHOLDER>_REDIS_PASSWORD
+  # Variables are store in secret named redis-opencrvs-users
+  auth_users:
+    - GATEWAY
+    - WORKFLOW
+    - AUTH
+    - WEBHOOKS
 
 influxdb:
   enabled: true
@@ -49,21 +128,4 @@ influxdb:
 hearth:
   enabled: true
 
-redis:
-  enabled: true
-  auth_mode: disabled
-  # List of placeholders for OpenCRVS "users":
-  auth_users:
-    - GATEWAY
-    - WORKFLOW
-    - AUTH
-    - WEBHOOKS
 
-elasticsearch:
-  enabled: true
-  use_default_credentials: true
-
-hostname: farajaland.dev
-
-ingress:
-  ssl_enabled: true
