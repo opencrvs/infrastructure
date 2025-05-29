@@ -1,0 +1,71 @@
+{{- if not .Values.elasticsearch.use_default_credentials }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "0"
+  labels:
+    app: elasticsearch-on-deploy
+  name: elasticsearch-on-deploy
+spec:
+  template:
+    metadata:
+      labels:
+        app: elasticsearch-on-deploy
+    spec:
+      containers:
+        - name: elasticsearch-on-deploy
+          command: ["/scripts/setup.sh"]
+          image: "bash"
+          env:
+            - name: ELASTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-opencrvs-users
+                  key: ELASTIC_PASSWORD
+            - name: KIBANA_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-opencrvs-users
+                  key: KIBANA_USER_ELASTIC_USERNAME
+            - name: KIBANA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-opencrvs-users
+                  key: KIBANA_USER_ELASTIC_PASSWORD
+            - name: SEARCH_ELASTIC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-opencrvs-users
+                  key: SEARCH_ELASTIC_USERNAME
+            - name: SEARCH_ELASTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-opencrvs-users
+                  key: SEARCH_ELASTIC_PASSWORD
+            - name: METRICBEAT_ELASTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-opencrvs-users
+                  key: METRICBEAT_ELASTIC_PASSWORD
+            - name: APM_ELASTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-opencrvs-users
+                  key: APM_ELASTIC_PASSWORD
+            - name: KIBANA_SYSTEM_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-opencrvs-users
+                  key: KIBANA_SYSTEM_ELASTIC_PASSWORD
+          volumeMounts:
+            - mountPath: /scripts
+              name: elasticsearch-on-update-script
+      volumes:
+        - name: elasticsearch-on-update-script
+          configMap:
+            name: elasticsearch-on-update-script
+            defaultMode: 0755
+      restartPolicy: "OnFailure"
+{{- end }}
