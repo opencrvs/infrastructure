@@ -60,8 +60,9 @@ dependencies = [
   'minio', 
   'influxdb', 
   'redis',
-  'elasticsearch-on-deploy',
-  'mongo-on-deploy',
+  # FIXME: both resources are present only if security is enabled
+  # 'elasticsearch-on-deploy',
+  # 'mongo-on-deploy',
 ]
 
 for workload in dependencies:
