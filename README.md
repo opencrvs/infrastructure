@@ -76,7 +76,7 @@ Additional settings for linux (Ubuntu) users:
     ```
   - Start minikube with unlimited amount of memory:
     ```
-    minikube start --memory=no-limits
+    minikube start --memory=max
     ```
   - Start load balancer (tunnel) on localhost:
     ```
