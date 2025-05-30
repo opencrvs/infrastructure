@@ -27,6 +27,7 @@ traefik_deps = [
   'config',
   'client',
   'countryconfig',
+  'dashboards',
   'events',
   'gateway',
   'login',
@@ -55,11 +56,12 @@ k8s_resource(
 tilt_label = '3.Dependencies'
 dependencies = [
   'elasticsearch',
-  'hearth',
   'mongodb',
   'minio', 
   'influxdb', 
   'redis',
+  'elasticsearch-on-deploy',
+  'mongo-on-deploy',
 ]
 
 for workload in dependencies:
@@ -78,6 +80,7 @@ opensrvs_services = [
   'documents', 
   'events',
   'gateway',
+  'hearth',
   'login',
   'metrics', 
   'data-migration', 

@@ -1,3 +1,4 @@
+chart_dev_mode: true
 # All OpenCRVS services will be available under domain:
 hostname: opencrvs.localhost
 

@@ -51,7 +51,7 @@ spec:
             - name: HOST
               value: "0.0.0.0"
             - name: FHIR_URL
-              value: {{ .Values.fhir_url | quote }}
+              value: {{ .Values.fhir_url | quote | default "http://hearth:3447/fhir" }}
             - name: REDIS_HOST
               value: {{ .Values.redis_host | quote }}
             - name: CLIENT_APP_URL

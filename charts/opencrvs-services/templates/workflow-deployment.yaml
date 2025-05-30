@@ -20,7 +20,7 @@ spec:
           image: "ghcr.io/opencrvs/ocrvs-workflow:{{ .Values.image.tag }}"
           env:
             - name: FHIR_URL
-              value: {{ .Values.fhir_url | quote }}
+              value: {{ .Values.fhir_url | quote | default "http://hearth:3447/fhir" }}
             - name: APPLICATION_CONFIG_URL
               value: http://config.{{ .Release.Namespace }}.svc.cluster.local:2021
             - name: CERT_PUBLIC_KEY_PATH

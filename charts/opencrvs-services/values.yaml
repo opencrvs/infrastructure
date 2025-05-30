@@ -1,3 +1,4 @@
+chart_dev_mode: false
 # NOTES:
 # Liveness and readiness probes defaults are here:
 # We are good to go with defaults for now
@@ -16,6 +17,7 @@
 elasticsearch:
   host: elasticsearch.opencrvs-deps-dev.svc.cluster.local
   port: 9200
+  noauth: true
 # InfluxDB configuration, including the hostname, port, and database name.
 influxdb:
   host: influxdb-0.influxdb.opencrvs-deps-dev.svc.cluster.local
@@ -23,7 +25,7 @@ influxdb:
   db: ocrvs
 
 # FHIR URL Endpoint.
-fhir_url: http://hearth.opencrvs-deps-dev.svc.cluster.local:3447/fhir
+fhir_url: http://hearth.opencrvs-dev.svc.cluster.local:3447/fhir
 
 # MinIO configuration, including the hostname and port.
 minio:
@@ -144,28 +146,23 @@ countryconfig:
     SMTP_SECURE: "false"
     SMTP_USERNAME: apikey
 dashboards:
+  use_default_credentials: true
   replicas: 1
   port: 4444
   hpa:
     minReplicas: 1
     maxReplicas: 1
   env:
-    OPENCRVS_METABASE_ADMIN_EMAIL: ""
-    OPENCRVS_METABASE_ADMIN_PASSWORD: ""
-    OPENCRVS_METABASE_DB_AUTH_DB: ""
-    OPENCRVS_METABASE_DB_PASS: ""
-    OPENCRVS_METABASE_DB_USER: ""
     OPENCRVS_METABASE_MAP_NAME: Full country
     OPENCRVS_METABASE_MAP_REGION_KEY: State
     OPENCRVS_METABASE_MAP_REGION_NAME: State
     OPENCRVS_METABASE_SITE_NAME: OpenCRVS Dashboards
-    OPENCRVS_METABASE_ADMIN_EMAIL: user@opencrvs.org
-    OPENCRVS_METABASE_ADMIN_PASSWORD: m3tabase
+  # For stable work we need at least 4Gi of memory (check metabase logs at startup)
   resources:
-    memoryRequest: "1Gi"
+    memoryRequest: "2Gi"
     cpuRequest: "250m"
-    memoryLimit: "1Gi"
-    cpuLimit: "500m"
+    memoryLimit: "2Gi"
+    cpuLimit: "2"
 
 data_seeder:
   enabled: false

@@ -1,3 +1,4 @@
+chart_dev_mode: true
 # All OpenCRVS services will be available under domain:
 hostname: opencrvs.localhost
 
@@ -38,8 +39,7 @@ env:
 mongodb_noauth: false
   
 elasticsearch:
-  credentials:
-    secret: elasticsearch-opencrvs-users
+  noauth: false
 
 image:
   tag: develop
@@ -71,6 +71,8 @@ gateway:
       - GATEWAY_REDIS_USERNAME:REDIS_USERNAME
 events:
   secrets:
+    elasticsearch-opencrvs-urls:
+      - SEARCH_ELASTIC_URL:ES_URL
     mongodb-urls:
       - USER_MGNT_MONGO_URL
       - EVENTS_MONGO_URL
@@ -79,10 +81,21 @@ notification:
   secrets:
     mongodb-urls:
       - NOTIFICATION_MONGO_URL:MONGO_URL
+
+dashboards:
+  use_default_credentials: false
+  secrets:
+    mongo-opencrvs-users:
+      - PERFORMANCE_MONGODB_USER:OPENCRVS_METABASE_DB_USER
+      - PERFORMANCE_MONGODB_DB:OPENCRVS_METABASE_DB_AUTH_DB
+      - PERFORMANCE_MONGODB_PASSWORD:OPENCRVS_METABASE_DB_PASS
+
 search:
   secrets:
     mongodb-urls:
       - HEARTH_MONGO_URL
+    elasticsearch-opencrvs-urls:
+      - SEARCH_ELASTIC_HOST:ES_HOST
 countryconfig:
   image:
     # Replace countryconfig with farajaland to test data
@@ -106,7 +119,11 @@ metrics:
       - HEARTH_MONGO_URL
       - METRICS_MONGO_URL:MONGO_URL
 migration:
+  # env:
+    # ES_HOST: "elasticsearch-0.elasticsearch.opencrvs.svc.cluster.local:9200"
   secrets:
+    elasticsearch-opencrvs-urls:
+      - SEARCH_ELASTIC_HOST:ES_HOST
     minio-opencrvs-users:
       - MINIO_ACCESS_KEY
       - MINIO_SECRET_KEY
@@ -119,7 +136,10 @@ migration:
       - METRICS_MONGO_URL:DASHBOARD_MONGO_URL
       - EVENTS_MONGO_URL
 data_cleanup:
+
   secrets:
+    elasticsearch-opencrvs-urls:
+      - SEARCH_ELASTIC_HOST:ELASTICSEARCH_HOST
     minio-opencrvs-users:
       - MINIO_ROOT_USER
       - MINIO_ROOT_PASSWORD
@@ -148,3 +168,8 @@ workflow:
     redis-opencrvs-users:
       - WORKFLOW_REDIS_PASSWORD:REDIS_PASSWORD
       - WORKFLOW_REDIS_USERNAME:REDIS_USERNAME
+
+hearth:
+  secrets:
+    mongodb-urls:
+      - HEARTH_MONGO_URL:mongodb__url
