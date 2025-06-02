@@ -25,10 +25,12 @@ IMAGES=(
     opencrvs/ocrvs-documents
 )
 
+printf "\n%-30s %-12s %-16s %-11s %-15s %-15s %-10s\n" \
+    "Image" "Prev Tag" "Prev Size (MB)" "Curr. Tag" "Curr. Size (MB)" "Diff. (MB)" "State"
 for image in "${IMAGES[@]}";
 do
-    SIZE1=$(skopeo inspect docker://docker.io/${image}:${PREV_TAG} -n | jq '[.LayersData[].Size] | add / 1024 / 1024 | floor') || { SIZE1=0; echo "Not found"; continue; }
-    SIZE2=$(skopeo inspect docker://docker.io/${image}:${CURRENT_TAG} -n | jq '[.LayersData[].Size] | add / 1024 / 1024 | floor') || {SIZE2=0; echo "Not found"; continue; }
+    SIZE1=$(skopeo inspect docker://docker.io/${image}:${PREV_TAG} -n | jq '[.LayersData[].Size] | add / 1024 / 1024 | floor') || (SIZE1=0; echo "Not found"; continue;)
+    SIZE2=$(skopeo inspect docker://docker.io/${image}:${CURRENT_TAG} -n | jq '[.LayersData[].Size] | add / 1024 / 1024 | floor') || (SIZE2=0; echo "Not found"; continue;)
     
     DIFF=$(( SIZE2 - SIZE1 ))
     if [ $DIFF -lt 0 ]; then
@@ -45,5 +47,6 @@ do
         fi
     fi
 
-    echo "$DIFF_SIGN Comparing ${image}:  ${SIZE2}MB (${CURRENT_TAG}) - ${SIZE1}MB (${PREV_TAG}) = ${DIFF}MB"
+    printf "%-30s %-12s %-16s %-11s %-15s %+15d %-10s\n" \
+        "$image" "$PREV_TAG" "$SIZE1" "$CURRENT_TAG" "$SIZE2" "$DIFF" "$DIFF_SIGN"
 done
