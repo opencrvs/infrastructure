@@ -34,4 +34,5 @@ jobs:
             --namespace "opencrvs-deps-${ENV}" \
             -f infrastructure/${ENV}/dependencies/values.yaml \
             --create-namespace \
+            --atomic \
             --set environment="$ENV"
