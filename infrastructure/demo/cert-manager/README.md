@@ -1,3 +1,9 @@
+# Prerequisites
+Create API Token in Cloudflare
+
+Update `cloudflare-api-token.yaml` with your Cloudflare API token and zone ID.
+# Install cert-manager
+
  helm install \
    cert-manager jetstack/cert-manager \
    --namespace cert-manager \

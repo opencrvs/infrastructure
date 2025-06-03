@@ -1,7 +1,13 @@
 hostname: aws.opencrvs.dev
 
+redis:
+  auth_mode: acl
+
 minio:
   use_default_credentials: false
 
-redis:
-  auth_mode: acl
+elasticsearch:
+  use_default_credentials: false
+
+mongodb:
+  use_default_credentials: false
