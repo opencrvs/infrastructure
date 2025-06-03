@@ -1,9 +1,8 @@
 
 # 🚧 Work in Progress
 
-> [!NOTE]
-> # 🚧 Work in Progress
-> All scripts within this repository are relevant to OpenCRVS version 1.8.0
+> NOTE:
+> All scripts within this repository are relevant to OpenCRVS version 1.8.0 and higher.
 
 Please note that not all features from the Docker Swarm solution are supported yet and not all pipelines are implemented
 
@@ -11,7 +10,13 @@ Please note that not all features from the Docker Swarm solution are supported y
 
 # General Information
 
-Guidelines to run OpenCRVS as 
+This document provides guidance on running OpenCRVS both locally (on your PC or laptop) and on server environments using Kubernetes. It is intended for developers contributing to OpenCRVS, DevOps engineers deploying OpenCRVS in various environments, and anyone interested in installing, running, or testing OpenCRVS features.
+
+
+
+# Quick Start
+
+> 🚧 Work in Progress: Qucki start
 
 ---
 
@@ -302,7 +307,7 @@ If you see following issue on server environments sync secrets manually and dele
 
 ---
 
-# Running OpenCRVS on Kubernetes
+# Production deployment
 
  > [!NOTE]
  > 🚧 Work in Progress
@@ -315,17 +320,35 @@ Ensure your cluster has a storage class with encryption, or encryption is implem
 
 - **For existing OpenCRVS installations:**
   Make sure the cluster has at least the `hostpath` storage class configured and directories on the filesystem should point to encrypted partitions.
-  `hostpath` is the best option for migration from Docker Swarm to Kubernetes; it allows data to remain untouched. Data can be migrated to more robust storage later, such as `local` or `nfs` volumes after OpenCRVS migration to Kubernetes.
+  `hostpath` is also the best option for migration from Docker Swarm to Kubernetes for On-Premise Deployment. Data can be migrated to more robust storage later.
 
 - **For new installations:**
-  - Please check the available storage options in the official documentation: [Kubernetes Volumes Documentation](https://kubernetes.io/docs/concepts/storage/volumes/) and [Kubernetes Storage Classes Documentation](https://kubernetes.io/docs/concepts/storage/storage-classes/#provisioner).
-  - The recommended storage class for new installations is NFS.
+  - For Cloud Deployment please check your cloud provider documentation for available storage options. Usually all cloud providers have block and object storage available. E/g. AWS EBS, Azure Disk, Google Persistent Disk.
+  - For On-Premise Deployment please check your hardware and software requirements. If you have a SAN or NAS storage available, you can use it as a persistent volume for OpenCRVS. The recommended storage class for new installations is [Kubernetes NFS Subdir External Provisioner](https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner)
 
-Additionally, explore all possible options for CSI (Container Storage Interface) at the [CSI GitHub repository](https://github.com/kubernetes-csi/).
+Additional documentation and resources:
+- Container Storage Interface (CSI) at the [CSI GitHub repository](https://github.com/kubernetes-csi/).
+- Official documentation at [Kubernetes Volumes Documentation](https://kubernetes.io/docs/concepts/storage/volumes/)
+- [Kubernetes Storage Classes Documentation](https://kubernetes.io/docs/concepts/storage/storage-classes/#provisioner).
 
-**NOTE:** Depending on your available hardware resources, you may optimize the installation by splitting data across different types of volumes. For example:
-- `Hostpath` works better for Elasticsearch.
-- `NFS` is the best option for MinIO and Mongo (or Postgres).
+**NOTE:** Depending on your available hardware resources, you may optimize the installation by selecting appropriate storage classes for different data types. For example:
+
+- **Block storage** (such as `hostPath`, AWS EBS, or Azure Disk) is ideal for databases like Elasticsearch, MongoDB, and Postgres. Block storage provides high performance, low latency, and strong data consistency, making it suitable for workloads that require frequent read/write operations and durability.
+- **NFS (Network File System)** is a network-based storage solution that exposes file shares over the network. While NFS is often used for shared persistent volumes in Kubernetes, it is not true block storage. NFS is easy to set up and works well for sharing files between pods, but it can introduce performance bottlenecks, higher latency, and potential data consistency issues under heavy concurrent access. NFS is generally not recommended for high-performance databases, but can be suitable for shared file storage, logs, or application data that does not require strict consistency.
+- **Object storage** (such as AWS S3, Azure Blob Storage, or MinIO) is better suited for storing unstructured data, backups, and large files. Object storage offers scalability and cost-effectiveness, but typically has higher latency and is not suitable for database persistent volumes.
+
+**Example:**  
+- Use a block storage class (e.g., `hostPath` or `local-path`) for your database persistent volumes to ensure fast and reliable access.
+- Use NFS for shared application data, logs, or files that need to be accessed by multiple pods, but avoid using it for database storage.
+- Use an object storage class (e.g., MinIO or S3) for storing user-uploaded files, backups, or exported reports, where scalability and accessibility are more important than low-latency access.
+
+**Comparison Table:**
+
+| Storage Type   | Use Case                        | Performance | Scalability | Data Consistency | Example StorageClass      |
+|----------------|---------------------------------|-------------|-------------|------------------|--------------------------|
+| Block Storage  | Databases                       | High        | Moderate    | Strong           | hostPath, EBS, local-path|
+| NFS            | Shared files, logs, app data    | Moderate    | High        | Moderate         | nfs-subdir   |
+| Object Storage | Backups, file storage           | Moderate    | High        | Eventual         | MinIO, S3                |
 
 ---
 ### Cert-manager

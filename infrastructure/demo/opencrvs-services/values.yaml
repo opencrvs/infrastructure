@@ -28,7 +28,11 @@ config:
     mongodb-urls:
       - HEARTH_MONGO_URL
       - CONFIG_MONGO_URL:MONGO_URL
-
+  resources:
+    memoryRequest: "2Gi"
+    cpuRequest: "300m"
+    memoryLimit: "2Gi"
+    cpuLimit: "2"
 documents:
   secrets:
     minio-opencrvs-users:
