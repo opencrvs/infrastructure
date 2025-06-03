@@ -49,6 +49,7 @@ config:
     mongodb-urls:
       - HEARTH_MONGO_URL
       - CONFIG_MONGO_URL:MONGO_URL
+
 documents:
   secrets:
     minio-opencrvs-users:
@@ -119,8 +120,6 @@ metrics:
       - HEARTH_MONGO_URL
       - METRICS_MONGO_URL:MONGO_URL
 migration:
-  # env:
-    # ES_HOST: "elasticsearch-0.elasticsearch.opencrvs.svc.cluster.local:9200"
   secrets:
     elasticsearch-opencrvs-urls:
       - SEARCH_ELASTIC_HOST:ES_HOST
@@ -135,6 +134,7 @@ migration:
       - OPENHIM_MONGO_URL
       - METRICS_MONGO_URL:DASHBOARD_MONGO_URL
       - EVENTS_MONGO_URL
+
 data_cleanup:
 
   secrets:
@@ -163,6 +163,7 @@ webhooks:
       - WEBHOOKS_REDIS_USERNAME:REDIS_USERNAME
     mongodb-urls:
       - WEBHOOKS_MONGO_URL:MONGO_URL
+
 workflow:
   secrets:
     redis-opencrvs-users:

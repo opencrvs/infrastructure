@@ -1,4 +1,3 @@
-elasticsearch_host: elasticsearch.opencrvs-deps-demo.svc.cluster.local:9200
 influxdb:
   host: influxdb-0.influxdb.opencrvs-deps-demo.svc.cluster.local
 fhir_url: http://hearth.opencrvs-deps-demo.svc.cluster.local:3447/fhir
@@ -15,16 +14,20 @@ resources:
   cpuLimit: "2"
 
 hostname: aws.opencrvs.dev
-
+mongodb_noauth: false
+  
+elasticsearch:
+  noauth: false
+  port: 9200
+  host: elasticsearch.opencrvs-deps-demo.svc.cluster.local
 image:
   tag: develop
 
-countryconfig:
-  image:
-    # Replace countryconfig with farajaland to test data
-    name: opencrvs/ocrvs-farajaland
-    # name: opencrvs/ocrvs-countryconfig
-    tag: develop
+config:
+  secrets:
+    mongodb-urls:
+      - HEARTH_MONGO_URL
+      - CONFIG_MONGO_URL:MONGO_URL
 
 documents:
   secrets:
@@ -37,39 +40,116 @@ auth:
     redis-opencrvs-users:
       - AUTH_REDIS_PASSWORD:REDIS_PASSWORD
       - AUTH_REDIS_USERNAME:REDIS_USERNAME
+user_mgnt:
+  secrets:
+    mongodb-urls:
+      - USER_MGNT_MONGO_URL:MONGO_URL
 gateway:
   secrets:
     redis-opencrvs-users:
       - GATEWAY_REDIS_PASSWORD:REDIS_PASSWORD
       - GATEWAY_REDIS_USERNAME:REDIS_USERNAME
-  # # Uncomment this section to add authentication for MinIO:
-  #   minio-opencrvs-users:
-  #   # TODO: Check if it is needed
-  #   - MINIO_BUCKET
+events:
+  secrets:
+    elasticsearch-opencrvs-urls:
+      - SEARCH_ELASTIC_URL:ES_URL
+    mongodb-urls:
+      - USER_MGNT_MONGO_URL
+      - EVENTS_MONGO_URL
+      - EVENTS_MONGO_URL:MONGO_URL
+notification:
+  secrets:
+    mongodb-urls:
+      - NOTIFICATION_MONGO_URL:MONGO_URL
 
+dashboards:
+  use_default_credentials: false
+  secrets:
+    mongo-opencrvs-users:
+      - PERFORMANCE_MONGODB_USER:OPENCRVS_METABASE_DB_USER
+      - PERFORMANCE_MONGODB_DB:OPENCRVS_METABASE_DB_AUTH_DB
+      - PERFORMANCE_MONGODB_PASSWORD:OPENCRVS_METABASE_DB_PASS
+
+search:
+  secrets:
+    mongodb-urls:
+      - HEARTH_MONGO_URL
+    elasticsearch-opencrvs-urls:
+      - SEARCH_ELASTIC_HOST:ES_HOST
+countryconfig:
+  image:
+    # Replace countryconfig with farajaland to test data
+    # name: opencrvs/ocrvs-farajaland
+    name: opencrvs/ocrvs-countryconfig
+    # tag: develop
+    # tag: ec53c12
+    tag: develop
+  secrets:
+    mongodb-urls:
+      - CONFIG_MONGO_URL
+      - USER_MGNT_MONGO_URL:MONGO_URL
+scheduler:
+  secrets:
+    mongodb-urls:
+      - OPENHIM_MONGO_URL
+metrics:
+  secrets:
+    mongodb-urls:
+      - METRICS_MONGO_URL:DASHBOARD_MONGO_URL
+      - HEARTH_MONGO_URL
+      - METRICS_MONGO_URL:MONGO_URL
 migration:
   secrets:
-# Uncomment this section to add authentication for MinIO:
+    elasticsearch-opencrvs-urls:
+      - SEARCH_ELASTIC_HOST:ES_HOST
     minio-opencrvs-users:
       - MINIO_ACCESS_KEY
       - MINIO_SECRET_KEY
+    mongodb-urls:
+      - CONFIG_MONGO_URL:APPLICATION_CONFIG_MONGO_URL
+      - USER_MGNT_MONGO_URL
+      - PERFORMANCE_MONGO_URL
+      - HEARTH_MONGO_URL
+      - OPENHIM_MONGO_URL
+      - METRICS_MONGO_URL:DASHBOARD_MONGO_URL
+      - EVENTS_MONGO_URL
+
 data_cleanup:
+
+  secrets:
+    elasticsearch-opencrvs-urls:
+      - SEARCH_ELASTIC_HOST:ELASTICSEARCH_HOST
+    minio-opencrvs-users:
+      - MINIO_ROOT_USER
+      - MINIO_ROOT_PASSWORD
+    mongodb-admin-user:
+      - MONGODB_ADMIN_USER
+      - MONGODB_ADMIN_PASSWORD
+data_seed:
+  env:
+    SUPER_USER_PASSWORD: "password"
+    ACTIVATE_USERS: "true"
   secrets:
     minio-opencrvs-users:
       - MINIO_ROOT_USER
       - MINIO_ROOT_PASSWORD
 
-data_seeder:
-  # Change to true to enable data seeder
-  enabled: true
+
 webhooks:
   secrets:
     redis-opencrvs-users:
       - WEBHOOKS_REDIS_PASSWORD:REDIS_PASSWORD
       - WEBHOOKS_REDIS_USERNAME:REDIS_USERNAME
+    mongodb-urls:
+      - WEBHOOKS_MONGO_URL:MONGO_URL
 
 workflow:
   secrets:
     redis-opencrvs-users:
       - WORKFLOW_REDIS_PASSWORD:REDIS_PASSWORD
       - WORKFLOW_REDIS_USERNAME:REDIS_USERNAME
+
+hearth:
+  secrets:
+    mongodb-urls:
+      - HEARTH_MONGO_URL:mongodb__url
