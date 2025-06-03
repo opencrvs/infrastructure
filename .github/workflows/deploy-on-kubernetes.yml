@@ -47,8 +47,13 @@ jobs:
       - name: Copy secrets from dependencies into application namespace
         run: |
           secrets=(
+            "elasticsearch-opencrvs-users"
+            "elasticsearch-opencrvs-urls"
             "redis-opencrvs-users"
             "minio-opencrvs-users"
+            "mongodb-urls"
+            "mongodb-admin-user"
+            "mongo-opencrvs-users"
           )
           for secret in "${secrets[@]}"; do
             kubectl get secret $secret -n opencrvs-deps-${ENV} -o yaml \
