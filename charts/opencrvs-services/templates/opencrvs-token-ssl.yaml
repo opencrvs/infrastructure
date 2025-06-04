@@ -8,6 +8,8 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: {{ $secret_name }}
+  annotations:
+    "helm.sh/resource-policy": keep
 type: Opaque
 data:
   "private-key.pem": {{ $cert.Key | b64enc | toYaml | indent 4}}
@@ -16,6 +18,8 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}-cert-tls
+  annotations:
+    "helm.sh/resource-policy": keep
 data:
   "public-key.pem": {{ $cert.Cert | toYaml | indent 4}}
 {{- end }}

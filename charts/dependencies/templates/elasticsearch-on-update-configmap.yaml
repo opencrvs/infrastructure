@@ -9,5 +9,7 @@ kind: ConfigMap
 metadata:
   labels:
     app: elasticsearch
+  annotations:
+    "helm.sh/resource-policy": keep
   name: elasticsearch-on-update-script
 {{- end }}

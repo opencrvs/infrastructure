@@ -13,6 +13,7 @@ data:
 kind: ConfigMap
 metadata:
   annotations:
+    "helm.sh/resource-policy": keep
     use-subpath: 'true'
   labels:
     app: hearth

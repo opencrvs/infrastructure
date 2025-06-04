@@ -76,6 +76,7 @@ kind: ConfigMap
 metadata:
   annotations:
     use-subpath: 'true'
+    "helm.sh/resource-policy": keep
   labels:
     app: hearth
   name: hearth-cm-checkduplicetask
