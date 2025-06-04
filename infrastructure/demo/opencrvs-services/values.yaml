@@ -83,7 +83,7 @@ search:
 countryconfig:
   image:
     # Replace countryconfig with farajaland to test data
-    name: opencrvs/ocrvs-farajaland
+    # name: opencrvs/ocrvs-farajaland
     # name: opencrvs/ocrvs-countryconfig
     # tag: develop
     # tag: ec53c12
