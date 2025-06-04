@@ -7,5 +7,6 @@ helm upgrade --install actions-runner-controller actions-runner-controller/actio
     --set authSecret.create=true \
     --set authSecret.github_token=${GITHUB_PAT}
 
+sleep 30
 kubectl apply -f runner-deployment.yaml
 kubectl apply -f service-account.yaml
