@@ -4,7 +4,14 @@
 
 provider "aws" {
   region = var.region
+  # Make sure credentials are configured with aws CLI
+  shared_credentials_files = ["~/.aws/credentials"]
 }
+
+resource "aws_s3_bucket" "terraform-state" {
+  bucket = "opencrvs-terraform-state"
+}
+
 
 # Filter out local zones, which are not currently supported 
 # with managed node groups
@@ -54,6 +61,13 @@ module "eks" {
     aws-ebs-csi-driver = {
       service_account_role_arn = module.irsa-ebs-csi.iam_role_arn
     }
+    amazon-cloudwatch-observability = {
+      resolve_conflicts = "OVERWRITE"
+      service_account_role_arn = module.irsa-cloudwatch.iam_role_arn
+    }
+    metrics-server = {
+      resolve_conflicts = "OVERWRITE"
+    }
   }
 
   vpc_id     = module.vpc.vpc_id
@@ -69,7 +83,7 @@ module "eks" {
       capacity_type  = "SPOT"
       name = "default"
       # TODO: change to t3.medium or t3.large
-      instance_types = ["t3.medium"]
+      instance_types = ["t3a.large"]
 
       min_size     = 1
       max_size     = 10
@@ -93,4 +107,20 @@ module "irsa-ebs-csi" {
   provider_url                  = module.eks.oidc_provider
   role_policy_arns              = [data.aws_iam_policy.ebs_csi_policy.arn]
   oidc_fully_qualified_subjects = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
+}
+
+# Custom role for Cloud Watch add-on
+data "aws_iam_policy" "cloudwatch_observability_policy" {
+  arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+module "irsa-cloudwatch" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
+  version = "5.55.0"
+
+  create_role                   = true
+  role_name                     = "AmazonEKSTFCloudWatchRole-${module.eks.cluster_name}"
+  provider_url                  = module.eks.oidc_provider
+  role_policy_arns              = [data.aws_iam_policy.cloudwatch_observability_policy.arn]
+  oidc_fully_qualified_subjects = ["system:serviceaccount:amazon-cloudwatch:cloudwatch-agent"]
 }
