@@ -1,10 +1,19 @@
 # Prerequisites
 Create API Token in Cloudflare
 
+
+Verify token:
+```bash
+curl "https://api.cloudflare.com/client/v4/user/tokens/verify" \
+     -H "Authorization: Bearer ..." 
+```
+
 Update `cloudflare-api-token.yaml` with your Cloudflare API token and zone ID.
+
 # Install cert-manager
 
- helm install \
+```bash
+helm install \
    cert-manager jetstack/cert-manager \
    --namespace cert-manager \
    --create-namespace \
@@ -14,3 +23,4 @@ Update `cloudflare-api-token.yaml` with your Cloudflare API token and zone ID.
 kubectl apply -f cloudflare-api-token.yaml 
 
 kubectl apply -f issuer.yaml
+```
