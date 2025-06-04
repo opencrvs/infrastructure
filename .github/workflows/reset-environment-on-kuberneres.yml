@@ -1,7 +1,13 @@
 name: Reset environment on Kubernetes
+run-name: "Reset environment (core: ${{ inputs.core-image-tag }})"
 on:
     workflow_dispatch:
       inputs:
+        core-image-tag:
+          description: "Core image tag"
+          required: true
+          default: "develop"
+          type: string        
         environment:
           description: "Target environment"
           required: true
@@ -13,7 +19,8 @@ on:
 jobs:
   reset:
     env:
-      ENV: ${{ github.event.inputs.environment }}
+      ENV: ${{ inputs.environment }}
+      CORE_IMAGE_TAG: ${{ inputs.core-image-tag }}
     runs-on: [self-hosted]
     steps:
         # FYI: Repository is needed only due to single file: infrastructure/dev/dependenciess/values.yaml
@@ -24,6 +31,7 @@ jobs:
             kubectl delete job -n opencrvs-${ENV} data-cleanup || true
             helm template -f infrastructure/${ENV}/opencrvs-services/values.yaml \
                 --set data_cleanup.enabled=true \
+                --set image.tag="$CORE_IMAGE_TAG" \
                 --namespace opencrvs-${ENV} \
                 -s templates/data-cleanup-job.yaml \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} -f -
@@ -37,6 +45,7 @@ jobs:
             kubectl delete job -n opencrvs-${ENV} data-migration || true
             helm template -f infrastructure/${ENV}/opencrvs-services/values.yaml \
                 -s templates/data-migration-job.yaml \
+                --set image.tag="$CORE_IMAGE_TAG" \
                 --namespace opencrvs-${ENV} \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} -f -
             sleep 30;
@@ -49,6 +58,7 @@ jobs:
             kubectl wait --for=condition=ready pod -n opencrvs-${ENV} -lapp=events;
             helm template  -f infrastructure/${ENV}/opencrvs-services/values.yaml \
                 --set data_seed.enabled=true \
+                --set image.tag="$CORE_IMAGE_TAG" \
                 --namespace opencrvs-${ENV} \
                 -s templates/data-seed-job.yaml \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} -f -
