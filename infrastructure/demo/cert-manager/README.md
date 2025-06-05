@@ -20,7 +20,7 @@ helm install \
    --version v1.17.0 \
    --set crds.enabled=true
 
-kubectl apply -f cloudflare-api-token.yaml 
+kubectl apply -f cloudflare-api-token.yaml
 
 kubectl apply -f issuer.yaml
 ```

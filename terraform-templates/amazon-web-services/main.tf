@@ -74,7 +74,7 @@ module "eks" {
   subnet_ids = module.vpc.private_subnets
 
   eks_managed_node_group_defaults = {
-    ami_type = "BOTTLEROCKET_x86_64"
+    ami_type = "AL2023_x86_64_STANDARD"
 
   }
 
@@ -87,7 +87,7 @@ module "eks" {
 
       min_size     = 1
       max_size     = 10
-      desired_size = 2
+      desired_size = 5
     }
   }
 }

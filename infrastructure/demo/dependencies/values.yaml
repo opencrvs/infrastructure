@@ -1,3 +1,4 @@
+chart_dev_mode: true
 hostname: aws.opencrvs.dev
 
 redis:

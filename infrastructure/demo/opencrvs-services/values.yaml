@@ -1,6 +1,7 @@
+chart_dev_mode: true
+
 influxdb:
   host: influxdb-0.influxdb.opencrvs-deps-demo.svc.cluster.local
-fhir_url: http://hearth.opencrvs-deps-demo.svc.cluster.local:3447/fhir
 
 minio:
   host: minio-0.minio.opencrvs-deps-demo.svc.cluster.local
