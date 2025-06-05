@@ -9,10 +9,9 @@
 # Copyright (C) The OpenCRVS Authors located at https://github.com/opencrvs/opencrvs-core/blob/master/AUTHORS.
 
 # This file is run on each deployment with the sole purpose of updating
-# passwords of MongoDB users to passwords given to this service as environment varibles
+# passwords of MongoDB users to passwords given to this service as environment variables
 
-NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
-HOST="mongodb-0.mongodb.${NAMESPACE}.svc.cluster.local"
+[ -z "$MONGODB_HOSTNAME" ] && echo "Please define MONGODB_HOSTNAME environment variable" && exit 1
 
 mongo_credentials() {
     if [ ! -z ${MONGODB_ADMIN_USER+x} ] || [ ! -z ${MONGODB_ADMIN_PASSWORD+x} ]; then
@@ -28,7 +27,7 @@ DELAY=10  # seconds
 ATTEMPT=1
 while [[ $ATTEMPT -le $MAX_RETRIES ]]; do
   echo "🔄 Attempt $ATTEMPT to connect..."
-  if mongo --host $HOST $(mongo_credentials) --quiet --eval 'db.runCommand({ connectionStatus: 1 })'; then
+  if mongo --host $MONGODB_HOSTNAME $(mongo_credentials) --quiet --eval 'db.runCommand({ connectionStatus: 1 })'; then
     echo "✅ Connection was initiated successfully."
     break
   elif [[ $ATTEMPT -eq $MAX_RETRIES ]]; then
@@ -44,7 +43,7 @@ done
 function checkIfUserExists {
     local user=$1
     local JSON="{\"user\": \"$user\"}"
-    CMD='mongo admin --host $HOST $(mongo_credentials) --quiet --eval "db.getCollection(\"system.users\").find($JSON).length() > 0 ? \"FOUND\" : \"NOT_FOUND\""'
+    CMD='mongo admin --host $MONGODB_HOSTNAME $(mongo_credentials) --quiet --eval "db.getCollection(\"system.users\").find($JSON).length() > 0 ? \"FOUND\" : \"NOT_FOUND\""'
     eval $CMD
 }
 
@@ -64,7 +63,7 @@ echo "db: $db, user: $user, roles: $roles"
 user_exists=$(echo $(checkIfUserExists "$user"))
 if [[ $user_exists != "FOUND" ]]; then
     echo "$user user not found"
-    mongo $(mongo_credentials) --host $HOST <<EOF
+    mongo $(mongo_credentials) --host $MONGODB_HOSTNAME <<EOF
     use $db
     db.createUser({
     user: '$user',
@@ -74,7 +73,7 @@ if [[ $user_exists != "FOUND" ]]; then
 EOF
 else
     echo "$user user exists"
-    mongo $(mongo_credentials) --host $HOST <<EOF
+    mongo $(mongo_credentials) --host $MONGODB_HOSTNAME <<EOF
     use $db
     db.updateUser('$user', {
     pwd: '$password',

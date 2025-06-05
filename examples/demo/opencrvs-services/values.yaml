@@ -1,0 +1,49 @@
+chart_dev_mode: true
+
+hostname: aws.opencrvs.dev
+influxdb:
+  host: influxdb-0.influxdb.opencrvs-deps-demo.svc.cluster.local
+elasticsearch:
+  auth_mode: auto
+  port: 9200
+  host: elasticsearch.opencrvs-deps-demo.svc.cluster.local
+
+
+minio:
+  auth_mode: use_secret
+  host: minio-0.minio.opencrvs-deps-demo.svc.cluster.local
+
+mongodb:
+  auth_mode: auto
+  host: mongodb-0.mongodb.opencrvs-deps-demo.svc.cluster.local
+
+redis:
+  auth_mode: use_secret
+  host: redis-0.redis.opencrvs-deps-demo.svc.cluster.local
+
+
+resources:
+  memoryRequest: "512Mi"
+  cpuRequest: "200m"
+  memoryLimit: "1Gi"
+  cpuLimit: "1"
+
+image:
+  tag: develop
+
+dashboards:
+  use_default_credentials: false
+
+countryconfig:
+  image:
+    # Replace countryconfig with farajaland to test data
+    name: opencrvs/ocrvs-farajaland
+    # name: opencrvs/ocrvs-countryconfig
+    # tag: develop
+    # tag: ec53c12
+    tag: develop
+
+data_seed:
+  env:
+    SUPER_USER_PASSWORD: "password"
+    ACTIVATE_USERS: "true"

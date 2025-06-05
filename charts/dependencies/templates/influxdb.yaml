@@ -78,6 +78,19 @@ spec:
       labels:
         app: influxdb
     spec:
+    {{- if .Values.affinity }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+            {{- range $k, $v := .Values.affinity }}
+              - key: {{ $k }}
+                operator: In
+                values:
+                - {{ $v }}
+            {{- end }}
+      {{- end }}
       containers:
         - image: influxdb:1.8.10
           name: influxdb

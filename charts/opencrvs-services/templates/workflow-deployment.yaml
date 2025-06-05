@@ -20,7 +20,7 @@ spec:
           image: "ghcr.io/opencrvs/ocrvs-workflow:{{ .Values.image.tag }}"
           env:
             - name: FHIR_URL
-              value: {{ .Values.fhir_url | quote | default "http://hearth:3447/fhir" }}
+              value: http://hearth.{{ .Release.Namespace }}.svc.cluster.local:3447/fhir
             - name: APPLICATION_CONFIG_URL
               value: http://config.{{ .Release.Namespace }}.svc.cluster.local:2021
             - name: CERT_PUBLIC_KEY_PATH
@@ -43,6 +43,18 @@ spec:
               value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/
             - name: WEBHOOKS_URL
               value: http://webhooks.{{ .Release.Namespace }}.svc.cluster.local:2525/
+          {{- if eq .Values.redis.auth_mode "use_secret" }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: WORKFLOW_REDIS_PASSWORD
+                  name: {{ .Values.redis.users_secret }}
+            - name: REDIS_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  key: WORKFLOW_REDIS_USERNAME
+                  name: {{ .Values.redis.users_secret }}
+          {{- end }}
           {{- include "render-env-vars" (dict "service_name" "workflow" "Values" .Values) }}
           {{ include "resources-helper" (dict "service_name" "workflow" "Values" .Values) | indent 10 }}
           ports:

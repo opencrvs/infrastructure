@@ -1,4 +1,4 @@
-{{- if not .Values.mongodb.use_default_credentials }}
+{{- if eq .Values.mongodb.auth_mode "auto" }}
 apiVersion: v1
 data:
   on-deploy.sh: |

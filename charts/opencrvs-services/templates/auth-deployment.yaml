@@ -42,7 +42,19 @@ spec:
           name: auth
           env:
             - name: REDIS_HOST
-              value: {{ .Values.redis_host | quote }}
+              value: {{ .Values.redis.host | quote }}
+          {{- if eq .Values.redis.auth_mode "use_secret" }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: AUTH_REDIS_PASSWORD
+                  name: {{ .Values.redis.users_secret }}
+            - name: REDIS_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  key: AUTH_REDIS_USERNAME
+                  name: {{ .Values.redis.users_secret }}
+          {{- end }}
             - name: COUNTRY_CONFIG_URL
               value: {{ include "render-external-url" (dict "service_name" "countryconfig" "Values" .Values) }}
             - name: CLIENT_APP_URL

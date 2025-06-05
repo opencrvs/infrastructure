@@ -52,13 +52,10 @@ def format_seed_environment_command(opencrvs_namespace, opencrvs_configuration_f
 def copy_secrets(dependencies_namespace, opencrvs_namespace):
 
     secrets_to_copy = [
-        "elasticsearch-opencrvs-users",
-        "elasticsearch-opencrvs-urls",
+        "elasticsearch-admin-user",
         "redis-opencrvs-users",
         "minio-opencrvs-users",
-        "mongodb-urls",
         "mongodb-admin-user",
-        "mongo-opencrvs-users",
     ]
     k8s_resource(
         new_name="deps-secrets",

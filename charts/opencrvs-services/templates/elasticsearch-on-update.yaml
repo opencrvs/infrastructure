@@ -19,45 +19,47 @@ spec:
           command: ["/scripts/setup.sh"]
           image: "bash"
           env:
+            - name: ELASTICSEARCH_HOST
+              value: {{ .Values.elasticsearch.host }}
             - name: ELASTIC_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: elasticsearch-opencrvs-users
+                  name: {{ .Values.elasticsearch.admin_user_secret_name }}
                   key: ELASTIC_PASSWORD
             - name: KIBANA_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: elasticsearch-opencrvs-users
+                  name: {{ .Values.elasticsearch.users_secret }}
                   key: KIBANA_USER_ELASTIC_USERNAME
             - name: KIBANA_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: elasticsearch-opencrvs-users
+                  name: {{ .Values.elasticsearch.users_secret }}
                   key: KIBANA_USER_ELASTIC_PASSWORD
             - name: SEARCH_ELASTIC_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: elasticsearch-opencrvs-users
+                  name: {{ .Values.elasticsearch.users_secret }}
                   key: SEARCH_ELASTIC_USERNAME
             - name: SEARCH_ELASTIC_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: elasticsearch-opencrvs-users
+                  name: {{ .Values.elasticsearch.users_secret }}
                   key: SEARCH_ELASTIC_PASSWORD
             - name: METRICBEAT_ELASTIC_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: elasticsearch-opencrvs-users
+                  name: {{ .Values.elasticsearch.users_secret }}
                   key: METRICBEAT_ELASTIC_PASSWORD
             - name: APM_ELASTIC_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: elasticsearch-opencrvs-users
+                  name: {{ .Values.elasticsearch.users_secret }}
                   key: APM_ELASTIC_PASSWORD
             - name: KIBANA_SYSTEM_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: elasticsearch-opencrvs-users
+                  name: {{ .Values.elasticsearch.users_secret }}
                   key: KIBANA_SYSTEM_ELASTIC_PASSWORD
           volumeMounts:
             - mountPath: /scripts

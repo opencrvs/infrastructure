@@ -29,9 +29,15 @@ spec:
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
             - name: USER_MANAGEMENT_URL
               value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/
-          {{- if .Values.mongodb_noauth }}
+          {{- if eq .Values.mongodb.auth_mode "disabled" }}
             - name: MONGO_URL
-              value: mongodb://{{ .Values.mongodb_host }}/notification
+              value: mongodb://{{ .Values.mongodb.host }}/notification
+          {{- else if or (eq .Values.mongodb.auth_mode "auto")  (eq .Values.mongodb.auth_mode "use_secret") }}
+            - name: MONGO_URL
+              valueFrom:
+                secretKeyRef:
+                  key: NOTIFICATION_MONGO_URL
+                  name: {{ .Values.mongodb.urls_secret }}
           {{- end }}
           {{- include "render-env-vars" (dict "service_name" "notification" "Values" .Values) }}
           {{ include "resources-helper" (dict "service_name" "notification" "Values" .Values) | indent 10 }}

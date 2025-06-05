@@ -1,6 +1,4 @@
-# Fix warnings
+# Missed features
 
-1. Add Kibana
-
-Features
-1. Encrypted storage class is requirement for kubernetes
+1. Kibana
+2. APM

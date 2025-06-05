@@ -42,9 +42,9 @@ spec:
           image: "ghcr.io/opencrvs/ocrvs-webhooks:{{ .Values.image.tag }}"
           env:
             - name: FHIR_URL
-              value: {{ .Values.fhir_url | quote | default "http://hearth:3447/fhir" }}
+              value: http://hearth.{{ .Release.Namespace }}.svc.cluster.local:3447/fhir
             - name: REDIS_HOST
-              value: {{ .Values.redis_host | quote }}
+              value: {{ .Values.redis.host | quote }}
             - name: QA_ENV
               value: "false"
             - name: AUTH_URL
@@ -59,9 +59,27 @@ spec:
               value: 0.0.0.0
             - name: USER_MANAGEMENT_URL
               value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/
-          {{- if .Values.mongodb_noauth }}
+          {{- if eq .Values.mongodb.auth_mode "disabled" }}
             - name: MONGO_URL
-              value: mongodb://{{ .Values.mongodb_host }}/webhooks
+              value: mongodb://{{ .Values.mongodb.host }}/webhooks
+          {{- else if or (eq .Values.mongodb.auth_mode "auto")  (eq .Values.mongodb.auth_mode "use_secret") }}
+            - name: MONGO_URL
+              valueFrom:
+                secretKeyRef:
+                  key: WEBHOOKS_MONGO_URL
+                  name: {{ .Values.mongodb.urls_secret }}
+          {{- end }}
+          {{- if eq .Values.redis.auth_mode "use_secret" }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: WEBHOOKS_REDIS_PASSWORD
+                  name: {{ .Values.redis.users_secret }}
+            - name: REDIS_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  key: WEBHOOKS_REDIS_USERNAME
+                  name: {{ .Values.redis.users_secret }}
           {{- end }}
           {{- include "render-env-vars" (dict "service_name" "webhooks" "Values" .Values) }}
           {{ include "resources-helper" (dict "service_name" "webhooks" "Values" .Values) | indent 10 }}

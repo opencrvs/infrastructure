@@ -60,6 +60,19 @@ spec:
       labels:
         app: elasticsearch
     spec:
+    {{- if .Values.affinity }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+            {{- range $k, $v := .Values.affinity }}
+              - key: {{ $k }}
+                operator: In
+                values:
+                - {{ $v }}
+            {{- end }}
+      {{- end }}
       initContainers:
         - name: volume-permission-fix
           image: busybox
@@ -85,7 +98,7 @@ spec:
             - name: ELASTIC_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: elasticsearch-opencrvs-users
+                  name: {{ .Values.elasticsearch.admin_user_secret_name }}
                   key: ELASTIC_PASSWORD
             - name: xpack.security.enabled
               value: 'true'

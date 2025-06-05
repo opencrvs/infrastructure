@@ -31,7 +31,19 @@ spec:
               echo "Cleanup complete!"
           env:
             - name: MONGO_HOST
-              value: {{ .Values.mongodb_host }}
+              value: {{ .Values.mongodb.host }}
+          {{- if or (eq .Values.mongodb.auth_mode "auto") (eq .Values.mongodb.auth_mode "use_secret") }}
+            - name: MONGODB_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  key: MONGODB_ADMIN_USER
+                  name: {{ .Values.mongodb.admin_user_secret_name }}
+            - name: MONGODB_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: MONGODB_ADMIN_PASSWORD
+                  name: {{ .Values.mongodb.admin_user_secret_name }}
+          {{- end }}
           {{- include "render-env-vars" (dict "service_name" "data_cleanup" "Values" .Values) }}
         - name: cleanup-minio
           image: "minio/mc"
@@ -49,6 +61,18 @@ spec:
               value: {{ .Values.minio.host }}
             - name: MINIO_PORT
               value: {{ .Values.minio.port | quote }}
+          {{- if or (eq .Values.minio.auth_mode "auto") (eq .Values.minio.auth_mode "use_secret") }}
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  key: MINIO_ROOT_USER
+                  name: {{ .Values.minio.users_secret }}
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: MINIO_ROOT_PASSWORD
+                  name: {{ .Values.minio.users_secret }}
+          {{- end }}
           {{- include "render-env-vars" (dict "service_name" "data_cleanup" "Values" .Values) }}
         - name: cleanup-elasticsearch
           image: "appropriate/curl"
@@ -65,9 +89,15 @@ spec:
                 curl -sS -XDELETE http://$ELASTICSEARCH_HOST/$index
               done
           env:
-          {{- if .Values.elasticsearch.noauth }}
+          {{- if eq .Values.elasticsearch.auth_mode "disabled" }}
             - name: ELASTICSEARCH_HOST
               value: "{{ .Values.elasticsearch.host }}:{{ .Values.elasticsearch.port }}"
+          {{- else if or (eq .Values.elasticsearch.auth_mode "auto") (eq .Values.elasticsearch.auth_mode "use_secret") }}
+            - name: ELASTICSEARCH_HOST
+              valueFrom:
+                secretKeyRef:
+                  key: SEARCH_ELASTIC_HOST
+                  name: {{ .Values.elasticsearch.urls_secret }}
           {{- end }}
           {{- include "render-env-vars" (dict "service_name" "data_cleanup" "Values" .Values) }}
         - name: cleanup-influxdb

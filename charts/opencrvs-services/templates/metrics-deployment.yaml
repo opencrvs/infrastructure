@@ -20,7 +20,7 @@ spec:
           name: metrics
           env:
             - name: FHIR_URL
-              value: {{ .Values.fhir_url | quote | default "http://hearth:3447/fhir" }}
+              value: http://hearth.{{ .Release.Namespace }}.svc.cluster.local:3447/fhir
             - name: METRICS_PORT  # Similar to PORT (Check if it's the same?)
               value: "1050"
             - name: CERT_PUBLIC_KEY_PATH
@@ -41,13 +41,29 @@ spec:
               value: {{ .Values.influxdb.host | quote }}
             - name: INFLUX_PORT
               value: {{ .Values.influxdb.port | quote }}
-          {{- if .Values.mongodb_noauth }}
+          {{- if eq .Values.mongodb.auth_mode "disabled" }}
             - name: DASHBOARD_MONGO_URL
-              value: mongodb://{{ .Values.mongodb_host }}/performance
+              value: mongodb://{{ .Values.mongodb.host }}/performance
             - name: HEARTH_MONGO_URL
-              value: mongodb://{{ .Values.mongodb_host }}/hearth-dev
+              value: mongodb://{{ .Values.mongodb.host }}/hearth-dev
             - name: MONGO_URL
-              value: mongodb://{{ .Values.mongodb_host }}/metrics
+              value: mongodb://{{ .Values.mongodb.host }}/metrics
+          {{- else if or (eq .Values.mongodb.auth_mode "auto")  (eq .Values.mongodb.auth_mode "use_secret") }}
+            - name: DASHBOARD_MONGO_URL
+              valueFrom:
+                secretKeyRef:
+                  key: METRICS_MONGO_URL
+                  name: {{ .Values.mongodb.urls_secret }}
+            - name: HEARTH_MONGO_URL
+              valueFrom:
+                secretKeyRef:
+                  key: HEARTH_MONGO_URL
+                  name: {{ .Values.mongodb.urls_secret }}
+            - name: MONGO_URL
+              valueFrom:
+                secretKeyRef:
+                  key: METRICS_MONGO_URL
+                  name: {{ .Values.mongodb.urls_secret }}
           {{- end }}
           {{- include "render-env-vars" (dict "service_name" "metrics" "Values" .Values) }}
           {{ include "resources-helper" (dict "service_name" "metrics" "Values" .Values) | indent 10 }}

@@ -62,11 +62,11 @@ if not security_enabled:
   print("""  - Minio admin user/password: minioadmin/minioadmin
   - Authentication for Redis, MongoDB and Elasticsearch is disabled""")
 if security_enabled:
-    deps_configuration_file = './infrastructure/localhost/dependencies/values-dev-secure.yaml'
-    opencrvs_configuration_file = './infrastructure/localhost/opencrvs-services/values-dev-secure.yaml'
+    deps_configuration_file = './examples/localhost/dependencies/values-dev-secure.yaml'
+    opencrvs_configuration_file = './examples/localhost/opencrvs-services/values-dev-secure.yaml'
 else:
-    deps_configuration_file = './infrastructure/localhost/dependencies/values-dev.yaml'
-    opencrvs_configuration_file = './infrastructure/localhost/opencrvs-services/values-dev.yaml'
+    deps_configuration_file = './examples/localhost/dependencies/values-dev.yaml'
+    opencrvs_configuration_file = './examples/localhost/opencrvs-services/values-dev.yaml'
 
 ######################################################
 # OpenCRVS Dependencies Deployment

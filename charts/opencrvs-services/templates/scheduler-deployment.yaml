@@ -21,9 +21,15 @@ spec:
           env:
             - name: METRICS_URL
               value: http://metrics.{{ .Release.Namespace }}.svc.cluster.local:1050
-          {{- if .Values.mongodb_noauth }}
+          {{- if eq .Values.mongodb.auth_mode "disabled" }}
             - name: OPENHIM_MONGO_URL
-              value: mongodb://{{ .Values.mongodb_host }}/openhim-dev
+              value: mongodb://{{ .Values.mongodb.host }}/openhim-dev
+          {{- else if or (eq .Values.mongodb.auth_mode "auto")  (eq .Values.mongodb.auth_mode "use_secret") }}
+            - name: OPENHIM_MONGO_URL
+              valueFrom:
+                secretKeyRef:
+                  key: OPENHIM_MONGO_URL
+                  name: {{ .Values.mongodb.urls_secret }}
           {{- end }}
           {{- include "render-env-vars" (dict "service_name" "scheduler" "Values" .Values) }}
       restartPolicy: Always
