@@ -1,0 +1,40 @@
+# Overwriting https://github.com/traefik/traefik-helm-chart/blob/master/traefik/values.yaml
+namespaceOverride: "traefik"
+logs:
+  general:
+    level: "DEBUG"
+    format: "common"
+  access:
+    # -- To enable access logs
+    enabled: true
+ingressRoute:
+  dashboard:
+    enabled: false
+    entryPoints: ["web"]
+    matchRule: Host(`traefik.opencrvs.localhost`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
+# Be explicit that we only use CRDs, not ingress/gw support
+providers: 
+  kubernetesCRD:
+    enabled: true
+  kubernetesIngress:
+    enabled: false
+  kubernetesGateway:
+    enabled: false
+service:
+  enabled: true
+  single: false
+  type: LoadBalancer
+
+ports:
+  traefik:
+    hostPort: 8080
+  web:
+    asDefault: true
+    hostPort: 8000
+  websecure:
+    asDefault: false
+    expose:
+      default: false
+    tls:
+      enabled: false
+tlsStore: {}

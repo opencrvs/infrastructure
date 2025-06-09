@@ -24,6 +24,18 @@ spec:
               value: "http://gateway.{{ .Release.Namespace }}.svc.cluster.local:7070"
             - name: COUNTRY_CONFIG_HOST
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
+          {{- if or (eq .Values.minio.auth_mode "auto") (eq .Values.minio.auth_mode "use_secret") }}
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  key: MINIO_ROOT_USER
+                  name: {{ .Values.minio.users_secret }}
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: MINIO_ROOT_PASSWORD
+                  name: {{ .Values.minio.users_secret }}
+          {{- end }}
           {{- include "render-env-vars" (dict "service_name" "data_seed" "Values" .Values) }}
       restartPolicy: "OnFailure"
 {{- end }}

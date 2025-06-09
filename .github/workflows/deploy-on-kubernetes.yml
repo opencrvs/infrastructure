@@ -32,7 +32,7 @@ jobs:
     # environment: ${{ github.event.inputs.environment }}
 
     steps:
-      # FYI: Repository is needed only due to single file: infrastructure/dev/opencrvs-services/values.yaml
+      # FYI: Repository is needed only due to single file: examples/dev/opencrvs-services/values.yaml
       - name: Checkout repo
         uses: actions/checkout@v4
 
@@ -47,13 +47,10 @@ jobs:
       - name: Copy secrets from dependencies into application namespace
         run: |
           secrets=(
-            "elasticsearch-opencrvs-users"
-            "elasticsearch-opencrvs-urls"
+            "elasticsearch-admin-user"
             "redis-opencrvs-users"
             "minio-opencrvs-users"
-            "mongodb-urls"
             "mongodb-admin-user"
-            "mongo-opencrvs-users"
           )
           for secret in "${secrets[@]}"; do
             kubectl get secret $secret -n opencrvs-deps-${ENV} -o yaml \
@@ -66,7 +63,7 @@ jobs:
         run: |
           helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
             --namespace "opencrvs-${ENV}" \
-            -f infrastructure/${ENV}/opencrvs-services/values.yaml \
+            -f examples/${ENV}/opencrvs-services/values.yaml \
             --create-namespace \
             --set image.tag="$CORE_IMAGE_TAG" \
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \

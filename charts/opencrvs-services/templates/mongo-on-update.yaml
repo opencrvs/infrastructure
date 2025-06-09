@@ -1,12 +1,10 @@
-# TODO: Move as pre-deploy hook to opencrvs-service
-# Change will allow to manage external database
-{{- if not .Values.mongodb.use_default_credentials }}
+{{- if eq .Values.mongodb.auth_mode "auto" }}
 apiVersion: batch/v1
 kind: Job
 metadata:
   annotations:
-    "helm.sh/hook": post-install
-    "helm.sh/hook-weight": "5"
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "1"
   labels:
     app: mongo-on-deploy
   name: mongo-on-deploy
@@ -21,37 +19,39 @@ spec:
           command: ["/bin/bash", "/on-deploy.sh"]
           image: "mongo:4.4"
           env:
+            - name: MONGODB_HOSTNAME
+              value: {{ .Values.mongodb.host }}
             - name: MONGODB_ADMIN_USER
               valueFrom:
                 secretKeyRef:
-                  name: mongodb-admin-user
+                  name: {{ .Values.mongodb.admin_user_secret_name }}
                   key: MONGODB_ADMIN_USER
             - name: MONGODB_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mongodb-admin-user
+                  name: {{ .Values.mongodb.admin_user_secret_name }}
                   key: MONGODB_ADMIN_PASSWORD
           {{- range .Values.mongodb.databases }}
             - name: {{ .prefix }}_MONGODB_DB
               valueFrom:
                 secretKeyRef:
-                  name: mongo-opencrvs-users
+                  name: {{ $.Values.mongodb.users_secret }}
                   key: {{ .prefix }}_MONGODB_DB
             - name: {{ .prefix }}_MONGODB_USER
               valueFrom:
                 secretKeyRef:
-                  name: mongo-opencrvs-users
+                  name: {{ $.Values.mongodb.users_secret }}
                   key: {{ .prefix }}_MONGODB_USER
             - name: {{ .prefix }}_MONGODB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mongo-opencrvs-users
+                  name: {{ $.Values.mongodb.users_secret }}
                   key: {{ .prefix }}_MONGODB_PASSWORD
           {{- if .roles }}
             - name: {{ .prefix }}_MONGODB_ROLES
               valueFrom:
                 secretKeyRef:
-                  name: mongo-opencrvs-users
+                  name: {{ $.Values.mongodb.users_secret }}
                   key: {{ .prefix }}_MONGODB_ROLES
           {{- end }}
           {{- end }}

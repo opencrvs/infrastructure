@@ -1,0 +1,27 @@
+{{/*
+Create MongoDB Admin user (superuser)
+*/}}
+{{- if not .Values.mongodb.use_default_credentials }}
+
+{{/* Prevent secret mutation between helm upgrades */}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace .Values.mongodb.admin_user_secret_name }}
+{{- if not $secret }}
+  {{- $admin_user := randAlphaNum 8 | lower }}
+  {{- $admin_password := randAlphaNum 16 }}
+  {{- if $.Values.chart_dev_mode }}
+    {{- $admin_user = "admin" }}
+    {{- $admin_password = "password" }}
+  {{- end }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.mongodb.admin_user_secret_name }}
+  annotations:
+    "helm.sh/resource-policy": keep
+type: Opaque
+data:
+  MONGODB_ADMIN_USER: {{ $admin_user | b64enc }}
+  MONGODB_ADMIN_PASSWORD: {{ $admin_password | b64enc }}
+{{- end }}
+{{- end }}

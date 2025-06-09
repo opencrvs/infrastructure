@@ -44,6 +44,19 @@ spec:
       labels:
         app: mongodb
     spec:
+    {{- if .Values.affinity }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+            {{- range $k, $v := .Values.affinity }}
+              - key: {{ $k }}
+                operator: In
+                values:
+                - {{ $v }}
+            {{- end }}
+      {{- end }}
       containers:
         - image: mongo:4.4
           {{- if not .Values.mongodb.use_default_credentials }}
@@ -51,12 +64,12 @@ spec:
             - name: MONGO_INITDB_ROOT_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: mongodb-admin-user
+                  name: {{ .Values.mongodb.admin_user_secret_name }}
                   key: MONGODB_ADMIN_USER
             - name: MONGO_INITDB_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mongodb-admin-user
+                  name: {{ .Values.mongodb.admin_user_secret_name }}
                   key: MONGODB_ADMIN_PASSWORD
           {{- end }}
           name: mongodb

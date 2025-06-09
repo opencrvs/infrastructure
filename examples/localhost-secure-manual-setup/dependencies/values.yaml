@@ -7,8 +7,6 @@ redis:
   auth_mode: acl
 
 minio:
-  # TODO: Revisit naming convention
-  # use_default_credentials could be applied to redis and other services as well
   use_default_credentials: false
 
 elasticsearch:

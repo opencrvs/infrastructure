@@ -20,20 +20,32 @@ spec:
           image: "ghcr.io/opencrvs/ocrvs-search:{{ .Values.image.tag }}"
           env:
             - name: FHIR_URL
-              value: {{ .Values.fhir_url | quote | default "http://hearth:3447/fhir" }}
+              value: http://hearth.{{ .Release.Namespace }}.svc.cluster.local:3447/fhir
             - name: APPLICATION_CONFIG_URL
               value: http://config.{{ .Release.Namespace }}.svc.cluster.local:2021
             - name: CERT_PUBLIC_KEY_PATH
               value: /secrets/public-key.pem
-          {{- if .Values.elasticsearch.noauth }}
+          {{- if eq .Values.elasticsearch.auth_mode "disabled" }}
             - name: ES_HOST
               value: "{{ .Values.elasticsearch.host }}:{{ .Values.elasticsearch.port }}"
-          {{- end}}
+          {{- else if or (eq .Values.elasticsearch.auth_mode "auto") (eq .Values.elasticsearch.auth_mode "use_secret") }}
+            - name: ES_HOST
+              valueFrom:
+                secretKeyRef:
+                  key: SEARCH_ELASTIC_HOST
+                  name: {{ .Values.elasticsearch.urls_secret }}
+          {{- end }}
             - name: USER_MANAGEMENT_URL
               value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/
-          {{- if .Values.mongodb_noauth }}
+          {{- if eq .Values.mongodb.auth_mode "disabled" }}
             - name: HEARTH_MONGO_URL
-              value: mongodb://{{ .Values.mongodb_host }}/hearth-dev
+              value: mongodb://{{ .Values.mongodb.host }}/hearth-dev
+          {{- else if or (eq .Values.mongodb.auth_mode "auto")  (eq .Values.mongodb.auth_mode "use_secret") }}
+            - name: HEARTH_MONGO_URL
+              valueFrom:
+                secretKeyRef:
+                  key: HEARTH_MONGO_URL
+                  name: {{ .Values.mongodb.urls_secret }}
           {{- end }}
           {{- include "render-env-vars" (dict "service_name" "search" "Values" .Values) }}
           {{ include "resources-helper" (dict "service_name" "search" "Values" .Values) | indent 10 }}

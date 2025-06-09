@@ -20,7 +20,6 @@ metadata:
     app: hearth
   name: hearth
 spec:
-  serviceName: hearth
   replicas: 1
   selector:
     matchLabels:
@@ -38,9 +37,15 @@ spec:
               value: uuidv4
             - name: logger__level
               value: warn
-          {{- if .Values.mongodb_noauth }}
+          {{- if eq .Values.mongodb.auth_mode "disabled" }}
             - name: mongodb__url
-              value: mongodb://{{ .Values.mongodb_host }}/hearth-dev
+              value: mongodb://{{ .Values.mongodb.host }}/hearth-dev
+          {{- else if or (eq .Values.mongodb.auth_mode "auto")  (eq .Values.mongodb.auth_mode "use_secret") }}
+            - name: mongodb__url
+              valueFrom:
+                secretKeyRef:
+                  key: HEARTH_MONGO_URL
+                  name: {{ .Values.mongodb.urls_secret }}
           {{- end }}
             - name: server__fhirVersion
               value: stu3

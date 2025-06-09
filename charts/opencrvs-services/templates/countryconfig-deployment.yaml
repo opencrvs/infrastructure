@@ -71,7 +71,7 @@ spec:
             - name: COUNTRY_CONFIG_HOST
               value: "0.0.0.0"
             - name: FHIR_URL
-              value: {{ .Values.fhir_url | quote | default "http://hearth:3447/fhir" }}
+              value: http://hearth.{{ .Release.Namespace }}.svc.cluster.local:3447/fhir
             - name: CLIENT_APP_URL
               value: {{ include "render-external-url" (dict "service_name" "register" "Values" .Values) }}
             - name: LOGIN_URL
@@ -89,11 +89,22 @@ spec:
               value: "http://auth.{{ .Release.Namespace }}.svc.cluster.local:4040"
             - name: CONFIRM_REGISTRATION_URL
               value: http://workflow.{{ .Release.Namespace }}.svc.cluster.local:5050/confirm/registration
-          {{- if .Values.mongodb_noauth }}
+          {{- if eq .Values.mongodb.auth_mode "disabled" }}
             - name: CONFIG_MONGO_URL
-              value: mongodb://{{ .Values.mongodb_host }}/application-config
+              value: mongodb://{{ .Values.mongodb.host }}/application-config
             - name: MONGO_URL
-              value: mongodb://{{ .Values.mongodb_host }}/user-
+              value: mongodb://{{ .Values.mongodb.host }}/user-mgnt
+          {{- else if or (eq .Values.mongodb.auth_mode "auto")  (eq .Values.mongodb.auth_mode "use_secret") }}
+            - name: CONFIG_MONGO_URL
+              valueFrom:
+                secretKeyRef:
+                  key: CONFIG_MONGO_URL
+                  name: {{ .Values.mongodb.urls_secret }}
+            - name: MONGO_URL
+              valueFrom:
+                secretKeyRef:
+                  key: USER_MGNT_MONGO_URL
+                  name: {{ .Values.mongodb.urls_secret }}
           {{- end }}
           {{- include "render-env-vars" (dict "service_name" "countryconfig" "Values" .Values) }}
           {{ include "resources-helper" (dict "service_name" "countryconfig" "Values" .Values) | indent 10 }}

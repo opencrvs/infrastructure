@@ -29,7 +29,7 @@ jobs:
         - name: Cleanup environment
           run: |
             kubectl delete job -n opencrvs-${ENV} data-cleanup || true
-            helm template -f infrastructure/${ENV}/opencrvs-services/values.yaml \
+            helm template -f examples/${ENV}/opencrvs-services/values.yaml \
                 --set data_cleanup.enabled=true \
                 --set image.tag="$CORE_IMAGE_TAG" \
                 --namespace opencrvs-${ENV} \
@@ -43,7 +43,7 @@ jobs:
         - name: Migration
           run: |
             kubectl delete job -n opencrvs-${ENV} data-migration || true
-            helm template -f infrastructure/${ENV}/opencrvs-services/values.yaml \
+            helm template -f examples/${ENV}/opencrvs-services/values.yaml \
                 -s templates/data-migration-job.yaml \
                 --set image.tag="$CORE_IMAGE_TAG" \
                 --namespace opencrvs-${ENV} \
@@ -56,7 +56,7 @@ jobs:
             kubectl delete job -n opencrvs-${ENV} data-seed || true
             kubectl delete pod -n opencrvs-${ENV} -lapp=events;
             kubectl wait --for=condition=ready pod -n opencrvs-${ENV} -lapp=events;
-            helm template  -f infrastructure/${ENV}/opencrvs-services/values.yaml \
+            helm template  -f examples/${ENV}/opencrvs-services/values.yaml \
                 --set data_seed.enabled=true \
                 --set image.tag="$CORE_IMAGE_TAG" \
                 --namespace opencrvs-${ENV} \

@@ -2,6 +2,7 @@ chart_dev_mode: true
 hostname: aws.opencrvs.dev
 
 redis:
+  # TODO: auth mode values doesn't match with opencrvs-services chart
   auth_mode: acl
 
 minio:
@@ -12,3 +13,8 @@ elasticsearch:
 
 mongodb:
   use_default_credentials: false
+
+# TODO: revise naming
+# probably set better name like node_selector, etc.
+affinity:
+ role: data1

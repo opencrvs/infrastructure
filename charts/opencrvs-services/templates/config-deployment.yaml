@@ -44,7 +44,7 @@ spec:
             - name: CERT_PUBLIC_KEY_PATH
               value: /secrets/public-key.pem
             - name: FHIR_URL
-              value: {{ .Values.fhir_url | quote | default "http://hearth:3447/fhir" }}
+              value: http://hearth.{{ .Release.Namespace }}.svc.cluster.local:3447/fhir
             - name: CLIENT_APP_URL
               value: {{ include "render-external-url" (dict "service_name" "register" "Values" .Values) }}
             - name: HOST
@@ -65,11 +65,22 @@ spec:
               value: http://search.{{ .Release.Namespace }}.svc.cluster.local:9090/    
             - name: USER_MANAGEMENT_URL
               value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/
-          {{- if .Values.mongodb_noauth }}     
+          {{- if eq .Values.mongodb.auth_mode "disabled" }}     
             - name: HEARTH_MONGO_URL
-              value: "mongodb://{{ .Values.mongodb_host }}/hearth-dev"
+              value: "mongodb://{{ .Values.mongodb.host }}/hearth-dev"
             - name: MONGO_URL
-              value: mongodb://{{ .Values.mongodb_host }}/application-config
+              value: mongodb://{{ .Values.mongodb.host }}/application-config
+          {{- else if or (eq .Values.mongodb.auth_mode "auto")  (eq .Values.mongodb.auth_mode "use_secret") }}
+            - name: HEARTH_MONGO_URL
+              valueFrom:
+                secretKeyRef:
+                  key: HEARTH_MONGO_URL
+                  name: {{ .Values.mongodb.urls_secret }}
+            - name: MONGO_URL
+              valueFrom:
+                secretKeyRef:
+                  key: CONFIG_MONGO_URL
+                  name: {{ .Values.mongodb.urls_secret }}
           {{- end }}
           {{- include "render-env-vars" (dict "service_name" "config" "Values" .Values) }}
           {{ include "resources-helper" (dict "service_name" "config" "Values" .Values) | indent 10 }}

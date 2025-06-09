@@ -11,6 +11,8 @@ ingress:
 # For OpenCRVS developers there is no need to deploy dependencies helm chart as template.
 chart_dev_mode: true
 
+affinity: {}
+
 mongodb:
   # Enable MongoDB deployment.
   enabled: true
@@ -19,50 +21,7 @@ mongodb:
   # By default MongoDB is deployed without authentication enabled.
   use_default_credentials: true
   # MongoDB databases and users to create, if `use_default_credentials` is set to `false`.
-  databases:
-    # prefix: <PLACEHOLDER> to generate variable names:
-    # - <PLACEHOLDER>_DB, database name from `db` field
-    # - <PLACEHOLDER>_MONGODB_USER, user name from `user` field
-    # - <PLACEHOLDER>_MONGODB_PASSWORD, random password for user
-    # - <PLACEHOLDER>_MONGODB_ROLES, roles for user in JSON format
-    # db: Name of MongoDB database to create.
-    # user: Name of MongoDB user to create and attach to database.
-    # roles: JSON string with roles to assign to user.
-    #        If not provided, then user is created with `readWrite` role on the database.
-    #        If roles are provided, please add explicitly `readWrite` role for the database.
-    #        For example:
-    #        [{ role: 'readWrite', db: 'hearth' }, ...]
-    - prefix: USER_MGNT
-      db: user-mgnt
-      user: user-mgnt
-    - prefix: HEARTH
-      db: hearth-dev
-      user: hearth
-      roles: "[{ role: 'readWrite', db: 'hearth' }, { role: 'readWrite', db: 'performance' }, { role: 'readWrite', db: 'hearth-dev' }]"
-    - prefix: CONFIG
-      db: application-config
-      user: config
-    - prefix: PERFORMANCE
-      db: performance
-      user: performance
-    - prefix: METRICS
-      db: metrics
-      user: metrics
-    - prefix: OPENHIM
-      db: openhim-dev
-      user: openhim
-      roles: "[{ role: 'readWrite', db: 'openhim' }, { role: 'readWrite', db: 'openhim-dev' }]"
-    - prefix: WEBHOOKS
-      db: webhooks
-      user: webhooks
-    - prefix: NOTIFICATION
-      db: notification
-      user: notification
-    - prefix: EVENTS
-      db: events
-      user: events
-      roles: "[{ role: 'readWrite', db: 'events' }, {role: 'read', db: 'user-mgnt'}]"
-
+  admin_user_secret_name: mongodb-admin-user
 
 # Elasticsearch Configuration
 elasticsearch:
@@ -70,20 +29,8 @@ elasticsearch:
   enabled: true
   # By default Elasticsearch is deployed without authentication enabled.
   use_default_credentials: true
-  # List of users to create and grant authorization to Elasticsearch.
-  # Column separated pair of placeholder and user name, <PLACEHOLDER>:<USERNAME>
-  # Placeholders are converted to variables:
-  # - <PLACEHOLDER>_ELASTIC_USERNAME
-  # - <PLACEHOLDER>_ELASTIC_PASSWORD
-  # If <USERNAME> is not provided, then random username is generated.
-  # Password is always generated randomly.
-  # Values are stored in secret named `elasticsearch-opencrvs-users`.
-  auth_users:
-    - SEARCH
-    - KIBANA_USER
-    - KIBANA_SYSTEM:kibana_system
-    - METRICBEAT:beats_system
-    - APM:apm_system
+  admin_user_secret_name: elasticsearch-admin-user
+
 
 minio:
   # Enable MinIO deployment.

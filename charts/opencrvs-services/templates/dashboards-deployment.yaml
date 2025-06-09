@@ -45,9 +45,29 @@ spec:
             - name: OPENCRVS_METABASE_MAP_URL
               value: "http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040/content/map.geojson"
             - name: OPENCRVS_METABASE_DB_HOST
-              value: {{ .Values.mongodb_host | quote }}
+              value: {{ .Values.mongodb.host | quote }}
             - name: OPENCRVS_METABASE_ADMIN_EMAIL
               value: {{ .Values.dashboards.admin_email | quote | default "user@opencrvs.org" }}
+          {{- if eq .Values.mongodb.auth_mode "disabled" }}
+            - name: OPENCRVS_METABASE_DB_AUTH_DB
+              value: performance
+          {{- else if or (eq .Values.mongodb.auth_mode "auto")  (eq .Values.mongodb.auth_mode "use_secret") }}
+            - name: OPENCRVS_METABASE_DB_AUTH_DB
+              valueFrom:
+                secretKeyRef:
+                  key: PERFORMANCE_MONGODB_DB
+                  name: {{ .Values.mongodb.users_secret }}
+            - name: OPENCRVS_METABASE_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  key: PERFORMANCE_MONGODB_USER
+                  name: {{ .Values.mongodb.users_secret }}
+            - name: OPENCRVS_METABASE_DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  key: PERFORMANCE_MONGODB_PASSWORD
+                  name: {{ .Values.mongodb.users_secret }}
+          {{- end }}
           {{- if .Values.dashboards.use_default_credentials }}
             - name: OPENCRVS_METABASE_ADMIN_PASSWORD
               value: m3tabase

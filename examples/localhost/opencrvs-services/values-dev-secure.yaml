@@ -1,0 +1,66 @@
+chart_dev_mode: true
+# All OpenCRVS services will be available under domain:
+hostname: opencrvs.localhost
+
+# Access OpenCRVS services at http://opencrvs.localhost
+# If SSL is enabled, You need to accept SSL Certificate on localhost for multiple endpoints:
+# - login
+# - register
+# - countryconfig
+# - config
+# - client
+# - ...
+# That makes it easier to test the application locally without SSL
+# On local environment SSL is disabled by default:
+ingress:
+  ssl_enabled: false
+
+# On local environment services are exposed at NodePort as well and are available from Tilt
+# To access service you need to click on the service name in Tilt UI:
+service_type: LoadBalancer
+
+elasticsearch:
+  auth_mode: auto
+
+minio:
+  auth_mode: auto
+# Horizontal Pod Autoscaler (HPA) configuration:
+# Disabled by default for local environment.
+hpa:
+  enabled: false
+
+# Pod Disruption Budget (PDB) configuration:
+# Disabled by default for local environment.
+pdb:
+  enabled: false
+
+# Define the environment variables for the OpenCRVS services at global level.
+env:
+  LOG_LEVEL: debug 
+  MINIO_BUCKET: "ocrvs"
+
+mongodb:
+  auth_mode: auto
+
+redis:
+  auth_mode: use_secret
+
+image:
+  tag: develop
+
+dashboards:
+  use_default_credentials: false
+
+countryconfig:
+  image:
+    # Replace countryconfig with farajaland to test data
+    # name: opencrvs/ocrvs-farajaland
+    name: opencrvs/ocrvs-countryconfig
+    # tag: develop
+    # tag: ec53c12
+    tag: local
+
+data_seed:
+  env:
+    SUPER_USER_PASSWORD: "password"
+    ACTIVATE_USERS: "true"

@@ -1,52 +1,3 @@
-# Copyright (c) HashiCorp, Inc.
-# SPDX-License-Identifier: MPL-2.0
-# Source: http://developer.hashicorp.com/terraform/tutorials/kubernetes/eks
-
-provider "aws" {
-  region = var.region
-  # Make sure credentials are configured with aws CLI
-  shared_credentials_files = ["~/.aws/credentials"]
-}
-
-resource "aws_s3_bucket" "terraform-state" {
-  bucket = "opencrvs-terraform-state"
-}
-
-
-# Filter out local zones, which are not currently supported 
-# with managed node groups
-data "aws_availability_zones" "available" {
-  filter {
-    name   = "opt-in-status"
-    values = ["opt-in-not-required"]
-  }
-}
-
-module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "5.21.0"
-
-  name = "demo-vpc"
-
-  cidr = "10.0.0.0/16"
-  azs  = slice(data.aws_availability_zones.available.names, 0, 3)
-
-  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-  public_subnets  = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
-
-  enable_nat_gateway   = true
-  single_nat_gateway   = true
-  enable_dns_hostnames = true
-
-  public_subnet_tags = {
-    "kubernetes.io/role/elb" = 1
-  }
-
-  private_subnet_tags = {
-    "kubernetes.io/role/internal-elb" = 1
-  }
-}
-
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "20.36.0"
@@ -79,19 +30,38 @@ module "eks" {
   }
 
   eks_managed_node_groups = {
-    default = {
+    az1 = {
       capacity_type  = "SPOT"
-      name = "default"
+      name = "spot-az1"
       # TODO: change to t3.medium or t3.large
       instance_types = ["t3a.large"]
-
+      subnet_ids     = [module.vpc.private_subnets[0]]
       min_size     = 1
       max_size     = 10
-      desired_size = 5
+      desired_size = 1
+      labels = {
+        "az"     = "az1"
+        "role"       = "data1"
+      }
+    }
+    az2 = {
+      capacity_type  = "SPOT"
+      name = "spot-az2"
+      # TODO: change to t3.medium or t3.large
+      instance_types = ["t3a.large"]
+      subnet_ids     = [module.vpc.private_subnets[1]]
+      min_size     = 1
+      max_size     = 10
+      desired_size = 1
+      labels = {
+        "az"     = "az2"
+        "role"       = "workload"
+      }
     }
   }
 }
 
+# Configure addons
 
 # https://aws.amazon.com/blogs/containers/amazon-ebs-csi-driver-is-now-generally-available-in-amazon-eks-add-ons/ 
 data "aws_iam_policy" "ebs_csi_policy" {
@@ -123,4 +93,38 @@ module "irsa-cloudwatch" {
   provider_url                  = module.eks.oidc_provider
   role_policy_arns              = [data.aws_iam_policy.cloudwatch_observability_policy.arn]
   oidc_fully_qualified_subjects = ["system:serviceaccount:amazon-cloudwatch:cloudwatch-agent"]
+}
+
+data "aws_eks_cluster" "this" {
+  name = module.eks.cluster_name
+}
+
+data "aws_eks_cluster_auth" "this" {
+  name = module.eks.cluster_name
+}
+
+provider "kubernetes" {
+  host                   = data.aws_eks_cluster.this.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.this.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.this.token
+}
+
+resource "kubernetes_storage_class" "gp3_default" {
+  metadata {
+    name = "gp3"
+    annotations = {
+      "storageclass.kubernetes.io/is-default-class" = "true"
+    }
+  }
+
+  storage_provisioner = "ebs.csi.aws.com"
+
+  parameters = {
+    type = "gp3"
+    fsType = "ext4"
+  }
+
+  reclaim_policy = "Delete"
+  volume_binding_mode = "WaitForFirstConsumer"
+  allow_volume_expansion = true
 }
