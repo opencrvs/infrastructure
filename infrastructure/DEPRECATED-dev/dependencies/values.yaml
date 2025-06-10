@@ -1,7 +1,0 @@
-hostname: k8s.opencrvs.dev
-
-minio:
-  use_default_credentials: false
-
-redis:
-  auth_mode: acl
