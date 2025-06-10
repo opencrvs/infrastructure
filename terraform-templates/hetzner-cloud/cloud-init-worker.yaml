@@ -7,15 +7,3 @@ users:
       - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINgMcsSBwTE0EbMDRSF1T4vJDcN/5HAjKGbi2DqV7g/Q vmudryi@opencrvs.org"
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
-write_files:
-  - path: /root/.ssh/id_rsa
-    content: |
-      ${worker_private_ssh_key}
-    permissions: "0600"
-runcmd:
-  - "apt-get update -y"
-  - # wait for the master node to be ready by trying to connect to it
-  - "until curl -k https://10.0.1.1:6443; do sleep 5; done"
-  - |
-    REMOTE_TOKEN=$(ssh -o StrictHostKeyChecking=accept-new cluster@10.0.1.1 sudo cat /var/lib/rancher/k3s/server/node-token)
-    curl -sfL https://get.k3s.io | K3S_URL=https://10.0.1.1:6443 K3S_TOKEN=$REMOTE_TOKEN INSTALL_K3S_EXEC="--kubelet-arg cloud-provider=external" sh -

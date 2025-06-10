@@ -27,6 +27,7 @@ spec:
 apiVersion: v1
 data:
   influxdb.conf: |+
+    bind-address = ":8088"
     [meta]
       dir = "/var/lib/influxdb/meta"
 
@@ -34,9 +35,11 @@ data:
       dir = "/var/lib/influxdb/data"
       engine = "tsm1"
       wal-dir = "/var/lib/influxdb/wal"
+      max-values-per-tag = 0
 
     [http]
-    flux-enabled=true
+      flux-enabled=true
+      bind-address = ":8086"
 kind: ConfigMap
 metadata:
   annotations:
