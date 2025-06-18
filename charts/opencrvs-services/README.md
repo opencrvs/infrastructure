@@ -1,8 +1,104 @@
-# Before you begin
+# OpenCRVS Helm Chart
 
 This document describes OpenCRVS Helm chart configuration and provides explanation with examples for various deployment flows.
 
+# 🚀 Quickstart
+
+Quickstart scenario allows to run OpenCRVS locally on kubernetes cluster like minikube.
+
+After installation visit http://opencrvs.localhost
+
+**1. Install Traefik Ingress Controller**
+
+```
+helm repo add traefik https://traefik.github.io/charts
+helm repo update
+helm upgrade --install traefik traefik/traefik \
+    --namespace traefik \
+    --create-namespace \
+    -f examples/localhost/traefik/values.yaml
+```
+
+**2. Install the OpenCRVS Dependencies Chart (Database & Storage Components)**
+
+OpenCRVS requires supporting services (MongoDB, MinIO, InfluxDB, Elasticsearch, Redis):
+
+```
+helm upgrade opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart \
+    --install \
+    --namespace "opencrvs-deps-dev" \
+    -f examples/localhost/dependencies/values-dev.yaml \
+    --create-namespace
+```
+
+**3. Install OpenCRVS Chart**
+
+```
+helm upgrade opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
+    --install \
+    --namespace "opencrvs-dev" \
+    -f examples/localhost/opencrvs-services/values.yaml \
+    --create-namespace \
+    --set image.tag=v1.8.0 \
+    --set countryconfig.image.tag=v1.8.0
+```
+
 [Configuration options](#configuration-options) table gives brief overview of options available within helm chart.
+
+# 🛠 Prerequisites
+
+Before installing OpenCRVS using Helm, ensure you have the following:
+
+
+---
+
+## 🛠 Prerequisites
+
+Before installing OpenCRVS using Helm, ensure you have the following:
+
+- **A Kubernetes Cluster:**  
+  - Kubernetes version 1.21 or higher (lower versions may work but are not tested).
+  - Sufficient resources to run OpenCRVS and dependencies (recommend at least 4 CPUs, 8Gi RAM; adjust for production deployments).
+
+- **kubectl Installed:**  
+  - [kubectl](https://kubernetes.io/docs/tasks/tools/) configured to access your cluster.
+
+- **Helm 3.x Installed:**  
+  - [Install Helm](https://helm.sh/docs/intro/install/).
+
+- **Persistent Volume Provisioner:**  
+  - Your Kubernetes cluster should support dynamic persistent volume provisioning for MongoDB, MinIO, etc.
+
+- **Traefik Ingress Controller:**  
+  - OpenCRVS requires an Ingress controller for HTTP/S routing.  
+  - [Traefik](https://doc.traefik.io/traefik/) is recommended; see Quickstart for installation steps.
+
+- **Cert-manager** required for traefik to issue valid SSL Certificate from Lets Encrypt. For more information how to issue valid SSL Certificates using cert-manager please check official documentation.
+
+- **(Optional, Recommended) DNS Access:**  
+  - You'll need to configure DNS to route your OpenCRVS hostname to the ingress controller's external IP.
+
+- **OpenCRVS Optional Dependencies:**  
+  - If you wish to bring your own MongoDB, MinIO, Elasticsearch, Redis, or InfluxDB, ensure they are already deployed and accessible to your cluster.
+  - Otherwise, install the provided `opencrvs-deps` chart as shown in the Quickstart.
+
+---
+
+### Example: Check Kubernetes and Helm Versions
+
+```sh
+kubectl version --short
+helm version
+```
+
+---
+
+**Next steps:**  
+Once the prerequisites are in place, continue with [Quickstart](#quickstart) to deploy OpenCRVS.
+
+---
+
+Let me know if you want to tailor this for a specific cloud platform, Kubernetes distribution, or have extra checks you’d like to suggest to users!
 
 # Configuration options
 
