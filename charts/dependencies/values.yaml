@@ -11,6 +11,7 @@ ingress:
 # For OpenCRVS developers there is no need to deploy dependencies helm chart as template.
 chart_dev_mode: true
 
+# FIXME: Rename affinity to node_label_selector
 affinity: {}
 
 mongodb:
