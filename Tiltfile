@@ -18,7 +18,8 @@ include('./tilt/common.tilt')
 # One of working combination is:
 # - core: da3ab7b
 # - opencrvs/ocrvs-farajaland: efc9b7a
-core_images_tag = "da3ab7b"
+
+core_images_tag = "develop"
 
 # Countryconfig/Farajaland image repository and tag
 # Usually image repository value (countryconfig_image_name) is your repository on DockerHub
@@ -28,7 +29,7 @@ core_images_tag = "da3ab7b"
 countryconfig_image_name="opencrvs/ocrvs-farajaland"
 # If you would like to start with sample countryconfig image, please use:
 # countryconfig_image_name="opencrvs/ocrvs-countryconfig"
-countryconfig_image_tag="efc9b7a"
+countryconfig_image_tag="develop"
 
 # Namespaces:
 # - opencrvs-deps-dev, dependencies namespace
@@ -41,7 +42,7 @@ opencrvs_namespace = 'opencrvs-dev'
 # - Setup MinIO admin user and password
 # - Configure Redis users
 # - Sync passwords between dependencies and OpenCRVS services
-security_enabled = True
+security_enabled = False
 
 # If your machine is powerful feel free to change parallel updates from default 3
 # Be careful repositories like npm, yarn, pip, etc. could have rate limits
