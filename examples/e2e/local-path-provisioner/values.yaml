@@ -10,6 +10,7 @@ storageClass:
 nodeSelector:
   role: data1
 
+# FIXME: Put to encrypted volume
 configmap:
   config.json: |
     {
