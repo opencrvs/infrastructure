@@ -7,7 +7,7 @@ module "master_node" {
   ip                 = local.master_ip
   name               = "${var.country_name}-k8s-master"
   private_network_id = hcloud_network.private_network.id
-  location = "hel1"
+  location = "nbg1"
   user_data = file("cloud-init-master.yaml")
   depends_on = [ hcloud_network_subnet.private_network_subnet ]
 #   user_data = templatefile("cloud-init-master.yaml", {
@@ -18,7 +18,7 @@ module "master_node" {
 
 module "worker_node" {
     count = 2
-    location = "hel1"
+    location = "nbg1"
   source             = "./node"
   name               = "${var.country_name}-k8s-worker-${count.index}"
   private_network_id = hcloud_network.private_network.id

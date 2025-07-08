@@ -13,7 +13,8 @@ spec:
       image: ghcr.io/opencrvs/opencrvs-github-runner:latest
       labels:
         - self-hosted
-        - aws
+        - e2e
+        - hetzner
       env:
         - name: DOCKER_ENABLED
           value: "true"

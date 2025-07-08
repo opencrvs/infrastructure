@@ -2,15 +2,8 @@
 packages:
   - curl
 users:
-  - name: cluster
+  - name: provision
     ssh-authorized-keys:
-      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINgMcsSBwTE0EbMDRSF1T4vJDcN/5HAjKGbi2DqV7g/Q vmudryi@opencrvs.org"
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC7urAt3KYs4Io/53yS87QQj3qJ5/AL+seqG1J+VrF13 vmudryi@NB01NSTL012"
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
-runcmd:
-  - "apt-get update -y"
-  - |
-    curl https://get.k3s.io | sh -
-    chown cluster:cluster /etc/rancher/k3s/k3s.yaml
-    chown cluster:cluster /var/lib/rancher/k3s/server/node-token
-#     kubectl taint nodes ${node_name} node.cloudprovider.kubernetes.io/uninitialized:NoSchedule-

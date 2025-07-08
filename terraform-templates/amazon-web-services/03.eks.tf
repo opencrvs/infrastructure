@@ -50,9 +50,9 @@ module "eks" {
       # TODO: change to t3.medium or t3.large
       instance_types = ["t3a.large"]
       subnet_ids     = [module.vpc.private_subnets[1]]
-      min_size     = 1
+      min_size     = 2
       max_size     = 10
-      desired_size = 1
+      desired_size = 2
       labels = {
         "az"     = "az2"
         "role"       = "workload"
