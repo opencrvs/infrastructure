@@ -44,7 +44,10 @@ spec:
       port: {{ .Values.countryconfig.port }}
     middlewares:
       - name: block-internal-routes
-
+  {{- if .Values.ingress.tls_resolver }}
+  tls:
+    certResolver: {{ .Values.ingress.tls_resolver }}
+  {{- end }}
 ---
 apiVersion: apps/v1
 kind: Deployment

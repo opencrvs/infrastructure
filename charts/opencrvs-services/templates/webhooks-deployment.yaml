@@ -19,6 +19,10 @@ spec:
       port: {{ .Values.webhooks.port }}
     middlewares:
       - name: sts-and-basic-response-headers
+  {{- if .Values.ingress.tls_resolver }}
+  tls:
+    certResolver: {{ .Values.ingress.tls_resolver }}
+  {{- end }}
 
 ---
 apiVersion: apps/v1

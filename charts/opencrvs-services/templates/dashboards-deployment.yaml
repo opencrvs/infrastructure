@@ -19,6 +19,11 @@ spec:
       port: {{ .Values.dashboards.port }}
     middlewares:
       - name: sts-and-basic-response-headers
+  {{- if .Values.ingress.tls_resolver }}
+  tls:
+    certResolver: {{ .Values.ingress.tls_resolver }}
+  {{- end }}
+
 ---
 apiVersion: apps/v1
 kind: Deployment

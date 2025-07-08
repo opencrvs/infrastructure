@@ -1,5 +1,8 @@
 chart_dev_mode: false
 
+ingress:
+  tls_resolver: letsencrypt
+
 hostname: k8s-e2e.opencrvs.dev
 influxdb:
   host: influxdb-0.influxdb.opencrvs-deps-e2e.svc.cluster.local

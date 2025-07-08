@@ -73,8 +73,6 @@ Before installing OpenCRVS using Helm, ensure you have the following:
   - OpenCRVS requires an Ingress controller for HTTP/S routing.  
   - [Traefik](https://doc.traefik.io/traefik/) is recommended; see Quickstart for installation steps.
 
-- **Cert-manager** required for traefik to issue valid SSL Certificate from Lets Encrypt. For more information how to issue valid SSL Certificates using cert-manager please check official documentation.
-
 - **(Optional, Recommended) DNS Access:**  
   - You'll need to configure DNS to route your OpenCRVS hostname to the ingress controller's external IP.
 
@@ -82,23 +80,6 @@ Before installing OpenCRVS using Helm, ensure you have the following:
   - If you wish to bring your own MongoDB, MinIO, Elasticsearch, Redis, or InfluxDB, ensure they are already deployed and accessible to your cluster.
   - Otherwise, install the provided `opencrvs-deps` chart as shown in the Quickstart.
 
----
-
-### Example: Check Kubernetes and Helm Versions
-
-```sh
-kubectl version --short
-helm version
-```
-
----
-
-**Next steps:**  
-Once the prerequisites are in place, continue with [Quickstart](#quickstart) to deploy OpenCRVS.
-
----
-
-Let me know if you want to tailor this for a specific cloud platform, Kubernetes distribution, or have extra checks you’d like to suggest to users!
 
 # Configuration options
 
@@ -274,6 +255,11 @@ Let me know if you want to tailor this for a specific cloud platform, Kubernetes
             <td>ingress.ssl_enabled</td>
             <td>true</td>
             <td>Enable or disable https endpoint, by default all http traffic is routed to https</td>
+        </tr>
+        <tr>
+            <td>ingress.tls_resolver</td>
+            <td>` `</td>
+            <td>Traefik TLS Resolver</td>
         </tr>
         <tr>
             <td>service_type</td>

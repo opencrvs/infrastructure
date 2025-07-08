@@ -148,10 +148,13 @@ mongodb:
 # All OpenCRVS services will be available under domain:
 hostname: opencrvs.org
 
-# Access OpenCRVS services at https://<hostname>/
-# For example, https://farajaland.org/
+
 ingress:
+  # Access OpenCRVS services at https://<hostname>/
+  # For example, https://farajaland.org/
   ssl_enabled: true
+  # Generate SSL Certificate by TLS resolver instead of using default traefik Certificate
+  tls_resolver: ""
 
 # See kubernetes documentation for more information on service types:
 # https://kubernetes.io/docs/concepts/services-networking/service/
