@@ -44,13 +44,13 @@ spec:
       labels:
         app: mongodb
     spec:
-    {{- if .Values.affinity }}
+    {{- if .Values.node_label_selector }}
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-            {{- range $k, $v := .Values.affinity }}
+            {{- range $k, $v := .Values.node_label_selector }}
               - key: {{ $k }}
                 operator: In
                 values:
