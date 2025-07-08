@@ -7,7 +7,8 @@ spec:
   entryPoints:
   {{- if .Values.ingress.ssl_enabled }}
     - websecure
-  {{- else }}
+  {{- end }}
+  {{- if or .Values.ingress.tls_resolver (not .Values.ingress.ssl_enabled) }}
     - web
   {{- end }}
   routes:

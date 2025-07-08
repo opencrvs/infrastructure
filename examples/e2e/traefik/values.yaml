@@ -43,11 +43,29 @@ certificatesResolvers:
       httpChallenge:
         entryPoint: web
       email: vadym@opencrvs.org
-      storage: /data/acme.json
+      # Storage for production certificates:
+      # storage: /data/acme.json
+      # Storage for staging certificates:
+      storage: /data/acme-staging.json
+      # Staging server
+      caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+      # Production server
+      # caServer: https://acme-v02.api.letsencrypt.org/directory
 
 # Additional arguments
 additionalArguments:
   - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
   - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
   - "--certificatesresolvers.letsencrypt.acme.email=vadym@opencrvs.org"
-  - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
+  # Storage for staging certificates:
+  - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme-staging.json"
+  # Storage for staging certificates:
+  # - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
+
+persistence:
+  enabled: true
+  name: data
+  accessMode: ReadWriteOnce
+  size: 128Mi
+  path: /data
+  annotations: {}

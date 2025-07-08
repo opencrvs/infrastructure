@@ -1,5 +1,5 @@
 chart_dev_mode: false
-hostname: deps.k8s-e2e.opencrvs.dev
+hostname: k8s-e2e.opencrvs.dev
 
 ingress:
   tls_resolver: letsencrypt
