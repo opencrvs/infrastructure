@@ -60,13 +60,13 @@ spec:
       labels:
         app: elasticsearch
     spec:
-    {{- if .Values.node_label_selector }}
+    {{- if .Values.node_selector }}
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-            {{- range $k, $v := .Values.node_label_selector }}
+            {{- range $k, $v := .Values.node_selector }}
               - key: {{ $k }}
                 operator: In
                 values:

@@ -15,7 +15,7 @@ ingress:
 chart_dev_mode: true
 
 # Label selector for datastore nodes, usually used to keep data persistent
-node_label_selector: {}
+node_selector: {}
 
 mongodb:
   # Enable MongoDB deployment.

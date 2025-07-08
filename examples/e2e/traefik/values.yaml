@@ -35,3 +35,19 @@ ports:
     nodePort: 30443
     hostPort: 443
     protocol: TCP
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      tlsChallenge: false
+      httpChallenge:
+        entryPoint: web
+      email: vadym@opencrvs.org
+      storage: /data/acme.json
+
+# Additional arguments
+additionalArguments:
+  - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+  - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+  - "--certificatesresolvers.letsencrypt.acme.email=vadym@opencrvs.org"
+  - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
