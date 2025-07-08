@@ -5,14 +5,17 @@ hostname: farajaland.dev
 ingress:
   # Enable SSL for IngressRoutes.
   ssl_enabled: true
+  # If traefik was deployed with custom resolver, please define resolver name here.
+  # Resolver will be attached to Traefik CRD IngressRoute
+  tls_resolver: ""
 
 # FIXME: Tiltfile deploys helm chart as template. There is no way to track existing secrets on the cluster.
 # This flag was introduced to avoid secrets update (mutation) on every file change within chart directory.
 # For OpenCRVS developers there is no need to deploy dependencies helm chart as template.
 chart_dev_mode: true
 
-# FIXME: Rename affinity to node_label_selector
-affinity: {}
+# Label selector for datastore nodes, usually used to keep data persistent
+node_label_selector: {}
 
 mongodb:
   # Enable MongoDB deployment.

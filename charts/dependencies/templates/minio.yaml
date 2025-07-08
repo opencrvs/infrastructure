@@ -36,6 +36,11 @@ spec:
     - name: minio
       namespace: {{ .Release.Namespace }}
       port: 3536
+  {{- if .Values.ingress.tls_resolver }}
+  tls:
+    certResolver: {{ .Values.ingress.tls_resolver }}
+  {{- end }}
+
 ---
 apiVersion: v1
 kind: Service
@@ -72,13 +77,13 @@ spec:
       labels:
         app: minio
     spec:
-    {{- if .Values.affinity }}
+    {{- if .Values.node_label_selector }}
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-            {{- range $k, $v := .Values.affinity }}
+            {{- range $k, $v := .Values.node_label_selector }}
               - key: {{ $k }}
                 operator: In
                 values:
