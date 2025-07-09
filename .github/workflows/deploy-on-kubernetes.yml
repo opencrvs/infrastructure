@@ -15,10 +15,7 @@ on:
           description: "Target environment"
           required: true
           default: "demo"
-          type: choice
-          options:
-            - dev
-            - demo
+          type: string
     workflow_call:
       inputs:
         core-image-tag:
