@@ -56,11 +56,11 @@ jobs:
             "mongodb-admin-user"
           )
           for secret in "${secrets[@]}"; do
-            kubectl get secret $secret -n opencrvs-deps-${ENV} -o yaml \
-            | sed "s#namespace: opencrvs-deps-${ENV}#namespace: opencrvs-${ENV}#" \
+            kubectl get secret $secret -n opencrvs-deps-e2e -o yaml \
+            | sed "s#namespace: opencrvs-deps-e2e#namespace: opencrvs-${ENV}#" \
             | grep -vE 'resourceVersion|uid|creationTimestamp' \
             | kubectl apply -n opencrvs-${ENV} -f - \
-            || echo "Secret $secret doesn't exist in opencrvs-deps-${ENV} namespace"
+            || echo "Secret $secret doesn't exist in opencrvs-deps-e2e namespace"
           done
       # FIXME:
       # In generic workflow we should use environment variables or ...
