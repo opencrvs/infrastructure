@@ -40,7 +40,8 @@ jobs:
       ENV: ${{ inputs.environment }}
       CORE_IMAGE_TAG: ${{ inputs.core-image-tag }}
       COUNTRYCONFIG_IMAGE_TAG: ${{ inputs.countryconfig-image-tag }}
-    runs-on: [self-hosted]
+    # runs-on: [self-hosted]
+    runs-on: ubuntu-latest
     # TEMPORARY COMMENTED
     # environment: ${{ inputs.environment }}
 
