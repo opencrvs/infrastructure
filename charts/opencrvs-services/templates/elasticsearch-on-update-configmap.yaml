@@ -11,5 +11,7 @@ metadata:
     app: elasticsearch
   annotations:
     "helm.sh/resource-policy": keep
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "0"
   name: elasticsearch-on-update-script
 {{- end }}
