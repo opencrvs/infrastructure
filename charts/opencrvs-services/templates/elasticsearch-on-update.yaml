@@ -1,4 +1,4 @@
-{{- if not (eq .Values.elasticsearch.auth_mode "disabled") }}
+{{- if eq .Values.elasticsearch.auth_mode "auto" }}
 apiVersion: batch/v1
 kind: Job
 metadata:
