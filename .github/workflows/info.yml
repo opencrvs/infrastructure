@@ -1,28 +1,15 @@
 name: Info job
 on:
-    workflow_dispatch:
-      inputs:
-        environment:
-          description: "Target environment"
-          required: true
-          default: "demo"
-          type: choice
-          options:
-            - dev
-            - demo
+  workflow_call: {}
+  workflow_dispatch: {}
 jobs:
-  deploy:
-    env:
-      ENV: ${{ github.event.inputs.environment }}
+  self-test:
     runs-on: [self-hosted]
-    # TEMPORARY COMMENTED
-    # environment: ${{ github.event.inputs.environment }}
     steps:
-        # FYI: Repository is needed only due to single file: infrastructure/dev/dependenciess/values.yaml
-        - name: Checkout repo
-          uses: actions/checkout@v4
         - name: Cleanup environment
           run: |
+            ls -l /var/run/secrets/kubernetes.io/serviceaccount
+            env
             echo "Environment: $ENV"
             which kubectl            
             kubectl get pods -A
