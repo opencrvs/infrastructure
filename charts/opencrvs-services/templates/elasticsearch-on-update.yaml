@@ -4,7 +4,7 @@ kind: Job
 metadata:
   annotations:
     "helm.sh/hook": pre-install
-    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-weight": "1"
   labels:
     app: elasticsearch-on-deploy
   name: elasticsearch-on-deploy
