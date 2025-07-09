@@ -1,4 +1,4 @@
-{{- if not .Values.elasticsearch.use_default_credentials }}
+{{- if not (eq .Values.elasticsearch.auth_mode "disabled") }}
 apiVersion: v1
 data:
 {{- range $path, $file := .Files.Glob "files/elasticsearch/*" }}
