@@ -1,5 +1,5 @@
 name: Deploy Application on k8s
-run-name: "Deploy OpenCRVS on k8s (core: ${{ github.event.inputs.core-image-tag }}, country: ${{ github.event.inputs.countryconfig-image-tag }})"
+run-name: "Deploy OpenCRVS on k8s (core: ${{ inputs.core-image-tag }}, country: ${{ inputs.countryconfig-image-tag }})"
 on:
     workflow_dispatch:
       inputs:
@@ -19,17 +19,30 @@ on:
           options:
             - dev
             - demo
-    # push:
-    #     branches: ["develop"]
+    workflow_call:
+      inputs:
+        core-image-tag:
+          description: "Tag of the core image"
+          type: string
+          default: "develop"
+        countryconfig-image-tag:
+          description: "Tag of the countryconfig image"
+          type: string
+          default: "develop"
+        environment:
+          description: "Target environment"
+          type: string
+          default: "demo"
+
 jobs:
   deploy:
     env:
-      ENV: ${{ github.event.inputs.environment }}
-      CORE_IMAGE_TAG: ${{ github.event.inputs.core-image-tag }}
-      COUNTRYCONFIG_IMAGE_TAG: ${{ github.event.inputs.countryconfig-image-tag }}
+      ENV: ${{ inputs.environment }}
+      CORE_IMAGE_TAG: ${{ inputs.core-image-tag }}
+      COUNTRYCONFIG_IMAGE_TAG: ${{ inputs.countryconfig-image-tag }}
     runs-on: [self-hosted]
     # TEMPORARY COMMENTED
-    # environment: ${{ github.event.inputs.environment }}
+    # environment: ${{ inputs.environment }}
 
     steps:
       # FYI: Repository is needed only due to single file: examples/dev/opencrvs-services/values.yaml
