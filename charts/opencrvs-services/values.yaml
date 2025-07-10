@@ -140,6 +140,26 @@ mongodb:
       user: events
       roles: "[{ role: 'readWrite', db: 'events' }, {role: 'read', db: 'user-mgnt'}]"
 
+# TODO: Implement
+postgres:
+  # Postgres hostname configuration
+  host: postgres-0.postgres.opencrvs-deps-dev.svc.cluster.local
+  auth_mode: disabled
+  # auth_mode:
+  # - disabled: Default credentials are used postgres/postgres
+  # - auto: Users are managed by OpenCRVS helm chart, this mode requires secret to be created with Postgres admin user
+  # - use_secret: Kubernetes Secrets needs to be created manually, users are managed by Postgres administrator, but helm
+  #               will pick up data from users_secret and urls_secret
+  # - managed: Kubernetes Secrets needs to be created manually and mapped manually for each service, for more information
+  #            please check README.md
+  # It is recommended to setup auto or use_secret values for server environment
+  auth_mode: disabled
+
+  # Postgres databases and users to create, if `use_default_credentials` is set to `false`.
+  admin_user_secret_name: postgres-admin-user
+  users_secret: postgres-opencrvs-users
+  urls_secret: postgres-urls
+
 ###############################################################################
 # Application configuration
 ###############################################################################

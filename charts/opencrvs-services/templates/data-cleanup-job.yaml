@@ -45,6 +45,40 @@ spec:
                   name: {{ .Values.mongodb.admin_user_secret_name }}
           {{- end }}
           {{- include "render-env-vars" (dict "service_name" "data_cleanup" "Values" .Values) }}
+        - name: cleanup-postgres
+          image: postgres:17
+          command: ["/bin/bash", "-c"]
+          args: |
+            echo "🔁 Dropping database '${POSTGRES_DB}' and roles..."
+            psql -h postgres -U "$POSTGRES_USER" -d postgres -v ON_ERROR_STOP=1 <<EOF
+            SELECT pg_terminate_backend(pid)
+            FROM pg_stat_activity
+            WHERE datname = '\''"$POSTGRES_DB"'\'' AND pid <> pg_backend_pid();
+
+            DROP DATABASE IF EXISTS "$POSTGRES_DB";
+
+            DROP ROLE IF EXISTS "$EVENTS_MIGRATOR_ROLE";
+            DROP ROLE IF EXISTS "$EVENTS_APP_ROLE";
+          env:
+          # FIXME: Double check property name "managed"
+          {{- if not (eq .Values.postgres.auth_mode "managed") }}
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: {{ .Values.postgres.admin_user_secret_name }}
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  key: POSTGRES_USER
+                  name: {{ .Values.postgres.admin_user_secret_name }}
+          {{- end }}
+            - name: POSTGRES_DB
+              value: events
+            - name: EVENTS_MIGRATOR_ROLE
+              value: events_migrator
+            - name: EVENTS_APP_ROLE
+              value: events_app
         - name: cleanup-minio
           image: "minio/mc"
           command: ["/bin/bash", "-c"]
