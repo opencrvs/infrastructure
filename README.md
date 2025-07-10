@@ -12,22 +12,22 @@ Please note that not all features from the Docker Swarm solution are supported y
 
 This document provides guidance on running OpenCRVS both locally (on your PC or laptop) and on server environments using Kubernetes. It is intended for developers contributing to OpenCRVS, DevOps engineers deploying OpenCRVS in various environments, and anyone interested in installing, running, or testing OpenCRVS features.
 
+# Repository content
 
+- [charts](charts), OpenCRVS helm charts
+- [github-runner](github-runner), configuration files required to deploy self-hosted runner
 
-# Quick Start
+# Quickstart
 
-> 🚧 Work in Progress: Qucki start
+> **NOTE:** Before running commands from Quickstart instructions make sure your kubernetes cluster meets all requirements.
+
+Check quickstart instructions how to deploy OpenCRVS to Kubernetes cluster at [charts/opencrvs-services](charts/opencrvs-services/README.md#-quickstart)
 
 ---
 
-# Developing OpenCRVS with Kubernetes
+# System requirements
 
-Kubernetes is the easiest option to run OpenCRVS locally on your PC or Laptop and test all features and functionality.
-Before running make sure all hardware and software requirements are met.
-
-Once you make sure your development environment is ready for running OpenCRVS we are recommending you start from "For OpenCRVS DevOps" configuration and get familiar with all tools used to deploy OpenCRVS locally (tilt, kubectl, helm). In that particular configuration all docker images are pulled from our registry and OpenCRVS application is starting with Falajaland demo data. No additional actions are needed from your side.
-
-## Prerequisites
+## Desktop requirements
 
 ### Hardware requirements
 - 16G RAM
@@ -94,7 +94,13 @@ Additional settings for linux (Ubuntu) users:
 
 ---
 
-# Running OpenCRVS locally
+# Developing OpenCRVS with Kubernetes
+
+Kubernetes is the easiest option to run OpenCRVS locally on your PC or Laptop and test all features and functionality.
+Before running make sure all hardware and software requirements are met.
+
+Once you make sure your development environment is ready for running OpenCRVS we are recommending you start from "For OpenCRVS DevOps" configuration and get familiar with all tools used to deploy OpenCRVS locally (tilt, kubectl, helm). In that particular configuration all docker images are pulled from our registry and OpenCRVS application is starting with Falajaland demo data. No additional actions are needed from your side.
+
 
 The OpenCRVS team uses [Tilt](https://tilt.dev/) to manage the local development environment. Depending on your role and development needs, the following configurations (Tiltfiles) are available:
 

@@ -9,12 +9,10 @@ spec:
   template:
     spec:
       serviceAccountName: opencrvs-runner
-      repository: opencrvs/infrastructure
+      repository: REPOSITORY_PLACEHOLDER
       image: ghcr.io/opencrvs/opencrvs-github-runner:latest
       labels:
         - self-hosted
-        - e2e
-        - hetzner
       env:
         - name: DOCKER_ENABLED
           value: "true"
