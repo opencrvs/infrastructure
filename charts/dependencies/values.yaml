@@ -27,6 +27,14 @@ mongodb:
   # MongoDB databases and users to create, if `use_default_credentials` is set to `false`.
   admin_user_secret_name: mongodb-admin-user
 
+postgres:
+  # Enable postgres deployment.
+  enabled: true
+  # By default postgres is deployed with authentication enabled user/password: postgres/postgres
+  use_default_credentials: true
+  # postgres databases and users to create, if `use_default_credentials` is set to `false`.
+  admin_user_secret_name: postgres-admin-user
+
 # Elasticsearch Configuration
 elasticsearch:
   # Enable Elasticsearch deployment.
