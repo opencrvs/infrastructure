@@ -209,7 +209,6 @@ auth:
 client:
   replicas: 1
   port: 3000
-  container_port: 80
   env:
     DECLARED_DECLARATION_SEARCH_QUERY_COUNT: 100
 
@@ -230,7 +229,6 @@ config:
 
 countryconfig:
   image:
-    # Replace this repository with your own image
     name: opencrvs/ocrvs-countryconfig
     tag: develop
   replicas: 1
@@ -296,7 +294,6 @@ gateway:
 login:
   replicas: 1
   port: 3020
-  container_port: 80
 
 metrics:
   replicas: 1

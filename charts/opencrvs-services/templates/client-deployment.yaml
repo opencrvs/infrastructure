@@ -59,21 +59,21 @@ spec:
           {{- include "render-env-vars" (dict "service_name" "client" "Values" .Values) }}
           {{ include "resources-helper" (dict "service_name" "client" "Values" .Values) | indent 10 }}
           ports:
-            - containerPort: {{ .Values.client.container_port }}
+            - containerPort: {{ .Values.client.port }}
               protocol: TCP
           livenessProbe:
             httpGet:
               # /manifest.json is external service proxied by nginx on countryconfig
               # pod should be restarted once countryconfig is up
               path: /manifest.json
-              port: {{ .Values.client.container_port }}
+              port: {{ .Values.client.port }}
             periodSeconds: 30
           readinessProbe:
             httpGet:
               # /manifest.json is external service proxied by nginx on countryconfig
               # pod should be restarted once countryconfig is up
               path: /manifest.json
-              port: {{ .Values.client.container_port }}
+              port: {{ .Values.client.port }}
             periodSeconds: 30
       restartPolicy: Always
 
