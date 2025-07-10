@@ -26,9 +26,9 @@ core_images_tag = "develop"
 # If for some reason you don't have DockerHub account yet, please create you local registry
 # (see: https://medium.com/@ankitkumargupta/quick-start-local-docker-registry-35107038242e)
 # If you would like to use Farajaland demo image, please use:
-countryconfig_image_name="opencrvs/ocrvs-farajaland"
+# countryconfig_image_name="opencrvs/ocrvs-farajaland"
 # If you would like to start with sample countryconfig image, please use:
-# countryconfig_image_name="opencrvs/ocrvs-countryconfig"
+countryconfig_image_name="opencrvs/ocrvs-countryconfig"
 countryconfig_image_tag="develop"
 
 # Namespaces:
