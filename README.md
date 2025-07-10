@@ -96,6 +96,10 @@ Additional settings for linux (Ubuntu) users:
 
 ---
 
+## Server requirements
+
+> TODO: Add server requirements
+
 # Developing OpenCRVS with Kubernetes
 
 Kubernetes is the easiest option to run OpenCRVS locally on your PC or Laptop and test all features and functionality.
