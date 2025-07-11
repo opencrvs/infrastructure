@@ -153,7 +153,6 @@ postgres:
   # - managed: Kubernetes Secrets needs to be created manually and mapped manually for each service, for more information
   #            please check README.md
   # It is recommended to setup auto or use_secret values for server environment
-  auth_mode: disabled
 
   # Postgres databases and users to create, if `use_default_credentials` is set to `false`.
   admin_user_secret_name: postgres-admin-user

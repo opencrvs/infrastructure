@@ -26,9 +26,12 @@ core_images_tag = "develop"
 # If for some reason you don't have DockerHub account yet, please create you local registry
 # (see: https://medium.com/@ankitkumargupta/quick-start-local-docker-registry-35107038242e)
 # If you would like to use Farajaland demo image, please use:
-# countryconfig_image_name="opencrvs/ocrvs-farajaland"
+countryconfig_image_name="opencrvs/ocrvs-farajaland"
+# Mosip integration is hardcoded in the Farajaland demo image,
+# Please also set mosip_enabled to True in the configuration file
+mosip_enabled = True
 # If you would like to start with sample countryconfig image, please use:
-countryconfig_image_name="opencrvs/ocrvs-countryconfig"
+# countryconfig_image_name="opencrvs/ocrvs-countryconfig"
 countryconfig_image_tag="develop"
 
 # Namespaces:
@@ -81,10 +84,13 @@ k8s_yaml(helm(dependencies_chart_path,
 # OpenCRVS Deployment
 print("🚀 Deploying services: auth, events, gateway...")
 opencrvs_chart_path = './charts/opencrvs-services'
+opencrvs_values = [opencrvs_configuration_file]
+if mosip_enabled:
+    opencrvs_values.append('./examples/localhost/opencrvs-services/values-mosip.yaml')
 k8s_yaml(
   helm(opencrvs_chart_path,
        namespace=opencrvs_namespace,
-       values=[opencrvs_configuration_file],
+       values=opencrvs_values,
        set=[
         "image.tag={}".format(core_images_tag),
         "countryconfig.image.name={}".format(countryconfig_image_name),
@@ -93,6 +99,14 @@ k8s_yaml(
       )
 )
 
+if mosip_enabled:
+    print("🚀 Deploying mosip services...")
+    mosip_chart_path = './charts/opencrvs-mosip'
+    k8s_yaml(
+      helm(mosip_chart_path,
+           namespace=opencrvs_namespace,
+           values=[opencrvs_configuration_file])
+    )
 
 #######################################################
 # Add Data Tasks to Tilt Dashboard

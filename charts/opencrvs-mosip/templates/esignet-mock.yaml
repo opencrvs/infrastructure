@@ -1,0 +1,41 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: esignet-mock
+spec:
+  selector:
+    app: esignet-mock
+  ports:
+    - port: 20260
+      targetPort: 20260
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: esignet-mock
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: esignet-mock
+  template:
+    metadata:
+      labels:
+        app: esignet-mock
+    spec:
+      containers:
+        - name: esignet-mock
+          image: ghcr.io/opencrvs/esignet-mock:1.8.0-beta.10
+          env:
+            - name: CLIENT_APP_URL
+              value: https://register.{{ .Values.hostname }}
+          {{- include "render-env-vars" (dict "service_name" "esignet_mock" "Values" .Values) }}
+          volumeMounts:
+            - name: keystore
+              mountPath: /certs
+      volumes:
+        - name: keystore
+          secret:
+            secretName: mosip-certs

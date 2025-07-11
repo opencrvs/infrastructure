@@ -1,0 +1,7 @@
+apiVersion: v2
+name: opencrvs-mosip
+description: |
+  OpenCRVS API for MOSIP https://github.com/opencrvs/mosip/tree/main
+type: application
+version: 0.1.0
+appVersion: "1.8.0-beta.10"
