@@ -1,0 +1,14 @@
+{{- if or (eq .Values.postgres.auth_mode "auto") (eq .Values.postgres.auth_mode "disabled") }}
+apiVersion: v1
+data:
+  on-deploy.sh: |
+    {{- .Files.Get "files/postgres-on-deploy.sh" | indent 8 }}
+kind: ConfigMap
+metadata:
+  labels:
+    app: postgres
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "0"
+  name: postgres-on-update-script
+{{- end }}

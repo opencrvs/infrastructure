@@ -7,8 +7,9 @@ List of deployed services:
 | Service name | Docker image | Default port | Notes |
 |---|---|---|---|
 | mongodb | mongo:4.4 | 27017 |  |
-| minio | 3535 / 3536 |  |
-| influxdb | minio/minio:RELEASE.2023-08-16T20-17-30Z.hotfix.a51234923 | influxdb:1.8.10 | 8086 |  |
+| minio | minio/minio:RELEASE.2023-08-16T20-17-30Z.hotfix.a51234923 | 3535 / 3536 |  |
+| postgres | postgres:17 | 5432 |  |
+| influxdb | influxdb:1.8.10 | 8086 |  |
 | elasticsearch | docker.elastic.co/elasticsearch/elasticsearch:8.16.4 | 9200 |  |
 | redis | bitnami/redis:latest | 6379 |  |
 
@@ -29,7 +30,15 @@ This section allows you to configure the deployment of MongoDB within your infra
 | version                  | string  | 4.4 | Specify the MongoDB Docker image version to use. See: https://hub.docker.com/_/mongo                                         |
 | use_default_credentials  | bool    | true | If true, deploys MongoDB without authentication. If false, custom databases and users are created as specified below.                                                                                                         |
 
+## Postgres
 
+Postgres configuration section for Helm values.yaml
+
+This section allows you to configure the postgres deployment within your infrastructure.
+| Parameter                | Type    | Default | Description                                                                                                                                                                                                                   |
+|--------------------------|---------|----|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| enabled                  | bool    | true | Enable or disable the Postgres deployment.                                                                                                                                                                                     |
+| use_default_credentials  | bool    | true | If true, deploys Postgres with default user/password: postgres/postgres |    
 
 ## Elasticsearch
 

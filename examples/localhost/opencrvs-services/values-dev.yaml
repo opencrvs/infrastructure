@@ -38,6 +38,13 @@ env:
 image:
   tag: develop
 
+# FIXME: drop section after testing
+config:
+  resources:
+    memoryRequest: "2Gi"
+    cpuRequest: "250m"
+    memoryLimit: "2Gi"
+    cpuLimit: "2"
 
 countryconfig:
   image:

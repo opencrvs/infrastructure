@@ -66,6 +66,13 @@ spec:
               value: "events"
             - name: USER_MANAGEMENT_URL
               value: "http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/"
+          {{- if not (eq .Values.postgres.auth_mode "managed") }}
+            - name: EVENTS_POSTGRES_URL
+              valueFrom:
+                secretKeyRef:
+                  key: events_app_db_url
+                  name: {{ .Values.postgres.urls_secret }}
+          {{- end }}
           {{- if eq .Values.mongodb.auth_mode "disabled" }}
             - name: USER_MGNT_MONGO_URL
               value: mongodb://{{ .Values.mongodb.host }}/user-mgnt
