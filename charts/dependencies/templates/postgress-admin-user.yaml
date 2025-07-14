@@ -18,6 +18,8 @@ metadata:
   name: {{ .Values.postgres.admin_user_secret_name }}
   annotations:
     "helm.sh/resource-policy": keep
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "0"
 type: Opaque
 data:
   POSTGRES_USER: {{ $admin_user | b64enc }}
