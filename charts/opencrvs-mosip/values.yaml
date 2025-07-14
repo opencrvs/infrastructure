@@ -1,5 +1,6 @@
 hostname: opencrvs.localhost
-
+ingress:
+  ssl_enabled: false
 mosip_mock:
   env:
     FOO: bar
