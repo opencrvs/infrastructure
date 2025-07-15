@@ -159,6 +159,11 @@ postgres:
   users_secret: postgres-opencrvs-users
   urls_secret: postgres-urls
 
+postgres_on_deploy:
+  env:
+    TARGET_DB: events
+
+
 ###############################################################################
 # Application configuration
 ###############################################################################
