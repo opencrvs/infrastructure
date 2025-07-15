@@ -97,11 +97,12 @@ spec:
           command: ["/bin/bash", "-c"]
           args:
             - |
+              MINIO_BUCKET=${MINIO_BUCKET:-ocrvs}
               echo "Running mongo cleanup script..."
               mc alias set myminio http://$MINIO_HOST:$MINIO_PORT ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin}
-              mc rm --recursive --force myminio/ocrvs
-              mc rb myminio/ocrvs
-              mc mb myminio/ocrvs
+              mc rm --recursive --force myminio/$MINIO_BUCKET
+              mc rb myminio/$MINIO_BUCKET
+              mc mb myminio/$MINIO_BUCKET
               echo "Cleanup complete!"
           env:
             - name: MINIO_HOST
