@@ -158,6 +158,8 @@ postgres:
   admin_user_secret_name: postgres-admin-user
   users_secret: postgres-opencrvs-users
   urls_secret: postgres-urls
+  # FIXME: Refactor like mongodb in the future when we get more databases
+  events_db: events
 
 postgres_on_deploy:
   env:
