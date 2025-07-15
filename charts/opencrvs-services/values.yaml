@@ -160,11 +160,8 @@ postgres:
   urls_secret: postgres-urls
   # FIXME: Refactor like mongodb in the future when we get more databases
   events_db: events
-
-postgres_on_deploy:
-  env:
-    TARGET_DB: events
-
+  events_migrator: events_migrator
+  events_app: events_app
 
 ###############################################################################
 # Application configuration
