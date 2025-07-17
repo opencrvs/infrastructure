@@ -39,6 +39,10 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.postgres.admin_user_secret_name }}
                   key: POSTGRES_PASSWORD
+            - name: EVENTS_APP_ROLE
+              value: {{ .Values.postgres.events_app }}
+            - name: EVENTS_MIGRATOR_ROLE
+              value: {{ .Values.postgres.events_migrator }}
           {{- end }}
             - name: EVENTS_APP_POSTGRES_PASSWORD
               valueFrom:
@@ -50,6 +54,7 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.postgres.users_secret }}
                   key: EVENTS_MIGRATOR_POSTGRES_PASSWORD
+          {{- include "render-env-vars" (dict "service_name" "postgres_on_deploy" "Values" .Values) }}
           volumeMounts:
             - mountPath: /scripts
               name: postgres-on-update-script

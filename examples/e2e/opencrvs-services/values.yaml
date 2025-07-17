@@ -24,6 +24,9 @@ redis:
   auth_mode: use_secret
   host: redis-0.redis.opencrvs-deps-e2e.svc.cluster.local
 
+postgres:
+  auth_mode: auto
+  host: postgres-0.postgres.opencrvs-deps-e2e.svc.cluster.local
 
 resources:
   memoryRequest: "512Mi"
@@ -45,6 +48,14 @@ countryconfig:
     # tag: develop
     # tag: ec53c12
     tag: develop
+
+  env:
+    OPENID_PROVIDER_CLAIMS: name,family_name,given_name,middle_name,birthdate,address
+    OPENID_PROVIDER_CLIENT_ID: mock-client_id
+    # FIXME: In general these values should be passed externally using `--set key=value`
+    ESIGNET_REDIRECT_URL: http://esignet-mock.opencrvs.localhost/authorize
+    MOSIP_API_USERINFO_URL: http://mosip-api.opencrvs.localhost/esignet/get-oidp-user-info
+
 
 data_seed:
   env:

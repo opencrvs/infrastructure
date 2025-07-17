@@ -74,21 +74,22 @@ Minikube (with docker driver) is recommended way to run Kubernetes on linux. How
 **NOTE**: 
 - Docker support is still experimental for minikube, but it gives better performance in comparison to alternative solutions.
 
+Add following values to /etc/sysctl.conf for linux (Ubuntu) users:
+```
+fs.inotify.max_user_instances = 8192
+fs.inotify.max_user_watches = 65536
+```
+If you already have minikube cluster running, please recreate it (delete/start) to apply changes properly/
 
-Additional settings for linux (Ubuntu) users:
-  - Add following values to /etc/sysctl.conf:
-    ```
-    fs.inotify.max_user_watches = 524288
-    fs.inotify.max_user_instances = 512
-    ```
-  - Start minikube with unlimited amount of memory:
-    ```
-    minikube start --memory=max
-    ```
-  - Start load balancer (tunnel) on localhost:
-    ```
-    minikube tunnel -c --bind-address='127.0.0.1'
-    ```
+Start minikube with unlimited amount of memory:
+```
+minikube start --memory=max
+```
+
+Start load balancer (tunnel) on localhost to proxy requests from your browser inside minikube cluster:
+```
+minikube tunnel -c --bind-address='127.0.0.1'
+```
 
 ---
 

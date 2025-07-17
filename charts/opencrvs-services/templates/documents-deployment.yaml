@@ -33,7 +33,7 @@ spec:
               {{- $http_scheme := include "http-scheme" .}}
               value: "{{ $http_scheme }}:"
             - name: MINIO_URL
-              value: minio.{{ .Values.hostname }}
+              value: {{ .Values.minio.external_hostname | default (printf "minio.%s" .Values.hostname) }}
           {{- if or (eq .Values.minio.auth_mode "auto") (eq .Values.minio.auth_mode "use_secret") }}
             - name: MINIO_ACCESS_KEY
               valueFrom:

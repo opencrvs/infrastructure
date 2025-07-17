@@ -10,6 +10,8 @@ metadata:
   name: {{ $secret_name }}
   annotations:
     "helm.sh/resource-policy": keep
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "0"
 type: Opaque
 data:
   "private-key.pem": {{ $cert.Key | b64enc | toYaml | indent 4}}
@@ -20,6 +22,8 @@ metadata:
   name: {{ .Release.Name }}-cert-tls
   annotations:
     "helm.sh/resource-policy": keep
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "0"
 data:
   "public-key.pem": {{ $cert.Cert | toYaml | indent 4}}
 {{- end }}

@@ -46,14 +46,18 @@ spec:
         - image: "ghcr.io/opencrvs/ocrvs-client:{{ .Values.image.tag }}"
           name: client
           env:
+          # FIXME: Build common helper to avoid duplicates
+          {{- if not (hasKey .Values.client.env "CONTENT_SECURITY_POLICY_WILDCARD") }}
             - name: CONTENT_SECURITY_POLICY_WILDCARD
               value: "*.{{ .Values.hostname }}"
+          {{- end }}
             - name: COUNTRY_CONFIG_URL_INTERNAL
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
             - name: GATEWAY_URL_INTERNAL
               value: http://gateway.{{ .Release.Namespace }}.svc.cluster.local:7070
             - name: COUNTRY_CONFIG_URL
               value: {{ include "render-external-url" (dict "service_name" "countryconfig" "Values" .Values) }}
+            # FIXME: Do we use MINIO_URL variable inside client container?
             - name: MINIO_URL
               value: {{ include "render-external-url" (dict "service_name" "minio" "Values" .Values) }}
           {{- include "render-env-vars" (dict "service_name" "client" "Values" .Values) }}

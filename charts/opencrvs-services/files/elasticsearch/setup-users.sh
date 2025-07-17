@@ -22,9 +22,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/setup-helpers.sh"
 declare -A users_passwords
 users_passwords=(
   [$SEARCH_ELASTIC_USERNAME]="${SEARCH_ELASTIC_PASSWORD:-}"
-  [beats_system]="${METRICBEAT_ELASTIC_PASSWORD:-}"
-  [apm_system]="${APM_ELASTIC_PASSWORD:-}"
-  [kibana_system]="${KIBANA_SYSTEM_PASSWORD:-}"
+  [$METRICBEAT_ELASTIC_USERNAME]="${METRICBEAT_ELASTIC_PASSWORD:-}"
+  [$APM_ELASTIC_USERNAME]="${APM_ELASTIC_PASSWORD:-}"
+  [$KIBANA_SYSTEM_ELASTIC_USERNAME]="${KIBANA_SYSTEM_PASSWORD:-}"
   [$KIBANA_USERNAME]="${KIBANA_PASSWORD:-}"
 )
 

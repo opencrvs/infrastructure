@@ -44,13 +44,13 @@ certificatesResolvers:
         entryPoint: web
       email: vadym@opencrvs.org
       # Storage for production certificates:
-      # storage: /data/acme.json
+      storage: /data/acme.json
       # Storage for staging certificates:
-      storage: /data/acme-staging.json
+      # storage: /data/acme-staging.json
       # Staging server
-      caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+      # caServer: https://acme-staging-v02.api.letsencrypt.org/directory
       # Production server
-      # caServer: https://acme-v02.api.letsencrypt.org/directory
+      caServer: https://acme-v02.api.letsencrypt.org/directory
 
 # Additional arguments
 additionalArguments:
@@ -58,9 +58,9 @@ additionalArguments:
   - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
   - "--certificatesresolvers.letsencrypt.acme.email=vadym@opencrvs.org"
   # Storage for staging certificates:
-  - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme-staging.json"
+  # - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme-staging.json"
   # Storage for staging certificates:
-  # - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
+  - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
 
 persistence:
   enabled: true

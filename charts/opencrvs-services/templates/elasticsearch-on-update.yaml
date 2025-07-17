@@ -46,16 +46,31 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.elasticsearch.users_secret }}
                   key: SEARCH_ELASTIC_PASSWORD
+            - name: METRICBEAT_ELASTIC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.elasticsearch.users_secret }}
+                  key: METRICBEAT_ELASTIC_USERNAME
             - name: METRICBEAT_ELASTIC_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.elasticsearch.users_secret }}
                   key: METRICBEAT_ELASTIC_PASSWORD
+            - name: APM_ELASTIC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.elasticsearch.users_secret }}
+                  key: APM_ELASTIC_USERNAME
             - name: APM_ELASTIC_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.elasticsearch.users_secret }}
                   key: APM_ELASTIC_PASSWORD
+            - name: KIBANA_SYSTEM_ELASTIC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.elasticsearch.users_secret }}
+                  key: KIBANA_SYSTEM_ELASTIC_USERNAME
             - name: KIBANA_SYSTEM_PASSWORD
               valueFrom:
                 secretKeyRef:
