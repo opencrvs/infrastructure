@@ -33,15 +33,46 @@ DB_EXISTS=$(psql -qtAX -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
   -U "$POSTGRES_USER" -d postgres \
   -c "SELECT 1 FROM pg_database WHERE datname = '$TARGET_DB';")
 
+# --- Check role existence ---
+MIGRATOR_ROLE_EXISTS=$(
+  psql -qtAX -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+    -U "$POSTGRES_USER" -d postgres \
+    -c "SELECT 1 FROM pg_roles WHERE rolname = '${EVENTS_MIGRATOR_ROLE}';"
+)
+APP_ROLE_EXISTS=$(
+  psql -qtAX -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+    -U "$POSTGRES_USER" -d postgres \
+    -c "SELECT 1 FROM pg_roles WHERE rolname = '${EVENTS_APP_ROLE}';"
+)
+
 echo "[1/3] Cluster-wide setup..."
 if [[ "$DB_EXISTS" == "1" ]]; then
   echo "✅ Database '$TARGET_DB' already exists. Updating passwords."
+  # Create roles if missing, alter password if they exist
+  if [ "$MIGRATOR_ROLE_EXISTS" != "1" ]; then
+    echo "Creating role ${EVENTS_MIGRATOR_ROLE}..."
+    psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+      -U "$POSTGRES_USER" -d postgres \
+      -c "CREATE ROLE ${EVENTS_MIGRATOR_ROLE} WITH LOGIN PASSWORD '${EVENTS_MIGRATOR_POSTGRES_PASSWORD}';"
+  else
+    echo "ALTERING password for ${EVENTS_MIGRATOR_ROLE}..."
+    psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+      -U "$POSTGRES_USER" -d postgres \
+      -c "ALTER ROLE ${EVENTS_MIGRATOR_ROLE} WITH PASSWORD '${EVENTS_MIGRATOR_POSTGRES_PASSWORD}';"
+  fi
 
-  psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
-    -U "$POSTGRES_USER" -d postgres <<EOF
-ALTER ROLE ${EVENTS_MIGRATOR_ROLE} WITH PASSWORD '${EVENTS_MIGRATOR_POSTGRES_PASSWORD}';
-ALTER ROLE ${EVENTS_APP_ROLE} WITH PASSWORD '${EVENTS_APP_POSTGRES_PASSWORD}';
-EOF
+  if [ "$APP_ROLE_EXISTS" != "1" ]; then
+    echo "Creating role ${EVENTS_APP_ROLE}..."
+    psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+      -U "$POSTGRES_USER" -d postgres \
+      -c "CREATE ROLE ${EVENTS_APP_ROLE} WITH LOGIN PASSWORD '${EVENTS_APP_POSTGRES_PASSWORD}';"
+  else
+    echo "ALTERING password for ${EVENTS_APP_ROLE}..."
+    psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
+      -U "$POSTGRES_USER" -d postgres \
+      -c "ALTER ROLE ${EVENTS_APP_ROLE} WITH PASSWORD '${EVENTS_APP_POSTGRES_PASSWORD}';"
+  fi
+
   echo "Passwords updated. Skipping initialization."
 else
   echo "Database '$TARGET_DB' does not exist. Proceeding with initialization."
