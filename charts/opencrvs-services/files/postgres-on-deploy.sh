@@ -16,7 +16,7 @@ set -euo pipefail
 : "${EVENTS_APP_ROLE:=events_app}"
 : "${EVENTS_MIGRATOR_ROLE:=events_migrator}"
 TARGET_DB=${TARGET_DB:-"events"}
-
+TARGET_DB=${TARGET_DB/-/_}
 export PGPASSWORD="$POSTGRES_PASSWORD"
 
 echo "Waiting for PostgreSQL to be ready at ${POSTGRES_HOST}:${POSTGRES_PORT}..."

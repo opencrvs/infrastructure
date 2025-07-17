@@ -87,7 +87,7 @@ spec:
                   name: {{ .Values.postgres.admin_user_secret_name }}
           {{- end }}
             - name: POSTGRES_DB
-              value: {{ .Values.postgres.events_db }}
+              value: {{ .Values.postgres.events_db | replace "-" "_" }}
             - name: EVENTS_APP_POSTGRES_USER
               valueFrom:
                 secretKeyRef:
