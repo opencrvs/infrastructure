@@ -88,10 +88,16 @@ spec:
           {{- end }}
             - name: POSTGRES_DB
               value: {{ .Values.postgres.events_db }}
-            - name: EVENTS_MIGRATOR_ROLE
-              value: {{ .Values.postgres.events_migrator }}
-            - name: EVENTS_APP_ROLE
-              value: {{ .Values.postgres.events_app }}
+            - name: EVENTS_APP_POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.users_secret }}
+                  key: EVENTS_APP_POSTGRES_USER
+            - name: EVENTS_MIGRATOR_POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.users_secret }}
+                  key: EVENTS_MIGRATOR_POSTGRES_USER
         - name: cleanup-minio
           image: "minio/mc"
           command: ["/bin/bash", "-c"]
