@@ -127,14 +127,22 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              echo "Running elasticsearch cleanup script..."
+              approved_words="${ES_INDEX_PREFIX:-events}_ ${ELASTICSEARCH_INDEX_NAME:-ocrvs}-"
               indices=$(curl -sS -XGET http://$ELASTICSEARCH_HOST/_cat/indices?h=index)
+              echo "Running elasticsearch cleanup script..."
               echo "--------------------------"
-              echo "🧹 cleanup for indices from $ELASTICSEARCH_HOST: $indices"
+              echo "🧹 cleanup for indices: $approved_words from $indices"
               echo "--------------------------"
               for index in $indices; do
-                echo "Delete index $index..."
-                curl -sS -XDELETE http://$ELASTICSEARCH_HOST/$index
+                for approved in $approved_words; do
+                  case "$index" in
+                    "$approved"*) 
+                      echo "Delete index $index..."
+                      curl -sS -XDELETE "http://$ELASTICSEARCH_HOST/$index"
+                      break
+                      ;;
+                  esac
+                done
               done
           env:
           {{- if eq .Values.elasticsearch.auth_mode "disabled" }}
