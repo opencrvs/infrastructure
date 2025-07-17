@@ -40,12 +40,12 @@ spec:
                   name: {{ .Values.postgres.admin_user_secret_name }}
                   key: POSTGRES_PASSWORD
           {{- end }}
-            - name: EVENTS_APP_POSTGRES_USER
+            - name: EVENTS_APP_ROLE
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.postgres.users_secret }}
                   key: EVENTS_APP_POSTGRES_USER
-            - name: EVENTS_MIGRATOR_POSTGRES_USER
+            - name: EVENTS_MIGRATOR_ROLE
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.postgres.users_secret }}
