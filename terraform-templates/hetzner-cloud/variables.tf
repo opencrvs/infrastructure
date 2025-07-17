@@ -14,8 +14,26 @@ variable "users" {
   }
 }
 
-variable "worker_private_ssh_key_path" {
-  description = "Private SSH key for the worker nodes."
+variable "private_key_path" {
+  description = "Private SSH key for nodes."
   type        = string
   default     = ""
+}
+
+variable "location" {
+  description = "The location for the Hetzner Cloud resources."
+  type        = string
+  default     = "hil"
+}
+
+variable "master_server_type" {
+  description = "Server type for the master node."
+  type        = string
+  default     = "cpx31"
+}
+
+variable "worker_server_type" {
+  description = "Server type for the worker nodes."
+  type        = string
+  default     = "cpx31"
 }
