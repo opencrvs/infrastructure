@@ -355,6 +355,8 @@ scheduler: {}
 data_cleanup:
   # TODO: Add more restrictive flag to avoid someone running this job by mistake
   enabled: false
+  env:
+    MINIO_BUCKET: ocrvs
 
 data_migration:
   env:
