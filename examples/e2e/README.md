@@ -1,6 +1,5 @@
 Deployment sequence for the demo application:
-1. Deploy cert-manager
-2. Deploy traefik
-3. Deploy Runner
-4. Install OpenCRVS dependencies
-5. Install OpenCRVS
+1. Deploy traefik
+2. Deploy Runner
+3. Install OpenCRVS dependencies
+4. Install OpenCRVS
