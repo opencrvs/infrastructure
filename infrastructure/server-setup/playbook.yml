@@ -39,11 +39,7 @@
             - users
       tags:
         - users
-
-- hosts: all
-  become: yes
-  become_method: sudo
-  tasks:
+    
     - include_tasks:
         file: tasks/application.yml
         apply:
@@ -104,4 +100,4 @@
 
 - import_playbook: k8s.yml
 
-- import_playbook: backups.yml
+# - import_playbook: backups.yml  # not needeed for now.
