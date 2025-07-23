@@ -1,4 +1,4 @@
-hostname: opencrvs.localhost
+hostname: k8s-test.opencrvs.dev
 
 ingress:
-  ssl_enabled: false
+  tls_resolver: letsencrypt

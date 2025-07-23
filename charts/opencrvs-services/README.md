@@ -37,10 +37,10 @@ helm upgrade opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart \
 helm upgrade opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
     --install \
     --namespace "opencrvs-dev" \
-    -f examples/localhost/opencrvs-services/values.yaml \
+    -f examples/localhost/opencrvs-services/values-dev.yaml \
     --create-namespace \
-    --set image.tag=v1.8.0 \
-    --set countryconfig.image.tag=v1.8.0
+    --set image.tag=4e53f47 \
+    --set countryconfig.image.tag=d3f121b
 ```
 
 [Configuration options](#configuration-options) table gives brief overview of options available within helm chart. Copy and modify `examples/localhost/opencrvs-services/values.yaml` to suit your needs.
@@ -661,7 +661,8 @@ Helm allows to render and run particular data migration template by running foll
 ```
 helm template -f <path to environment values file> \
     -s templates/data-migration-job.yaml \
-    oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -f -
+    -n opencrvs-dev \
+    oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-dev -f -
 ```
 
 As a result of execution migration job will be created.
@@ -685,7 +686,8 @@ Helm allows to render and run particular data seed template by running following
 helm template -f <path to environment values file> \
     --set data_seed.enabled=true \
     -s templates/data-seed-job.yaml \
-    oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -f -
+    -n opencrvs-dev \
+    oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-dev -f -
 ```
 
 As a result of execution data seed job will be created.

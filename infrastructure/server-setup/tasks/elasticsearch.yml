@@ -1,4 +1,4 @@
-- name: 'Set higher max map count forelastic search'
+- name: 'Set higher max map count for elastic search'
   sysctl:
     name: vm.max_map_count
     value: 262144

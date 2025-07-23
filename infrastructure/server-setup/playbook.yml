@@ -40,9 +40,7 @@
       tags:
         - users
 
-- import_playbook: jump.yml
-
-- hosts: docker-manager-first:docker-workers
+- hosts: all
   become: yes
   become_method: sudo
   tasks:
@@ -63,24 +61,6 @@
         - tools
 
     - include_tasks:
-        file: tasks/docker.yml
-        apply:
-          tags:
-            - docker
-      tags:
-        - docker
-
-    - include_tasks:
-        file: tasks/deployment-user.yml
-        apply:
-          tags:
-            - deployment-user
-            - users
-      tags:
-        - deployment-user
-        - users
-
-    - include_tasks:
         file: tasks/mongodb.yml
         apply:
           tags:
@@ -95,22 +75,6 @@
             - data-partition
       tags:
         - data-partition
-
-    - include_tasks:
-        file: tasks/swap.yml
-        apply:
-          tags:
-            - swap
-      tags:
-        - swap
-
-    - include_tasks:
-        file: tasks/ufw.yml
-        apply:
-          tags:
-            - ufw
-      tags:
-        - ufw
 
     - include_tasks:
         file: tasks/fail2ban.yml
@@ -138,26 +102,6 @@
       tags:
         - decrypt-on-boot
 
-- import_playbook: swarm.yml
-
-- hosts: docker-manager-first
-  become: yes
-  become_method: sudo
-  tasks:
-    - include_tasks:
-        file: tasks/elasticsearch.yml
-        apply:
-          tags:
-            - elasticsearch
-      tags:
-        - elasticsearch
-
-    - include_tasks:
-        file: tasks/traefik.yml
-        apply:
-          tags:
-            - traefik
-      tags:
-        - traefik
+- import_playbook: k8s.yml
 
 - import_playbook: backups.yml

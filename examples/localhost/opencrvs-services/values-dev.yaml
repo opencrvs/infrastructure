@@ -1,8 +1,8 @@
 chart_dev_mode: true
 # All OpenCRVS services will be available under domain:
-hostname: opencrvs.localhost
+hostname: k8s-test.opencrvs.dev
 
-# Access OpenCRVS services at http://opencrvs.localhost
+# Access OpenCRVS services at http://k8s-test.opencrvs.dev
 # If SSL is enabled, You need to accept SSL Certificate on localhost for multiple endpoints:
 # - login
 # - register
@@ -13,7 +13,7 @@ hostname: opencrvs.localhost
 # That makes it easier to test the application locally without SSL
 # On local environment SSL is disabled by default:
 ingress:
-  ssl_enabled: false
+  tls_resolver: letsencrypt
 
 # On local environment services are exposed at NodePort as well and are available from Tilt
 # To access service you need to click on the service name in Tilt UI:
@@ -54,3 +54,7 @@ countryconfig:
     # tag: develop
     # tag: ec53c12
     tag: local
+dashboards:
+  env:
+    OPENCRVS_METABASE_DB_USER: performance
+    OPENCRVS_METABASE_DB_PASS: performance

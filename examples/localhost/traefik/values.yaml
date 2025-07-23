@@ -2,16 +2,15 @@
 namespaceOverride: "traefik"
 logs:
   general:
-    level: "DEBUG"
-    format: "common"
+    # "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "PANIC"
+    level: "INFO"
+    format: "common" # FIXME: json in remote
   access:
     # -- To enable access logs
     enabled: true
 ingressRoute:
   dashboard:
     enabled: false
-    entryPoints: ["web"]
-    matchRule: Host(`traefik.opencrvs.localhost`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
 # Be explicit that we only use CRDs, not ingress/gw support
 providers: 
   kubernetesCRD:
@@ -23,18 +22,50 @@ providers:
 service:
   enabled: true
   single: false
-  type: LoadBalancer
+  type: NodePort
 
 ports:
-  traefik:
-    hostPort: 8080
   web:
-    asDefault: true
-    hostPort: 8000
+    port: 8000
+    hostPort: 80
+    protocol: TCP
+    nodePort: 30080
   websecure:
-    asDefault: false
-    expose:
-      default: false
-    tls:
-      enabled: false
-tlsStore: {}
+    port: 8443
+    nodePort: 30443
+    hostPort: 443
+    protocol: TCP
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      tlsChallenge: false
+      httpChallenge:
+        entryPoint: web
+      email: vadym@opencrvs.org
+      # Storage for production certificates:
+      storage: /data/acme.json
+      # Storage for staging certificates:
+      # storage: /data/acme-staging.json
+      # Staging server
+      # caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+      # Production server
+      caServer: https://acme-v02.api.letsencrypt.org/directory
+
+# Additional arguments
+additionalArguments:
+  - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+  - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+  - "--certificatesresolvers.letsencrypt.acme.email=vadym@opencrvs.org"
+  # Storage for staging certificates:
+  # - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme-staging.json"
+  # Storage for staging certificates:
+  - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
+
+persistence:
+  enabled: true
+  name: data
+  accessMode: ReadWriteOnce
+  size: 128Mi
+  path: /data
+  annotations: {}

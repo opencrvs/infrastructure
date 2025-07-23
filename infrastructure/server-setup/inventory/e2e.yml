@@ -1,0 +1,29 @@
+all:
+  vars:
+    #didn't specify ssh_private_key_file here, it will be collected from the environment secrets
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+    ansible_user: provision #will check after some time if this is still needed
+    users:
+      - name: shoumik
+        ssh_keys:
+          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINRSRTqm3vOfjyTutISEtbVp7ZddoWa9NZDZLeWZGzLy dsi@dsi-Inspiron-15-3511
+        state: present
+        sudoer: true
+      - name: vmudryi
+        ssh_keys:
+          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINgMcsSBwTE0EbMDRSF1T4vJDcN/5HAjKGbi2DqV7g/Q vmudryi@opencrvs.org
+        state: present
+        sudoer: true
+    children:
+      master:
+        hosts:
+          test-k8s-master:
+            ansible_host: 5.78.158.131
+      workers:
+        hosts:
+          test-k8s-worker-0:
+            ansible_host: 5.78.67.216 
+            data_label: data1
+          test-k8s-worker-1:
+            ansible_host: 5.78.133.88
+            data_label: data2
