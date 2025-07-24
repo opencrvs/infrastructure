@@ -1,20 +1,27 @@
----
-- name: Install required packages for containerd
-  shell: |
-    sudo apt update
-    sudo apt install -y curl gnupg2 software-properties-common apt-transport-https ca-certificates
-
 - name: Remove Docker's old version if it exists
-  shell: sudo apt remove -y docker docker-engine docker.io containerd runc
+  become: yes
+  apt:
+    name: "{{ item }}"
+    state: absent
+    purge: yes
+  loop:
+    - docker
+    - docker-engine
+    - docker.io
+    - containerd
+    - runc
+  when: item in ansible_facts.packages
+  ignore_errors: true
 
 - name: Remove Docker's official GPG key if it exists
   shell: sudo rm -f /etc/apt/trusted.gpg.d/docker.gpg
+  ignore_errors: true
 
 - name: Add Docker's official GPG key
   shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmour -o /etc/apt/trusted.gpg.d/docker.gpg
 
 - name: Add Docker repository
-  shell: sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+  shell: sudo add-apt-repository -y "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
 
 - name: Install containerd
   shell: |

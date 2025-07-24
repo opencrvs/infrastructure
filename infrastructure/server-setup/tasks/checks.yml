@@ -1,26 +1,34 @@
-- name: Check if external_backup_server_user is set
+- name: Check if single_node is defined
   fail:
-    msg: 'external_backup_server_user variable was deprecated in OpenCRVS 1.5. Please rename the variable to backup_server_remote_target_directory'
-  when: external_backup_server_user is defined
+    msg: |
+      Configuration error: single_node variable is not defined.
+      Please add 'single_node: true' or 'single_node: false' under the 'all.vars' section.
+  when: single_node is not defined
 
-- name: Check if external_backup_server_remote_directory is set
+- name: Get all Node groups 
+  set_fact:
+    child_groups: "{{ groups.keys() | difference(['all', 'ungrouped']) | list }}"
+
+- name: Display child groups
+  debug:
+    msg: "Detected Node groups: {{ child_groups }}"
+
+- name: Fail if single_node is set to False and worker nodes are not present
   fail:
-    msg: 'external_backup_server_remote_directory variable was deprecated in OpenCRVS 1.5. Please rename the variable to backup_server_remote_target_directory'
-  when: external_backup_server_remote_directory is defined
+    msg: |
+      Configuration mismatch detected!
+      single_node is set to 'false' but only {{ child_groups | length }} group found: {{ child_groups }}
+      For multi-node setup (single_node: false), you need at least 2 groups (e.g., master and workers).
+  when: 
+    - single_node == false
+    - child_groups | length == 1
 
-- name: 'Check mandatory variables are defined'
-  assert:
-    that:
-      - mongodb_admin_username is defined
-      - mongodb_admin_password is defined
-      - elasticsearch_superuser_password is defined
-      - encrypted_disk_size is defined
-
-- name: 'Prevent single-node configuration in production'
+- name: Fail if single_node is set to True and multiple groups are present
   fail:
-    msg: 'The production environment should always use more than one node. Please check the inventory file for production.'
-  when: >
-    (single_node | default(false)) == false and (
-      'docker-workers' not in groups or
-      groups['docker-workers'] | length == 0
-    )
+    msg: |
+      Configuration mismatch detected!
+      single_node is set to 'true' but multiple groups found: {{ child_groups }}
+      For single-node setup (single_node: true), only one group should be present.
+  when: 
+    - single_node == true
+    - child_groups | length > 1

@@ -1,3 +1,4 @@
+# TODO: Make Kubernetes components
 ---
 - name: Install Tigera Operator
   shell: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/tigera-operator.yaml

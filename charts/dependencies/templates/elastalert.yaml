@@ -1,0 +1,80 @@
+{{- if .Values.monitoring.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elastalert
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elastalert
+  template:
+    metadata:
+      labels:
+        app: elastalert
+    spec:
+      initContainers:
+        - name: setup-indices
+          image: appropriate/curl
+          env:
+            - name: ES_HOST
+              value: elasticsearch-0.elasticsearch.{{ .Release.Namespace }}.svc.cluster.local
+            - name: ES_PORT
+              value: "9200"
+            - name: ES_USERNAME
+              value: 'elastic'
+            - name: ES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.elasticsearch.admin_user_secret_name }}
+                  key: ELASTIC_PASSWORD
+          # TODO: Why we need this on docker swarm?
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Waiting for availability of Elasticsearch: http://${ES_HOST}:${ES_PORT}"
+              ping_status_code=$(curl -s --connect-timeout 60 -u $ES_USERNAME:$ES_PASSWORD -o /dev/null -w '%{http_code}' "http://${ES_HOST}:${ES_PORT}")
+
+              if [ "$ping_status_code" -ne 200 ]; then
+                echo "Elasticsearch is not ready. API returned status code: $ping_status_code"
+                exit 1
+              fi
+
+              echo 'Deleting Elastalert indices'
+              indices='elastalert_status,elastalert_status_error,elastalert_status_past,elastalert_status_silence,elastalert_status_status'
+
+              delete_status_code=$(curl -s --connect-timeout 60 -u $ES_USERNAME:$ES_PASSWORD -o /dev/null -w '%{http_code}' "http://${ES_HOST}:${ES_PORT}/${indices}?ignore_unavailable=true" -X DELETE)
+
+              if [ "$delete_status_code" -ne 200 ]; then
+                echo "Could not delete indices. API returned status code: $delete_status_code"
+                exit 1
+              fi
+      containers:
+        - name: elastalert
+          image: jertel/elastalert2:2.19.0
+          env:
+            - name: ES_HOST
+              value: elasticsearch-0.elasticsearch.{{ .Release.Namespace }}.svc.cluster.local
+            - name: ES_PORT
+              value: "9200"
+            - name: ES_USERNAME
+              value: 'elastic'
+            - name: ES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.elasticsearch.admin_user_secret_name }}
+                  key: ELASTIC_PASSWORD
+          volumeMounts:
+            - name: config
+              mountPath: /opt/elastalert/config.yaml
+              subPath: elastalert.yaml
+            - name:  rules
+              mountPath: /opt/elastalert/rules
+      volumes:
+        - name: config
+          configMap:
+            name: elastalert-config
+        - name: rules
+          configMap:
+            name: elastalert-rules
+{{- end }}

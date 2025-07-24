@@ -45,8 +45,10 @@ opencrvs_namespace = 'opencrvs-dev'
 # - Setup MinIO admin user and password
 # - Configure Redis users
 # - Sync passwords between dependencies and OpenCRVS services
-security_enabled = False
-
+security_enabled = True 
+# Monitoring enabled:
+# Enable Kibana and all other components
+monitoring_enabled = False
 # If your machine is powerful feel free to change parallel updates from default 3
 # Be careful repositories like npm, yarn, pip, etc. could have rate limits
 update_settings(max_parallel_updates=5)
@@ -78,7 +80,10 @@ print("🚀 Deploying dependencies: mongo, minio, elasticsearch...")
 dependencies_chart_path = './charts/dependencies'
 k8s_yaml(helm(dependencies_chart_path,
   namespace=dependencies_namespace,
-  values=[deps_configuration_file]))
+  values=[deps_configuration_file],
+  set=[
+    "monitoring.enabled={}".format(monitoring_enabled).lower()
+  ]))
 
 ######################################################
 # OpenCRVS Deployment

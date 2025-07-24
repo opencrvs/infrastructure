@@ -29,5 +29,13 @@
     net.bridge.bridge-nf-call-ip6tables = 1
     EOF
 
+# This brakes everything
+# - name: Configure kernel parameters for Elasticsearch
+#   shell: |
+#     sudo tee /etc/sysctl.d/98-elasticsearch.conf <<EOF
+#     # Set higher max map count for elasticsearch
+#     vm.max_map_count  = 1
+#     EOF
+
 - name: Apply sysctl settings
   shell: sudo sysctl --system

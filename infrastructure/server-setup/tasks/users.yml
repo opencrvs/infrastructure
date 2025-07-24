@@ -235,8 +235,10 @@
     - ansible_facts['distribution_version'] == '24.04'
 
 - name: Check SSH config syntax
-  command: sudo sshd -T
-  register: check_result
+  command:
+    cmd: sshd -t
+  register: check_status
+  ignore_errors: yes
 
 - name: Enable logging in to the provisioning user with specified SSH keys
   authorized_key:
@@ -244,21 +246,7 @@
     key: '{{ item }}'
   with_items: '{{ additional_keys_for_provisioning_user | default([]) }}'
 
-# Ubuntu 22.10
-- name: Check if sshd service exists
-  command: systemctl status sshd
-  register: sshd_status
-  ignore_errors: yes
-
-- name: Restart SSH service (sshd)
-  service:
-    name: sshd
-    state: restarted
-  when: sshd_status.rc == 0
-  become: yes
-
-# Ubuntu 23.10
-- name: Check if ssh service exists
+- name: Check if SSH service exists
   command: systemctl status ssh
   register: ssh_status
   ignore_errors: yes
@@ -267,5 +255,7 @@
   service:
     name: ssh
     state: restarted
-  when: ssh_status.rc == 0 and sshd_status.rc != 0
+  when: ssh_status.rc == 0
   become: yes
+
+

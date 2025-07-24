@@ -1,14 +1,21 @@
-- name: 'Install pip3'
+- name: 'Install required apt packages'
   apt:
-    name: python3-pip
+    name: "{{ item }}"
     state: present
+  loop:
+    - curl
+    - gnupg2
+    - software-properties-common
+    - apt-transport-https
+    - ca-certificates
+    - python3-pip
+    - jq
+    - yq
+    - zip
+    - python3-pip
+    - python3-kubernetes
 
-- name: 'Install jq'
-  apt:
-    name: jq
-    state: present
-
-- name: 'Install pexpect python module for ansible expect commands'
+- name: 'Ensure python-3pexpect is absent'
   apt:
     name: python-3pexpect
     state: absent
