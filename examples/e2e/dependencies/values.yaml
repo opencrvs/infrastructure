@@ -22,3 +22,6 @@ postgres:
 
 node_selector:
  role: data1
+
+monitoring:
+  enabled: true

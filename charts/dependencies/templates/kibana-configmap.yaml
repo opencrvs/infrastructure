@@ -1,0 +1,20 @@
+{{- if .Values.monitoring.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kibana-config
+data:
+  kibana.yml: |
+    server.host: "0.0.0.0"
+    server.maxPayload: 10485760
+    server.ssl.enabled: false
+    elasticsearch.hosts: [ "${KIBANA_SYSTEM_ELASTIC_URL}" ]
+    elasticsearch.username: "${ELASTICSEARCH_USERNAME}"
+    elasticsearch.password: "${ELASTICSEARCH_PASSWORD}"
+    # Add any other static config you need from your configs
+    monitoring.ui.container.elasticsearch.enabled: true
+    xpack.encryptedSavedObjects.encryptionKey: "${KIBANA_ENCRYPTION_KEY}"
+    xpack.reporting.encryptionKey: "${KIBANA_ENCRYPTION_KEY}"
+    xpack.actions.preconfiguredAlertHistoryEsIndex: true
+    logging.root.level: error
+{{- end }}

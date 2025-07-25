@@ -1,0 +1,16 @@
+{{- if and (eq .Values.elasticsearch.auth_mode "auto") .Values.monitoring.enabled }}
+apiVersion: v1
+data:
+{{- range $path, $file := .Files.Glob "files/kibana/*" }}
+    {{ base $path }}: |
+{{ toString $file | indent 8 }}
+{{- end }}
+kind: ConfigMap
+metadata:
+  labels:
+    app: kibana
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
+  name: kibana-on-update-script
+{{- end }}

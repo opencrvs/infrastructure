@@ -21,15 +21,17 @@ source "$(dirname "${BASH_SOURCE[0]}")/setup-helpers.sh"
 
 declare -A users_passwords
 users_passwords=(
-  [$SEARCH_ELASTIC_USERNAME]="${SEARCH_ELASTIC_PASSWORD:-}"
+  [$METRICBEAT_ELASTIC_USERNAME]="${METRICBEAT_ELASTIC_PASSWORD:-}"
+  [$APM_ELASTIC_USERNAME]="${APM_ELASTIC_PASSWORD:-}"
+  [$KIBANA_SYSTEM_ELASTIC_USERNAME]="${KIBANA_SYSTEM_PASSWORD:-}"
+  [$KIBANA_USERNAME]="${KIBANA_PASSWORD:-}"
 )
 
 # -------------------------------------
 # Role assignations for users
-# If you are adding a new user, remember to assign a role. You can use search_user as a template.
 declare -A users_roles
 users_roles=(
-  [$SEARCH_ELASTIC_USERNAME]='search_user'
+  [$KIBANA_USERNAME]='kibana_admin_user'
 )
 
 # --------------------------------------------------------
@@ -37,7 +39,7 @@ users_roles=(
 
 declare -A roles_files
 roles_files=(
-  [search_user]='search_user.json'
+  [kibana_admin_user]='kibana_user.json'
 )
 
 # --------------------------------------------------------

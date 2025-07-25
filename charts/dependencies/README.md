@@ -162,3 +162,20 @@ If you need any specific configuration for ACL (read-only, command limit, etc) p
 
 More details about ACL support can be found at https://redis.io/docs/latest/operate/oss_and_stack/management/security/acl/
 
+## Monitoring
+
+Helm chart has built-in Observability components configured to work with OpenCRVS and collect key metrics.
+
+Following tools are included in monitoring suite:
+- Kibana
+- Elastalert2
+- Filebeat
+- Metricbeat
+- Logstash
+- APM server
+
+> NOTE: Before enabling monitoring tools make sure Elasticsearch default credentials are disabled:
+```yaml
+elasticsearch:
+  use_default_credentials: false
+```

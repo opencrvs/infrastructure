@@ -42,6 +42,25 @@ elasticsearch:
   # By default Elasticsearch is deployed without authentication enabled.
   use_default_credentials: true
   admin_user_secret_name: elasticsearch-admin-user
+  auth_mode: auto
+  auth_users:
+    - KIBANA_USER
+    - KIBANA_SYSTEM:kibana_system
+    - METRICBEAT:beats_system
+    - APM:apm_system
+  # TEMPORAL SECRET TO STORE ELASTICSEARCH USERS
+  users_secret: elasticsearch-opencrvs-users
+  urls_secret: elasticsearch-opencrvs-urls
+
+# monitoring aggregates following components:
+# - kibana
+# - metricbeat
+# - filebeat
+# - logstash
+# - elastalert
+# - elastic-apm
+monitoring:
+  enabled: false
 
 
 minio:

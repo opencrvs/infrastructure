@@ -42,6 +42,9 @@ env:
 mongodb:
   auth_mode: auto
 
+postgres:
+  auth_mode: auto
+
 redis:
   auth_mode: use_secret
 
