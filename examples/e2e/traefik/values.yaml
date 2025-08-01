@@ -4,10 +4,12 @@ logs:
   general:
     # "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "PANIC"
     level: "INFO"
-    format: "common" # FIXME: json in remote
+    # format: "common" # For local environment
+    format: "json" # For server environment
   access:
     # -- To enable access logs
     enabled: true
+    format: "json"
 ingressRoute:
   dashboard:
     enabled: false
