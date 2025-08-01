@@ -41,10 +41,6 @@ elasticsearch:
   # Values are stored in secret named `elasticsearch-opencrvs-users`.
   auth_users:
     - SEARCH
-    - KIBANA_USER
-    - KIBANA_SYSTEM:kibana_system
-    - METRICBEAT:beats_system
-    - APM:apm_system
   # TEMPORAL SECRET TO STORE ELASTICSEARCH USERS
   users_secret: elasticsearch-opencrvs-users
 # InfluxDB configuration, including the hostname, port, and database name.
@@ -197,10 +193,10 @@ pdb:
 
 # Resources allocated to OpenCRVS microservices (Kubernetes PODs):
 resources:
-  memoryRequest: "256Mi"
-  cpuRequest: "250m"
-  memoryLimit: "1Gi"
-  cpuLimit: "500m"
+  memoryRequest: "128Mi"
+  cpuRequest: "100m"
+  memoryLimit: "2Gi"
+  cpuLimit: "2"
 
 hearth:
   enabled: true

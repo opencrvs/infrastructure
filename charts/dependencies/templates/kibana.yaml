@@ -1,1 +1,87 @@
-# TODO: Add kibana
+{{- if .Values.monitoring.enabled }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: kibana-route
+spec:
+  entryPoints:
+  {{- if .Values.ingress.ssl_enabled }}
+    - websecure
+  {{- end }}
+  {{- if or .Values.ingress.tls_resolver (not .Values.ingress.ssl_enabled) }}
+    - web
+  {{- end }}
+  routes:
+  - match: 'Host(`kibana.{{ .Values.hostname }}`)'
+    kind: Rule
+    services:
+    - name: kibana
+      namespace: {{ .Release.Namespace }}
+      port: 5601
+  {{- if .Values.ingress.tls_resolver }}
+  tls:
+    certResolver: {{ .Values.ingress.tls_resolver }}
+  {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5601
+      targetPort: 5601
+      protocol: TCP
+      name: http
+  selector:
+    app: kibana
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kibana
+  template:
+    metadata:
+      labels:
+        app: kibana
+    spec:
+      containers:
+        - name: kibana
+          image: ghcr.io/opencrvs/kibana:8.16.4
+          env:
+            # TODO: When users are not enabled
+            - name: ELASTICSEARCH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-opencrvs-users
+                  key: KIBANA_SYSTEM_ELASTIC_USERNAME
+            - name: ELASTICSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elasticsearch-opencrvs-users
+                  key: KIBANA_SYSTEM_ELASTIC_PASSWORD
+            - name: KIBANA_SYSTEM_ELASTIC_URL
+              value: http://elasticsearch-0.elasticsearch.{{ .Release.Namespace }}.svc.cluster.local:9200
+            - name: KIBANA_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: KIBANA_ENCRYPTION_KEY
+                  name: kibana-encryption-secret
+          ports:
+            - containerPort: 5601
+          volumeMounts:
+            - name: kibana-config
+              mountPath: /usr/share/kibana/config/kibana.yml
+              subPath: kibana.yml
+      volumes:
+        - name: kibana-config
+          configMap:
+            name: kibana-config
+{{- end }}
