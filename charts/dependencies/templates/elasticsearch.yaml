@@ -1,4 +1,6 @@
 {{ if .Values.elasticsearch.enabled }}
+{{- $storageType := default .Values.storage_type .Values.elasticsearch.storage_type | default "pvc" }}
+{{- if eq $storageType "pvc" }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -10,7 +12,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 5Gi
+      storage: {{ default "5Gi" .Values.elasticsearch.data_storage_size }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -23,7 +25,8 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: {{ default "1Gi" .Values.elasticsearch.backup_storage_size }}
+{{- end }}
 ---
 apiVersion: v1
 kind: Service
@@ -60,13 +63,14 @@ spec:
       labels:
         app: elasticsearch
     spec:
-    {{- if .Values.node_selector }}
+    {{- $node_selector := default .Values.node_selector .Values.elasticsearch.node_selector }}
+    {{- if $node_selector }}
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-            {{- range $k, $v := .Values.node_selector }}
+            {{- range $k, $v := $node_selector }}
               - key: {{ $k }}
                 operator: In
                 values:
@@ -129,9 +133,21 @@ spec:
       restartPolicy: Always
       volumes:
         - name: elasticsearch
+      {{- if eq $storageType "pvc" }}
           persistentVolumeClaim:
             claimName: elasticsearch
+      {{- else if eq $storageType "host_path" }}
+          hostPath:
+            path: {{ .Values.elasticsearch.host_data_path | default "/data/elasticsearch" }}
+            type: DirectoryOrCreate
+      {{- end }}
         - name: elasticsearch-backup
+      {{- if eq $storageType "pvc" }}
           persistentVolumeClaim:
             claimName: elasticsearch-backup
+      {{- else if eq $storageType "host_path" }}
+          hostPath:
+            path: {{ .Values.elasticsearch.host_backup_path | default "/data/backups/elasticsearch" }}
+            type: DirectoryOrCreate
+      {{- end }}
 {{- end }}

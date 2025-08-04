@@ -1,3 +1,7 @@
+{{ if .Values.mongodb.enabled }}
+{{- $storageType := default .Values.storage_type .Values.mongodb.storage_type | default "pvc" }}
+{{- if eq $storageType "pvc" }}
+
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -9,7 +13,8 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 100Mi
+      storage: {{ default "1Gi" .Values.mongodb.data_storage_size }}
+{{- end }}
 ---
 apiVersion: v1
 kind: Service
@@ -37,20 +42,19 @@ spec:
   selector:
     matchLabels:
       app: mongodb
-  # strategy:
-  #   type: Recreate
   template:
     metadata:
       labels:
         app: mongodb
     spec:
-    {{- if .Values.node_selector }}
+    {{- $node_selector := default .Values.node_selector .Values.mongodb.node_selector }}
+    {{- if $node_selector }}
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-            {{- range $k, $v := .Values.node_selector }}
+            {{- range $k, $v := $node_selector }}
               - key: {{ $k }}
                 operator: In
                 values:
@@ -82,5 +86,12 @@ spec:
       restartPolicy: Always
       volumes:
         - name: mongodb-data
+      {{- if eq $storageType "pvc" }}
           persistentVolumeClaim:
             claimName: mongodb
+      {{- else if eq $storageType "host_path" }}
+          hostPath:
+            path: {{ .Values.mongodb.host_data_path | default "/data/elasticsearch" }}
+            type: DirectoryOrCreate
+      {{- end }}
+{{- end }}

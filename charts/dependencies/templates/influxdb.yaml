@@ -1,3 +1,6 @@
+{{ if .Values.influxdb.enabled }}
+{{- $storageType := default .Values.storage_type .Values.influxdb.storage_type | default "pvc" }}
+{{- if eq $storageType "pvc" }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -9,7 +12,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: {{ default "1Gi" .Values.influxdb.data_storage_size }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -22,7 +25,8 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: {{ default "1Gi" .Values.influxdb.data_storage_size }}
+{{- end }}
 ---
 apiVersion: v1
 data:
@@ -81,13 +85,14 @@ spec:
       labels:
         app: influxdb
     spec:
-    {{- if .Values.node_selector }}
+    {{- $node_selector := default .Values.node_selector .Values.influxdb.node_selector }}
+    {{- if $node_selector }}
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-            {{- range $k, $v := .Values.node_selector }}
+            {{- range $k, $v := $node_selector }}
               - key: {{ $k }}
                 operator: In
                 values:
@@ -114,15 +119,28 @@ spec:
               subPath: influxdb.conf
       restartPolicy: Always
       volumes:
-        - name: influxdb
-          persistentVolumeClaim:
-            claimName: influxdb
-        - name: influxdb-backup
-          persistentVolumeClaim:
-            claimName: influxdb-backup
         - configMap:
             items:
               - key: influxdb.conf
                 path: influxdb.conf
             name: influxdb-config
           name: influxdb-config
+        - name: influxdb
+      {{- if eq $storageType "pvc" }}
+          persistentVolumeClaim:
+            claimName: influxdb
+      {{- else if eq $storageType "host_path" }}
+          hostPath:
+            path: {{ .Values.postgres.host_data_path | default "/data/influxdb" }}
+            type: DirectoryOrCreate
+      {{- end }}
+        - name: influxdb-backup
+      {{- if eq $storageType "pvc" }}
+          persistentVolumeClaim:
+            claimName: influxdb-backup
+      {{- else if eq $storageType "host_path" }}
+          hostPath:
+            path: {{ .Values.postgres.host_data_path | default "/data/backup/influxdb" }}
+            type: DirectoryOrCreate
+      {{- end }}
+{{- end }}

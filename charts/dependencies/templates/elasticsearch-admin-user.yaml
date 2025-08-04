@@ -12,6 +12,7 @@ kind: Secret
 metadata:
   name: {{ .Values.elasticsearch.admin_user_secret_name }}
   annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/resource-policy": keep
 type: Opaque
 data:

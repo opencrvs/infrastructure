@@ -68,7 +68,8 @@
   file:
     path: /data/traefik
     state: directory
-
+    group: 65532
+    owner: 65532
 - name: Check elasticsearch data directory
   stat:
     path: /data/elasticsearch
@@ -226,8 +227,8 @@
   file:
     path: /data/traefik/acme.json
     state: touch
-    owner: root
-    group: application
+    owner: 65532
+    group: 65532
     # Owner has rw, others no permissions
     mode: '0600'
 
@@ -235,7 +236,7 @@
   file:
     path: /data/traefik/certs
     state: directory
-    owner: root
-    group: application
+    owner: 65532
+    group: 65532
     # Owner has rwx, group r, others no permissions
     mode: '0740'

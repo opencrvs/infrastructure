@@ -1,0 +1,8 @@
+# Adjust hostname to your actual domain
+hostname: opencrvs.example.com
+
+minio:
+  use_default_credentials: false
+
+redis:
+  auth_mode: acl

@@ -11,7 +11,7 @@
     validate: 'visudo -cf %s'
     create: yes
   become: yes
-  when: item.state == 'present' and item.sudoer == true
+  when: item.state == 'present' and item.role == 'admin'
   with_items: '{{ users }}'
 
 - name: Set authorized keys for users

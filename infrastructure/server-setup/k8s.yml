@@ -43,18 +43,20 @@
   hosts: master
   tasks:
     - name: Install metrics server on control plane
-      include_tasks: tasks/metrics-server.yml
+      include_tasks: tasks/k8s-components/metrics-server.yml
     - name: Install k8s self-hosted runner
-      include_tasks: tasks/self-hosted-runner.yml
+      include_tasks: tasks/k8s-components/self-hosted-runner.yml
   tags:
     - k8s-components
 
-# FIXME: Add new_sans to extra_vars
-- name: Add extra SANs
+- name: Additional configuration
   become: yes
   hosts: master
   tasks:
-    - name: 
+    # FIXME: It should be started under provision user
+    - name: Configure Extra SANs for Kube API server
+      include_tasks: tasks/k8s-components/kube-api-add-extra-sans.yml
+    - name: Distribute kubeconfig into users directory
       include_tasks: tasks/user-kubeconfig.yml
   tags:
     - kubeconfig

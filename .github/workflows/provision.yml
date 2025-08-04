@@ -6,14 +6,10 @@ on:
       environment:
         description: 'Environment to provision'
         required: true
-        default: 'e2e'
+        default: 'dev'
         type: choice
         options:
-          - e2e
-          - staging
-          - production  
-          - development
-          - qa
+          - dev
       tags:
         description: 'Tags to apply to the provisioned resources'
         required: true

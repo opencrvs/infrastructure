@@ -1,4 +1,6 @@
 {{ if .Values.minio.enabled }}
+{{- $storageType := default .Values.storage_type .Values.minio.storage_type | default "pvc" }}
+{{- if eq $storageType "pvc" }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -10,7 +12,8 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: {{ default "1Gi" .Values.minio.data_storage_size }}
+{{- end }}
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
@@ -78,13 +81,14 @@ spec:
       labels:
         app: minio
     spec:
-    {{- if .Values.node_selector }}
+    {{- $node_selector := default .Values.node_selector .Values.minio.node_selector }}
+    {{- if $node_selector }}
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-            {{- range $k, $v := .Values.node_selector }}
+            {{- range $k, $v := $node_selector }}
               - key: {{ $k }}
                 operator: In
                 values:
@@ -99,9 +103,7 @@ spec:
             - --console-address
             - :3536
             - /data
-          # image: quay.io/minio/minio:RELEASE.2023-09-16T01-01-47Z.fips
           image: minio/minio:RELEASE.2023-08-16T20-17-30Z.hotfix.a51234923
-          # image: minio/minio:RELEASE.2025-03-12T18-04-18Z
           name: minio
           env:
             - name: MINIO_BROWSER_REDIRECT_URL
@@ -134,6 +136,12 @@ spec:
       restartPolicy: Always
       volumes:
         - name: minio
+      {{- if eq $storageType "pvc" }}
           persistentVolumeClaim:
             claimName: minio
+      {{- else if eq $storageType "host_path" }}
+          hostPath:
+            path: {{ .Values.minio.host_data_path | default "/data/minio" }}
+            type: DirectoryOrCreate
+      {{- end }}
 {{- end }}

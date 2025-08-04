@@ -56,7 +56,7 @@ spec:
           image: ghcr.io/opencrvs/mosip-api:1.8.0-beta.10
           env:
             - name: CLIENT_APP_URL
-              value: http://register.{{ .Values.hostname }}
+              value: {{ include "render-external-url" (dict "service_name" "register" "Values" .Values) }}
             - name: MOSIP_WEBSUB_CALLBACK_URL
               value: http://mosip-api.{{ .Release.Namespace }}.svc.cluster.local:2024/websub/callback
             - name: MOSIP_WEBSUB_HUB_URL

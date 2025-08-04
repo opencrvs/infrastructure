@@ -1,6 +1,16 @@
-name: Deploy Application on k8s
-run-name: "Deploy OpenCRVS on k8s (core: ${{ inputs.core-image-tag }}, country: ${{ inputs.countryconfig-image-tag }})"
+name: Deploy OpenCRVS
+run-name: "Deploy OpenCRVS (core: ${{ inputs.core-image-tag }}, country: ${{ inputs.countryconfig-image-tag }})"
 on:
+    workflow_call:
+      inputs:
+        core-image-tag:
+          type: string
+        countryconfig-image-tag:
+          type: string
+        environment:
+          type: string
+        reset:
+          type: boolean
     workflow_dispatch:
       inputs:
         core-image-tag:
@@ -14,39 +24,46 @@ on:
         environment:
           description: "Target environment"
           required: true
-          default: "demo"
-          type: string
-    workflow_call:
-      inputs:
-        core-image-tag:
-          type: string
-        countryconfig-image-tag:
-          type: string
-        environment:
-          type: string
-
+          default: "dev"
+          type: choice
+          options:
+            - dev
+        reset:
+          description: "Reset environment after deploy"
+          required: false
+          default: false
+          type: boolean
 jobs:
   deploy:
+    environment: ${{ inputs.environment }}
     env:
       ENV: ${{ inputs.environment }}
+      BRANCH: ${{ github.ref_name }}
       CORE_IMAGE_TAG: ${{ inputs.core-image-tag }}
       COUNTRYCONFIG_IMAGE_TAG: ${{ inputs.countryconfig-image-tag }}
     runs-on: [self-hosted]
-    # runs-on: ubuntu-latest
-
     steps:
-      # FYI: Repository is needed only due to single file: examples/dev/opencrvs-services/values.yaml
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
+      - name: Generate summary
+        run: |
+          echo "Deploying environment to https://${{ vars.DOMAIN }}" >> $GITHUB_STEP_SUMMARY
+          echo "Core image tag: ${{ inputs.core-image-tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "Country config image tag: ${{ inputs.countryconfig-image-tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "Reset environment: ${{ inputs.reset }}" >> $GITHUB_STEP_SUMMARY
       - name: Print deployment parameters
         run: |
           echo "Environment: $ENV"
           echo "Core Image: $CORE_IMAGE_TAG"
           echo "Country Config Image: $COUNTRYCONFIG_IMAGE_TAG"
-      - name: Create namespace
+          echo "base_ref: ${{ github.base_ref }}"
+          echo "branch: ${BRANCH}"
+      - name: Deploy OpenCRVS MOSIP API
         run: |
-          kubectl create namespace opencrvs-${ENV} || echo "Namespace already exists"
+          helm upgrade --install mosip-api oci://ghcr.io/opencrvs/opencrvs-mosip \
+          --namespace "opencrvs-${ENV}" \
+          -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/k8s-provision/examples/${ENV}/mosip-api/values.yaml \
+          --set hostname=$ENV.k8s-e2e.opencrvs.dev \
+          --create-namespace \
+          --atomic
       - name: Copy secrets from dependencies into application namespace
         run: |
           secrets=(
@@ -54,24 +71,38 @@ jobs:
             "redis-opencrvs-users"
             "minio-opencrvs-users"
             "mongodb-admin-user"
+            "postgres-admin-user"
           )
           for secret in "${secrets[@]}"; do
-            kubectl get secret $secret -n opencrvs-deps-e2e -o yaml \
-            | sed "s#namespace: opencrvs-deps-e2e#namespace: opencrvs-${ENV}#" \
+            kubectl get secret $secret -n opencrvs-deps-${ENV} -o yaml \
+            | sed "s#namespace: opencrvs-deps-${ENV}#namespace: opencrvs-${ENV}#" \
             | grep -vE 'resourceVersion|uid|creationTimestamp' \
             | kubectl apply -n opencrvs-${ENV} -f - \
-            || echo "Secret $secret doesn't exist in opencrvs-deps-e2e namespace"
+            || echo "Secret $secret doesn't exist in opencrvs-deps-${ENV} namespace"
           done
-      # FIXME:
-      # In generic workflow we should use environment variables or ...
-      # but not examples/e2e/opencrvs-services/values.yaml
       - name: Deploy with Helm
         run: |
           helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
+            --timeout 15m \
             --namespace "opencrvs-${ENV}" \
-            -f examples/e2e/opencrvs-services/values.yaml \
+            -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/k8s-provision/examples/${ENV}/opencrvs-services/values.yaml \
             --create-namespace \
+            --atomic \
             --set image.tag="$CORE_IMAGE_TAG" \
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
-            --set hostname=$ENV.k8s-e2e.opencrvs.dev \
-            --set environment="$ENV"
+            --set hostname=${{ vars.DOMAIN }}
+      - name: Cleanup Helm Locks
+        if: failure() || cancelled()
+        run: |
+          kubectl -n "opencrvs-${ENV}" get secrets -l owner=helm -o json | \
+          jq -r '.items[] | select(.metadata.labels.status=="pending-install" or .metadata.labels.status=="pending-upgrade") | .metadata.name' | \
+          xargs -r kubectl -n "opencrvs-${ENV}" delete secret || \
+          echo "No helm locks found, all is good"
+
+  reset-data:
+    if: ${{ inputs.reset }}
+    needs: deploy
+    uses: ./.github/workflows/k8s-reset-data.yml
+    with:
+      namespace: "opencrvs-${{ inputs.environment }}"
+    secrets: inherit

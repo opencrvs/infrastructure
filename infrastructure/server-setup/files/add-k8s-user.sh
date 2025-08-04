@@ -6,10 +6,10 @@ K8S_CA_CERT="/etc/kubernetes/pki/ca.crt"
 K8S_CA_KEY="/etc/kubernetes/pki/ca.key"
 K8S_ADMIN_KUBECONFIG="/etc/kubernetes/admin.conf"
 OUTPUT_BASE="./user-kubeconfigs"
-PUBLIC_API_SERVER_IP="91.99.202.110"   # <--- <<< replace with your public IP address
+PUBLIC_API_SERVER_IP=${PUBLIC_API_SERVER_IP:-"91.99.202.110"}   # <--- <<< replace with your public IP address
 API_SERVER_PORT="6443"
 ZIP_PASSWORD_PROMPT="Enter zip password (leave empty for no password): "
-
+ASK_PASSWORD=${ASK_PASSWORD:-yes}
 # Requires: zip, openssl, kubectl
 if [ "$(id -u)" -ne 0 ]; then
   echo "Please run as root (required for access to Kubernetes CA files)."
@@ -28,7 +28,7 @@ mkdir -p "$USERDIR"
 USER_KEY="${USERDIR}/${USERNAME}.key"
 USER_CSR="${USERDIR}/${USERNAME}.csr"
 USER_CERT="${USERDIR}/${USERNAME}.crt"
-USER_KUBECONFIG="${USERDIR}/kubeconfig"
+USER_KUBECONFIG="${USERDIR}/config"
 ZIP_FILE="${OUTPUT_BASE}/${USERNAME}-config.zip"
 
 # ====== KEY/CSR/CERT GEN ======
@@ -83,7 +83,11 @@ EOF
 
 # ====== ZIP ARCHIVE ======
 echo
-read -rsp "$ZIP_PASSWORD_PROMPT" ZIP_PASS
+if [[ "${ASK_PASSWORD}" == "yes" ]]; then
+  read -rsp "$ZIP_PASSWORD_PROMPT" ZIP_PASS
+else
+  ZIP_PASS=""
+fi
 echo
 cd "$USERDIR"
 if [[ -z "$ZIP_PASS" ]]; then
