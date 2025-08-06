@@ -1,10 +1,10 @@
-{{- if eq .Values.elasticsearch.auth_mode "auto" }}
+{{- if .Values.monitoring.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
   annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-weight": "1"
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
   labels:
     app: elasticsearch-on-deploy
   name: elasticsearch-on-deploy
@@ -36,16 +36,6 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.elasticsearch.users_secret }}
                   key: KIBANA_USER_ELASTIC_PASSWORD
-            - name: SEARCH_ELASTIC_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.elasticsearch.users_secret }}
-                  key: SEARCH_ELASTIC_USERNAME
-            - name: SEARCH_ELASTIC_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.elasticsearch.users_secret }}
-                  key: SEARCH_ELASTIC_PASSWORD
             - name: METRICBEAT_ELASTIC_USERNAME
               valueFrom:
                 secretKeyRef:

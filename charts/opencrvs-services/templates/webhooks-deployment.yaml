@@ -5,7 +5,7 @@ metadata:
   name: webhooks-route
 spec:
   entryPoints:
-  {{- if .Values.ingress.ssl_enabled }}
+  {{- if or .Values.ingress.ssl_enabled .Values.ingress.tls_resolver }}
     - websecure
   {{- end }}
   {{- if or .Values.ingress.tls_resolver (not .Values.ingress.ssl_enabled) }}

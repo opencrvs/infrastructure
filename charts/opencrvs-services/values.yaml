@@ -40,7 +40,7 @@ elasticsearch:
   # Password is always generated randomly.
   # Values are stored in secret named `elasticsearch-opencrvs-users`.
   auth_users:
-    - SEARCH
+    - SEARCH:search
   # TEMPORAL SECRET TO STORE ELASTICSEARCH USERS
   users_secret: elasticsearch-opencrvs-users
 # InfluxDB configuration, including the hostname, port, and database name.

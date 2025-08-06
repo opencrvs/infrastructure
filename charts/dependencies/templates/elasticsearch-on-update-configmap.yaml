@@ -1,4 +1,4 @@
-{{- if eq .Values.elasticsearch.auth_mode "auto" }}
+{{- if .Values.monitoring.enabled }}
 apiVersion: v1
 data:
 {{- range $path, $file := .Files.Glob "files/elasticsearch/*" }}

@@ -1,0 +1,62 @@
+---
+- name: Setup Kubernetes Cluster
+  hosts: all
+  gather_facts: yes
+  tasks:
+    - name: Include system preparation tasks
+      include_tasks: tasks/system-preparation.yml
+      tags:
+        - system-preparation
+      
+    - name: Include containerd installation tasks
+      include_tasks: tasks/install-containerd.yml
+      tags:
+        - containerd-setup
+
+    - name: Include Kubernetes installation tasks
+      include_tasks: tasks/install-kubernetes.yml
+      tags:
+        - kubernetes-installation
+
+- name: Initialize Kubernetes Master
+  hosts: master
+  tasks:
+    - name: Include master initialization tasks
+      include_tasks: tasks/init-master.yml
+      tags:
+        - control-plane-init
+    - name: Include network plugin installation tasks
+      include_tasks: tasks/install-network-plugin.yml
+      tags:
+        - cni-plugin-installation
+
+- name: Join Worker Nodes
+  hosts: workers
+  tasks:
+    - name: Include worker join tasks
+      include_tasks: tasks/join-workers.yml
+      tags:
+        - join-workers
+      when: single_node == false
+
+- name: Install k8s components
+  hosts: master
+  tasks:
+    - name: Install metrics server on control plane
+      include_tasks: tasks/k8s-components/metrics-server.yml
+    - name: Install k8s self-hosted runner
+      include_tasks: tasks/k8s-components/self-hosted-runner.yml
+  tags:
+    - k8s-components
+
+- name: Additional configuration
+  become: yes
+  hosts: master
+  tasks:
+    # FIXME: It should be started under provision user
+    - name: Configure Extra SANs for Kube API server
+      include_tasks: tasks/k8s-components/kube-api-add-extra-sans.yml
+    - name: Distribute kubeconfig into users directory
+      include_tasks: tasks/user-kubeconfig.yml
+  tags:
+    - kubeconfig

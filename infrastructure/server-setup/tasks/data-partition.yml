@@ -68,7 +68,8 @@
   file:
     path: /data/traefik
     state: directory
-
+    group: 65532
+    owner: 65532
 - name: Check elasticsearch data directory
   stat:
     path: /data/elasticsearch
@@ -222,14 +223,20 @@
     owner: 1000
     mode: g+rwx
 
-- name: Save secrets into encrypted folder for access by scripts
-  ansible.builtin.copy:
-    dest: /data/secrets/opencrvs.secrets
-    group: 1000
-    owner: 1000
-    mode: g+rwx
-    content: |
-      MONGODB_ADMIN_PASSWORD={{ mongodb_admin_password }}
-      MONGODB_ADMIN_USER={{ mongodb_admin_username }}
-      ELASTICSEARCH_ADMIN_PASSWORD={{elasticsearch_superuser_password}}
-      ELASTICSEARCH_ADMIN_USER=elastic
+- name: 'Create acme file for traefik'
+  file:
+    path: /data/traefik/acme.json
+    state: touch
+    owner: 65532
+    group: 65532
+    # Owner has rw, others no permissions
+    mode: '0600'
+
+- name: 'Create certs directory for traefik'
+  file:
+    path: /data/traefik/certs
+    state: directory
+    owner: 65532
+    group: 65532
+    # Owner has rwx, group r, others no permissions
+    mode: '0740'

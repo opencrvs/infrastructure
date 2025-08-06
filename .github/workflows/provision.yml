@@ -1,19 +1,15 @@
 name: Provision Environment
-run-name: Provision ${{ inputs.environment }}
+run-name: "Provision ${{ inputs.environment }} (tag: ${{ inputs.tags }})"
 on:
   workflow_dispatch:
     inputs:
       environment:
         description: 'Environment to provision'
         required: true
-        default: 'e2e'
+        default: 'dev'
         type: choice
         options:
-          - e2e
-          - staging
-          - production  
-          - development
-          - qa
+          - dev
       tags:
         description: 'Tags to apply to the provisioned resources'
         required: true
@@ -26,25 +22,61 @@ on:
           - application
           - tools
           - fail2ban
-          - data-partition
-          - ufw
           - decrypt-on-boot
-      
+          - k8s-components
+          - checks
+          - containerd-setup
+          - kubernetes-installation
+          - control-plane-init
+          - cni-plugin-installation
+          - join-workers
+          - system-preparation
+          - kubeconfig
+
 jobs:
   provision:
-    runs-on: [self-hosted]
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment }}
     steps:
       - name: Collect ssh key from secrets
         run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/id_rsa
+          echo "${{ secrets.SSH_KEY }}" > /tmp/id_rsa
           chmod 600 /tmp/id_rsa
-      
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+
+      - name: Set variables for ansible
+        id: ansible-variables
+        run: |
+          JSON_WITH_NEWLINES=$(cat<<EOF
+            ${{ toJSON(env) }}
+          EOF)
+          JSON_WITHOUT_NEWLINES=$(echo $JSON_WITH_NEWLINES | jq -R -c .)
+          echo "EXTRA_VARS=$JSON_WITHOUT_NEWLINES" >> $GITHUB_OUTPUT
+        env:
+          encrypted_disk_size: ${{ vars.DISK_SPACE }}
+          disk_encryption_key: ${{ secrets.ENCRYPTION_KEY }}
+          k8s_runner_token: ${{ secrets.K8S_RUNNER_TOKEN }}
+          repository: ${{ github.repository }}
+          k8s_cluster_env: ${{ inputs.environment }}
+
       - name: checkout repository
         uses: actions/checkout@v4
 
+
       - name: Run Ansible Playbook
-        run: |
-          ansible-playbook infrastructure/infrastructure/server-setup/playbook-k8s.yml \
-          -i infrastructure/infrastructure/server-setup/inventory/e2e-test.yml \
-          --private-key /tmp/id_rsa \
-          --extra-vars="ansible_user=provision"
+        uses: dawidd6/action-ansible-playbook@v4
+        env:
+          ANSIBLE_PERSISTENT_COMMAND_TIMEOUT: 10
+          ANSIBLE_SSH_TIMEOUT: 10
+          ANSIBLE_SSH_RETRIES: 5
+        with:
+          requirements: galaxy-requirements.yml
+          playbook: playbook.yml
+          directory: ./infrastructure/server-setup
+          options: |
+            --verbose
+            --inventory inventory/${{ inputs.environment }}.yml
+            --private-key /tmp/id_rsa
+            ${{ inputs.tags != 'all' && format('--tags={0}', inputs.tags) || '' }}
+            --extra-vars ""${{ steps.ansible-variables.outputs.EXTRA_VARS }}""

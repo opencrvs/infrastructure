@@ -14,3 +14,6 @@ backup_server_user: 'backup'
 backup_server_user_home: '/home/backup'
 crontab_user: root
 provisioning_user: provision
+kubernetes_version: "v1.33"
+pod_network_cidr: "192.168.0.0/16"
+calico_version: "v3.26.1"
