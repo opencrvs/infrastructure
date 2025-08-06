@@ -25,6 +25,10 @@ spec:
   tls:
     certResolver: {{ .Values.ingress.tls_resolver }}
   {{- end }}
+  {{- if .Values.ingress.tls_secret_name }}
+  tls:
+    secretName: {{ .Values.ingress.tls_secret_name }}
+  {{- end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
