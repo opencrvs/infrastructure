@@ -1,9 +1,18 @@
 
 # General information
 
-This example shows manual deployment on single-node kubernetes cluster. 
+This example shows how to deploy OpenCRVS with Farajaland data on single-node kubernetes cluster. OpenCRVS can be deployed manually or using GitHub Action Workflows.
 
-After deployment you will get OpenCRVS with Farajaland data populated across databases.
+# Prerequisites
+
+1. VM has at least 8cpu/16G RAM/50G SSD
+2. Linux distribution Ubuntu 24.04 is installed on VM
+3. VM has public IP, or at least you have option to open ports 80 and 443, otherwise traefik will not be able to issue valid SSL Certificates with lets encrypt http-01 challenge.
+4. Valid Domain name is attached to VM. You need to have 2 `A` records:
+   - Domain mapping to your IP address
+   - Wildcard domain mapped to your IP address
+
+# Information about deployment package
 
 Following components are included into deployment:
 - Traefik v3.4.3, official helm chart is used (traefik-36.3.0)
@@ -37,8 +46,8 @@ Following components are included into deployment:
    - ENCRYPTION_KEY, `/data` partition encryption key
    - K8S_RUNNER_TOKEN, Kubernetes self-hosted runner secret
 4. Create following GitHub environment variables:
-   - DISK_SPACE, encrypted partition disk size
-   - DOMAIN, domain
+   - DISK_SPACE, encrypted partition disk size, for testing 5g is more then sufficient
+   - DOMAIN, domain name attached to your VM
 
 ## Bootstrap github self-hosted runner
 
@@ -113,12 +122,8 @@ Review file `examples/dev/opencrvs-services/values.yaml` and if needed adjust va
 > NOTE: If you would like to provision infrastructure and kubernetes cluster with ansible scripts developed by OpenCRVS Team, please use [Deploy with Github](#deploy-with-github) scenario. Manual deployment scenario covers only OpenCRVS and dependencies installation.
 
 ## Prerequisites
-1. VM has public IP, or at least you have option to open ports 80 and 443, otherwise traefik will not be able to issue valid SSL Certificates with lets encrypt http-01 challenge.
-2. Valid Domain name is attached to VM. You need to have 2 `A` records:
-   - Domain mapping to your IP address
-   - Wildcard domain mapped to your IP address
 
-3. Single-node Kubernetes cluster is up and running on your VM.
+Single-node Kubernetes cluster is up and running on your VM.
    Make sure you are able connect to the cluster with kubectl
    ```
    kubectl get nodes
