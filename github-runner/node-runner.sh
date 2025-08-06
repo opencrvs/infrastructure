@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 
+printf """
+-----------------------------------
+Welcome to Bootstrap script!
+Please answer few questions
+
+"""
+
+
 set -o errexit      # Stop on error (like `-e`)
 set -o nounset      # Stop on unset vars (like `-u`)
 set -o pipefail     # Fail on first failed command in a pipeline
@@ -47,11 +55,12 @@ while [[ $# -gt 0 ]]; do
 done
 
 # --- INTERACTIVE PROMPTS (IF NOT SET) ---
+[[ -z "${ENV:-}" ]] && read -rp "Infrastructure environment name: " ENV
 [[ -z "${GITHUB_OWNER:-}" ]] && read -rp "GitHub owner (or org): " GITHUB_OWNER
+[[ "${SCOPE}" == "repo" && -z "${REPO_NAME:-}" ]] && read -rp "Repository name: " REPO_NAME
 [[ -z "${GITHUB_TOKEN:-}" ]] && read -rsp "GitHub token (no echo): " GITHUB_TOKEN && echo
 [[ -z "${SCOPE:-}" ]] && read -rp "Scope (repo|org) [repo]: " SCOPE && SCOPE="${SCOPE:-repo}"
-[[ "${SCOPE}" == "repo" && -z "${REPO_NAME:-}" ]] && read -rp "Repository name: " REPO_NAME
-[[ -z "${ENV:-}" ]] && read -rp "Infrastructure environment name: " ENV
+
 
 # --- Add runner labels ---
 LABELS="self-hosted,linux,node,${ENV}"
