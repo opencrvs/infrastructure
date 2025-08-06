@@ -1,0 +1,43 @@
+name: Update workflow environments
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update-environments:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+    #   - name: Install yq
+    #     run: |
+    #       sudo wget -qO /usr/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+    #       sudo chmod +x /usr/bin/yq
+    #       yq --version
+
+      - name: Extract inventory names
+        id: extract
+        run: |
+          mapfile -t ENVIRONMENTS < <(find infrastructure/server-setup/inventory -type f -name "*.yml" -exec basename {} .yml \;)
+          echo "env_list=${ENVIRONMENTS[*]}" >> "$GITHUB_OUTPUT"
+
+      - name: Update workflows
+        run: |
+          workflows=(
+            ".github/workflows/provision.yml"
+            ".github/workflows/deploy.yml"
+            ".github/workflows/seed-data.yml"
+            ".github/workflows/clear-environment.yml"
+          )
+          path=".on.workflow_dispatch.inputs.environment.options"
+
+          IFS=' ' read -r -a envs <<< "${{ steps.extract.outputs.env_list }}"
+
+          for wf in "${workflows[@]}"; do
+            echo "Updating $wf with: ${envs[*]}"
+            yq e "$path = [${envs[@]/#/'\"'}]"$'\"]' "$wf" -i
+          done
+
+      - name: Show diff
+        run: git diff
