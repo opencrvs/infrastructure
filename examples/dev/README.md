@@ -9,8 +9,10 @@ This example shows how to deploy OpenCRVS with Farajaland data on single-node ku
 2. Linux distribution Ubuntu 24.04 is installed on VM
 3. VM has public IP, or at least you have option to open ports 80 and 443, otherwise traefik will not be able to issue valid SSL Certificates with lets encrypt http-01 challenge.
 4. Valid Domain name is attached to VM. You need to have 2 `A` records:
-   - Domain mapping to your IP address
-   - Wildcard domain mapped to your IP address
+   - Primary domain for your VM IP address (e/g: opencrvs.example.com)
+   - Wildcard for primary domain or list of sub-domains mapped to your VM IP address.
+   
+   For more information, please check https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.5-setup-dns-a-records#domain-a-records
 
 # Information about deployment package
 
@@ -35,7 +37,7 @@ Following components are included into deployment:
   - Farajaland version: 3314a9a
 - MOSIP package
 
-# Deploy with Github
+# Deploy OpenCRVS with Github Actions workflows
 
 ## Prerequisites
 
@@ -70,12 +72,13 @@ Steps
    ```
    In your github repository you should see a self-hosted runner under settings/actions/runners
 
-## Prepare environment file
+## Prepare inventory file
 
 1. Go to `infrastructure/server-setup/inventory` folder
-2. Create file that match with your environment name, e/g if your environment name is `dev` then file name should be `dev.yml`
+2. Create configuration file for your dev VM, name should match with GitHub environment name, e/g if your environment name is `dev` then file name should be `dev.yml`. See example.
 3. Commit your changes
-4. Wait few minutes for update-envs workflow to complete
+4. Make sure update-envs workflow completed before moving to the next section.
+
 Configuration file example:
 ```yaml
 all:
@@ -85,17 +88,17 @@ all:
     ansible_user: provision
     single_node: true
     users:
-      - name: vmudryi
-        role: 
+      - name: myuser
         ssh_keys:
           - ssh-ed25519 AAAAC3N...cN/5HAjKGbi2DqV7g/Q
         state: present
+        # FIXME: https://github.com/opencrvs/opencrvs-core/issues/6267
         role: admin
   children:
     master:
       hosts:
         test-k8s-master:
-          ansible_host: 5.78.158.131
+          ansible_host: <your ip>
 ```
 
 ## Run provision
