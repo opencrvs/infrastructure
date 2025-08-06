@@ -10,11 +10,9 @@ on:
         type: choice
         options:
           - production
-          - development
           - staging
           - dev
           - backup
-          - jump
           - qa
 jobs:
   deploy:

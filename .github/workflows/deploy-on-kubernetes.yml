@@ -28,11 +28,9 @@ on:
         type: choice
         options:
           - production
-          - development
           - staging
           - dev
           - backup
-          - jump
           - qa
       reset:
         description: "Reset environment after deploy"
