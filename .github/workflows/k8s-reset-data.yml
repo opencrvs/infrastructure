@@ -9,15 +9,24 @@ on:
           description: "Target namespace"
           required: true
           type: string
+        environment:
+          description: "Target environment"
+          required: true
+          type: string
     workflow_call:
       inputs:
         namespace:
+          type: string
+        environment:
           type: string
 jobs:
   reset:
     env:
       namespace: ${{ inputs.namespace }}
-    runs-on: [self-hosted]
+    runs-on:
+      - self-hosted
+      - k8s
+      - ${{ inputs.environment }}
     steps:
         - name: Get helm release values
           run: helm get values opencrvs -n ${namespace} > ${namespace}.yaml

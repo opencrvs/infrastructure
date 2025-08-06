@@ -1,21 +1,29 @@
 name: Deploy Dependencies
 run-name: Deploy Dependencies on ${{ inputs.environment }}
 on:
-    workflow_dispatch:
-      inputs:
-        environment:
-          description: "Target environment"
-          required: true
-          default: "dev"
-          type: choice
-          options:
-            - dev
-
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - production
+          - development
+          - staging
+          - dev
+          - backup
+          - jump
+          - qa
 jobs:
   deploy:
     env:
       ENV: ${{ inputs.environment }}
-    runs-on: [self-hosted]
+    runs-on:
+      - self-hosted
+      - k8s
+      - ${{ inputs.environment }}
     steps:
       - name: Install traefik
         run: |

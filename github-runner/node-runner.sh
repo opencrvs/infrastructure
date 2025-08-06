@@ -80,7 +80,7 @@ fi
 # --- INSTALL DEPENDENCIES ---
 echo "[+] Installing dependencies..."
 sudo apt-get update -qq
-sudo apt-get install -y curl jq tar
+sudo apt-get install -y curl jq tar ansible
 
 # --- CREATE RUNNER DIR ---
 sudo mkdir -p "${RUNNER_DIR}"
