@@ -31,6 +31,7 @@ Following components are included into deployment:
 ## Prerequisites
 
 1. Fork repository: https://github.com/opencrvs/infrastructure
+2. Create repository level secret GH_TOKEN with read/write access to workflows
 2. Create GitHub environment
 3. Create following GitHub secrets under environment:
    - ENCRYPTION_KEY, `/data` partition encryption key
