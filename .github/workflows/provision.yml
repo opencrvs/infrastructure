@@ -9,7 +9,13 @@ on:
         default: 'dev'
         type: choice
         options:
+          - production
+          - development
+          - staging
           - dev
+          - backup
+          - jump
+          - qa
       tags:
         description: 'Tags to apply to the provisioned resources'
         required: true
@@ -32,10 +38,12 @@ on:
           - join-workers
           - system-preparation
           - kubeconfig
-
 jobs:
   provision:
-    runs-on: ubuntu-24.04
+    runs-on:
+      - self-hosted
+      - ${{ inputs.environment }}
+      - node
     environment: ${{ inputs.environment }}
     steps:
       - name: Collect ssh key from secrets
@@ -44,7 +52,6 @@ jobs:
           chmod 600 /tmp/id_rsa
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }}
-
       - name: Set variables for ansible
         id: ansible-variables
         run: |
@@ -59,11 +66,8 @@ jobs:
           k8s_runner_token: ${{ secrets.K8S_RUNNER_TOKEN }}
           repository: ${{ github.repository }}
           k8s_cluster_env: ${{ inputs.environment }}
-
       - name: checkout repository
         uses: actions/checkout@v4
-
-
       - name: Run Ansible Playbook
         uses: dawidd6/action-ansible-playbook@v4
         env:
@@ -74,7 +78,7 @@ jobs:
           requirements: galaxy-requirements.yml
           playbook: playbook.yml
           directory: ./infrastructure/server-setup
-          options: |
+          options: |-
             --verbose
             --inventory inventory/${{ inputs.environment }}.yml
             --private-key /tmp/id_rsa

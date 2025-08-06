@@ -1,3 +1,4 @@
+# TODO: Refactor monitoring helm chart
 {{- if .Values.monitoring.enabled }}
 apiVersion: batch/v1
 kind: Job

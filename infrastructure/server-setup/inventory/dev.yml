@@ -17,11 +17,3 @@ all:
       hosts:
         test-k8s-master:
           ansible_host: 5.78.158.131
-    # workers:
-    #   hosts:
-    #     test-k8s-worker-0:
-    #       ansible_host: 5.78.67.216
-        # test-k8s-worker-1:
-        #   ansible_host: 5.78.153.188
-        # test-k8s-worker-1:
-        #   ansible_host: 5.78.133.88

@@ -2,6 +2,10 @@ name: Update workflow environments
 
 on:
   workflow_dispatch:
+  push:
+    branches: ["*"]
+    paths:
+      - infrastructure/server-setup/inventory/*
 
 jobs:
   update-environments:
@@ -9,35 +13,38 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-
-    #   - name: Install yq
-    #     run: |
-    #       sudo wget -qO /usr/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-    #       sudo chmod +x /usr/bin/yq
-    #       yq --version
+        with:
+            token: ${{ github.token }}
 
       - name: Extract inventory names
         id: extract
         run: |
-          mapfile -t ENVIRONMENTS < <(find infrastructure/server-setup/inventory -type f -name "*.yml" -exec basename {} .yml \;)
-          echo "env_list=${ENVIRONMENTS[*]}" >> "$GITHUB_OUTPUT"
-
+          ENVIRONMENTS=(`find infrastructure/server-setup/inventory -type f -name "*.yml" -exec basename {} .yml \;`)
+          echo "env_list=${ENVIRONMENTS[@]}" >> "$GITHUB_OUTPUT"
+          echo "${ENVIRONMENTS[@]}"
       - name: Update workflows
         run: |
           workflows=(
             ".github/workflows/provision.yml"
-            ".github/workflows/deploy.yml"
-            ".github/workflows/seed-data.yml"
-            ".github/workflows/clear-environment.yml"
+            ".github/workflows/deploy-deps-on-kubernetes.yml"
+            ".github/workflows/deploy-on-kubernetes.yml"
           )
           path=".on.workflow_dispatch.inputs.environment.options"
 
           IFS=' ' read -r -a envs <<< "${{ steps.extract.outputs.env_list }}"
-
+          list=$(printf '"%s", ' "${envs[@]}")
+          list="[${list%, }]"
           for wf in "${workflows[@]}"; do
-            echo "Updating $wf with: ${envs[*]}"
-            yq e "$path = [${envs[@]/#/'\"'}]"$'\"]' "$wf" -i
+            echo "Updating $wf with: ${list}"
+            yq e "$path = $list" "$wf" -i
           done
 
       - name: Show diff
         run: git diff
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add .github/workflows/*.yml
+          git commit -m "Update environment options" || echo "No changes"
+          git push

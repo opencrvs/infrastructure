@@ -1,38 +1,44 @@
 name: Deploy OpenCRVS
-run-name: "Deploy OpenCRVS (core: ${{ inputs.core-image-tag }}, country: ${{ inputs.countryconfig-image-tag }})"
+run-name: "Deploy OpenCRVS on ${{ inputs.environment }} (core: ${{ inputs.core-image-tag }}, country: ${{ inputs.countryconfig-image-tag }})"
 on:
-    workflow_call:
-      inputs:
-        core-image-tag:
-          type: string
-        countryconfig-image-tag:
-          type: string
-        environment:
-          type: string
-        reset:
-          type: boolean
-    workflow_dispatch:
-      inputs:
-        core-image-tag:
-          description: "Tag of the core image"
-          required: true
-          default: "develop"
-        countryconfig-image-tag:
-          description: "Tag of the countryconfig image"
-          required: true
-          default: "develop"
-        environment:
-          description: "Target environment"
-          required: true
-          default: "dev"
-          type: choice
-          options:
-            - dev
-        reset:
-          description: "Reset environment after deploy"
-          required: false
-          default: false
-          type: boolean
+  workflow_call:
+    inputs:
+      core-image-tag:
+        type: string
+      countryconfig-image-tag:
+        type: string
+      environment:
+        type: string
+      reset:
+        type: boolean
+  workflow_dispatch:
+    inputs:
+      core-image-tag:
+        description: "Tag of the core image"
+        required: true
+        default: "develop"
+      countryconfig-image-tag:
+        description: "Tag of the countryconfig image"
+        required: true
+        default: "develop"
+      environment:
+        description: "Target environment"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - production
+          - development
+          - staging
+          - dev
+          - backup
+          - jump
+          - qa
+      reset:
+        description: "Reset environment after deploy"
+        required: false
+        default: false
+        type: boolean
 jobs:
   deploy:
     environment: ${{ inputs.environment }}
@@ -41,7 +47,10 @@ jobs:
       BRANCH: ${{ github.ref_name }}
       CORE_IMAGE_TAG: ${{ inputs.core-image-tag }}
       COUNTRYCONFIG_IMAGE_TAG: ${{ inputs.countryconfig-image-tag }}
-    runs-on: [self-hosted]
+    runs-on:
+      - self-hosted
+      - k8s
+      - ${{ inputs.environment }}
     steps:
       - name: Generate summary
         run: |
@@ -98,11 +107,11 @@ jobs:
           jq -r '.items[] | select(.metadata.labels.status=="pending-install" or .metadata.labels.status=="pending-upgrade") | .metadata.name' | \
           xargs -r kubectl -n "opencrvs-${ENV}" delete secret || \
           echo "No helm locks found, all is good"
-
   reset-data:
     if: ${{ inputs.reset }}
     needs: deploy
     uses: ./.github/workflows/k8s-reset-data.yml
     with:
       namespace: "opencrvs-${{ inputs.environment }}"
+      environment: ${{ inputs.environment }}
     secrets: inherit
