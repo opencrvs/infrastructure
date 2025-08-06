@@ -21,12 +21,12 @@ jobs:
           helm upgrade --install traefik oci://ghcr.io/traefik/helm/traefik \
             --namespace traefik \
             --create-namespace \
-            -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/k8s-provision/examples/${ENV}/traefik/values.yaml
+            -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/examples/${ENV}/traefik/values.yaml
       - name: Install OpenCRVS dependencies
         run: |
           helm upgrade --install opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart \
             --namespace "opencrvs-deps-${ENV}" \
-            -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/k8s-provision/examples/${ENV}/dependencies/values.yaml \
+            -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/examples/${ENV}/dependencies/values.yaml \
             --create-namespace \
             --set storage_type=host_path \
             --atomic

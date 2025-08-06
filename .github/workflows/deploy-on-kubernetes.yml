@@ -60,7 +60,7 @@ jobs:
         run: |
           helm upgrade --install mosip-api oci://ghcr.io/opencrvs/opencrvs-mosip \
           --namespace "opencrvs-${ENV}" \
-          -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/k8s-provision/examples/${ENV}/mosip-api/values.yaml \
+          -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/examples/${ENV}/mosip-api/values.yaml \
           --set hostname=$ENV.k8s-e2e.opencrvs.dev \
           --create-namespace \
           --atomic
@@ -85,7 +85,7 @@ jobs:
           helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
             --timeout 15m \
             --namespace "opencrvs-${ENV}" \
-            -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/k8s-provision/examples/${ENV}/opencrvs-services/values.yaml \
+            -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/examples/${ENV}/opencrvs-services/values.yaml \
             --create-namespace \
             --atomic \
             --set image.tag="$CORE_IMAGE_TAG" \
