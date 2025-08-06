@@ -1,4 +1,5 @@
-name: Deploy Dependencies on k8s
+name: Deploy Dependencies
+run-name: Deploy Dependencies on ${{ inputs.environment }}
 on:
     workflow_dispatch:
       inputs:
@@ -16,7 +17,7 @@ jobs:
       ENV: ${{ inputs.environment }}
     runs-on: [self-hosted]
     steps:
-      - name: 
+      - name: Install traefik
         run: |
           helm upgrade --install traefik oci://ghcr.io/traefik/helm/traefik \
             --namespace traefik \
