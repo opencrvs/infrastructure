@@ -51,7 +51,7 @@ spec:
               fi
       containers:
         - name: elastalert
-          image: jertel/elastalert2:2.19.0
+          image: jertel/elastalert2:2.25.0
           env:
             - name: ES_HOST
               value: elasticsearch-0.elasticsearch.{{ .Release.Namespace }}.svc.cluster.local
