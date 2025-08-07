@@ -1,17 +1,27 @@
-chart_dev_mode: true
-hostname: aws.opencrvs.dev
+chart_dev_mode: false
+hostname: test-k8s.opencrvs.dev
+
+node_selector:
+  role: data1
+
+ingress:
+  tls_resolver: letsencrypt
 
 redis:
-  auth_mode: acl
+  auth_mode: disabled
 
 minio:
   use_default_credentials: false
 
 elasticsearch:
   use_default_credentials: false
-
+  node_selector:
+    role: data2
 mongodb:
   use_default_credentials: false
 
-node_selector:
- role: data1
+postgres:
+  use_default_credentials: false
+
+monitoring:
+  enabled: true

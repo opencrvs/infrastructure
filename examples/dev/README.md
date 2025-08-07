@@ -13,6 +13,7 @@ This example shows how to deploy OpenCRVS with Farajaland data on single-node ku
    - Wildcard for primary domain or list of sub-domains mapped to your VM IP address.
    
    For more information, please check https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.5-setup-dns-a-records#domain-a-records
+5. Provision user is configured according to documentation at [3.3.1-provision-your-server-nodes-with-ssh-access](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.1-provision-your-server-nodes-with-ssh-access)
 
 # Information about deployment package
 
@@ -41,36 +42,36 @@ Following components are included into deployment:
 
 ## Prerequisites
 
-1. Fork repository: https://github.com/opencrvs/infrastructure
-2. Create repository level secret GH_TOKEN with read/write access to workflows
-2. Create GitHub environment
-3. Create following GitHub secrets under environment:
-   - ENCRYPTION_KEY, `/data` partition encryption key
+> NOTE: `(Optional)` steps should be performed only once per multiple environments
+
+1. (Optional) Fork repository: https://github.com/opencrvs/infrastructure
+2. (Optional) Create repository level secrets:
+   - GH_TOKEN with read/write access to workflows
    - K8S_RUNNER_TOKEN, Kubernetes self-hosted runner secret
-4. Create following GitHub environment variables:
+2. Create GitHub environment `demo`
+3. Create following GitHub secrets  under `demo` environment:
+   - ENCRYPTION_KEY, `/data` partition encryption key, store secret to password manager for future usage
+4. Create following GitHub variables under `demo` environment:
    - DISK_SPACE, encrypted partition disk size, for testing 5g is more then sufficient
    - DOMAIN, domain name attached to your VM
 
 ## Bootstrap github self-hosted runner
 
 Make sure you have following values:
-- github org name (usually repo owner)
-- github repository name
-- github PAT with access to repository code and workflow
-- environment name
+- github org name: `<your account or org name>`
+- github repository name: `<your repository name>`
+- github PAT with access to repository code and workflow: `<K8S_RUNNER_TOKEN or dedicated runner token>`
+- environment name: `dev`
 
-Steps
-1. Login to VM (server)
-2. Create `provision` user with sudo privileges 
-3. Run command:
-   ```
-   curl -s https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/polish-install-process/github-runner/node-runner.sh -o runner.sh && bash runner.sh
-   ```
-   You should see a message:
-   ```
-   ✅ Runner '....-runner' is installed and started!
-   ```
-   In your github repository you should see a self-hosted runner under settings/actions/runners
+Run following command on VM (master node):
+```
+curl -s https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/github-runner/node-runner.sh -o runner.sh && bash runner.sh
+```
+You should see a message:
+```
+✅ Runner '....-runner' is installed and started!
+```
+In your github repository you should see a self-hosted runner under settings/actions/runners
 
 ## Prepare inventory file
 

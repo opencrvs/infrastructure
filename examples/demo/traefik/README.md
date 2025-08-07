@@ -8,16 +8,6 @@ helm upgrade --install traefik traefik-repo/traefik --namespace traefik --create
 ```
 kubectl get svc -n traefik
 ```
-Create CNAME/A/AAA for Load balancer name. Lets encrypt works fine with AWS CNAME.
 
+Create CNAME/A/AAA for Load balancer name. Lets encrypt works fine with CNAME.
 
-# Create a wildcard certificate for the domain
-
-```
-kubectl apply -f  wildcard-certificate.yaml
-```
-
-# Wait few minutes
-```
-kubectl apply -f tlsstore.yaml
-```

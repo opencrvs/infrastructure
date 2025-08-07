@@ -13,3 +13,4 @@ List of upcoming (desired) changes:
 
 Open Questions:
 - Should we build dedicated helm chart for Monitoring?
+  Deployment may fail on larger clusters due to issue with filebeat and metricbeat don't start before kibana deployment.

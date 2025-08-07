@@ -1,0 +1,27 @@
+all:
+  vars:
+    single_node: false
+    kube_api_sans:
+    - test-k8s.opencrvs.dev
+    - 10.2.1.1
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+    ansible_user: provision
+    users:
+      - name: vmudryi
+        role: 
+        ssh_keys:
+          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINgMcsSBwTE0EbMDRSF1T4vJDcN/5HAjKGbi2DqV7g/Q vmudryi@opencrvs.org
+        state: present
+        role: admin
+  children:
+    master:
+      hosts:
+        test-k8s-master:
+          ansible_host: 10.2.1.1
+
+    workers:
+      hosts:
+        test-k8s-worker-0:
+          ansible_host: 10.2.1.2
+        test-k8s-worker-1:
+          ansible_host: 10.2.1.3

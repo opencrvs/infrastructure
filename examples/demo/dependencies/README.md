@@ -1,6 +1,9 @@
 ENV=demo;
-helm upgrade --install opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart:0.1.1 \
+
+
+helm upgrade --install opencrvs-deps charts/dependencies/ \
             --namespace "opencrvs-deps-${ENV}" \
-            -f infrastructure/${ENV}/dependencies/values.yaml \
+            -f examples/${ENV}/dependencies/values.yaml \
             --create-namespace \
-            --set environment="$ENV"
+            --set environment="$ENV" \
+            --set storage_type=host_path

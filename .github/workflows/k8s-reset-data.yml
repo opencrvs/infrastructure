@@ -1,5 +1,5 @@
-name: Reset environment (k8s)
-run-name: "Reset environment (namespace: ${{ inputs.namespace }})"
+name: Reset environment
+run-name: "Reset ${{ inputs.environment }} environment (namespace: ${{ inputs.namespace }})"
 # FIXME:
 # - replace sleep 30 with kubectl wait for job completion
 on:
@@ -21,6 +21,7 @@ on:
           type: string
 jobs:
   reset:
+    environment: ${{ inputs.environment }}
     env:
       namespace: ${{ inputs.namespace }}
     runs-on:
