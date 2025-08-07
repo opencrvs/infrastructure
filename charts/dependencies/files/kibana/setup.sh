@@ -67,14 +67,14 @@ _curl() {
 
 
 # Initial API status check to ensure Kibana is ready
-response=$(curl -s -w "\n%{http_code}" --connect-timeout 60 -u elastic:$ELASTICSEARCH_SUPERUSER_PASSWORD -o /dev/null -w '%{http_code}' "$kibana_alerting_api_url")
-status_code=$(http_status_from_curl_output $response)
-
-if [ "$status_code" -ne 200 ]; then
-  echo "Kibana is not ready yet! HTTP status $status_code"
-  exit 1
-fi
-
+cc=0
+status_code=500
+while [ "$status_code" -ne 200 ]; do
+  response=$(curl -s -w "\n%{http_code}" --connect-timeout 60 -u elastic:$ELASTICSEARCH_SUPERUSER_PASSWORD -o /dev/null -w '%{http_code}' "$kibana_alerting_api_url")
+  status_code=$(http_status_from_curl_output $response)
+  [ "$status_code" -ne 200 ] && echo "Kibana is not ready yet! HTTP status $status_code" && sleep 30 && ((cc++))
+  [ $cc -gt 10 ] && echo "Kibana didn't startup within 5 minutes" && exit 1
+done
 # Delete all alerts
 _curl --connect-timeout 60 -u elastic:$ELASTICSEARCH_SUPERUSER_PASSWORD "$kibana_alerting_api_url" | jq -r '.data[].id' | while read -r id; do
   _curl --connect-timeout 60 -X DELETE -H 'kbn-xsrf: true' -u elastic:$ELASTICSEARCH_SUPERUSER_PASSWORD "${KIBANA_URL}/api/alerting/rule/$id"

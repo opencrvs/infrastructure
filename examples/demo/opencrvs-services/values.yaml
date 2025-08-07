@@ -1,6 +1,15 @@
-chart_dev_mode: true
+chart_dev_mode: false
 
-hostname: aws.opencrvs.dev
+ingress:
+  tls_resolver: letsencrypt
+
+hpa:
+  enabled: false
+
+env:
+  APN_SERVICE_URL: "http://apm-server.opencrvs-deps-demo.svc.cluster.local:8200"
+
+hostname: test-k8s.opencrvs.dev
 influxdb:
   host: influxdb-0.influxdb.opencrvs-deps-demo.svc.cluster.local
 elasticsearch:
@@ -12,24 +21,28 @@ elasticsearch:
 minio:
   auth_mode: use_secret
   host: minio-0.minio.opencrvs-deps-demo.svc.cluster.local
+  external_hostname: minio.test-k8s.opencrvs.dev
 
 mongodb:
   auth_mode: auto
   host: mongodb-0.mongodb.opencrvs-deps-demo.svc.cluster.local
 
 redis:
-  auth_mode: use_secret
+  auth_mode: disabled
   host: redis-0.redis.opencrvs-deps-demo.svc.cluster.local
 
+postgres:
+  auth_mode: auto
+  host: postgres-0.postgres.opencrvs-deps-demo.svc.cluster.local
 
 resources:
-  memoryRequest: "512Mi"
+  memoryRequest: "256Mi"
   cpuRequest: "200m"
-  memoryLimit: "1Gi"
+  memoryLimit: "2Gi"
   cpuLimit: "1"
 
 image:
-  tag: develop
+  tag: 0f10027
 
 dashboards:
   use_default_credentials: false
@@ -39,9 +52,17 @@ countryconfig:
     # Replace countryconfig with farajaland to test data
     name: opencrvs/ocrvs-farajaland
     # name: opencrvs/ocrvs-countryconfig
-    # tag: develop
+    tag: 3314a9a
     # tag: ec53c12
-    tag: develop
+    # tag: v1.8.1
+
+  env:
+    OPENID_PROVIDER_CLAIMS: name,family_name,given_name,middle_name,birthdate,address
+    OPENID_PROVIDER_CLIENT_ID: mock-client_id
+    V2_EVENTS: "true"
+    FIXME: In general these values should be passed externally using `--set key=value`
+    ESIGNET_REDIRECT_URL: https://esignet-mock.test-k8s.opencrvs.dev/authorize
+    MOSIP_API_USERINFO_URL: https://mosip-api.test-k8s.opencrvs.dev/esignet/get-oidp-user-info
 
 data_seed:
   env:

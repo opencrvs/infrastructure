@@ -1,0 +1,17 @@
+chart_dev_mode: true
+hostname: aws.opencrvs.dev
+
+redis:
+  auth_mode: acl
+
+minio:
+  use_default_credentials: false
+
+elasticsearch:
+  use_default_credentials: false
+
+mongodb:
+  use_default_credentials: false
+
+node_selector:
+ role: data1

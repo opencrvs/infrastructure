@@ -2,9 +2,6 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "1"
   labels:
     app: kibana-on-deploy
   name: kibana-on-deploy

@@ -9,7 +9,7 @@ on:
         default: 'dev'
         type: choice
         options:
-          - production
+          - demo
           - staging
           - dev
           - backup
@@ -44,12 +44,6 @@ jobs:
       - node
     environment: ${{ inputs.environment }}
     steps:
-      - name: Collect ssh key from secrets
-        run: |
-          echo "${{ secrets.SSH_KEY }}" > /tmp/id_rsa
-          chmod 600 /tmp/id_rsa
-        env:
-          SSH_KEY: ${{ secrets.SSH_KEY }}
       - name: Set variables for ansible
         id: ansible-variables
         run: |
@@ -79,6 +73,5 @@ jobs:
           options: |-
             --verbose
             --inventory inventory/${{ inputs.environment }}.yml
-            --private-key /tmp/id_rsa
             ${{ inputs.tags != 'all' && format('--tags={0}', inputs.tags) || '' }}
             --extra-vars ""${{ steps.ansible-variables.outputs.EXTRA_VARS }}""

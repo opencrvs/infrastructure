@@ -1,16 +1,15 @@
-- name: Remove Docker's old version if it exists
-  become: yes
+- name: Remove Docker's old versions if installed
+  become: true
   apt:
     name: "{{ item }}"
     state: absent
-    purge: yes
+    purge: true
   loop:
     - docker
     - docker-engine
     - docker.io
     - containerd
     - runc
-  when: item in ansible_facts.packages
   ignore_errors: true
 
 - name: Remove Docker's official GPG key if it exists
