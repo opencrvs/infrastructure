@@ -29,6 +29,8 @@
     mode: '0600'
     remote_src: yes
     force: yes
+# FIXME: As Ops I would like to have dedicated master node, all workloads should go to workers
+#        Current setup will spread load across all nodes, including master
 - name: Single node setup
   register: taint_result
   shell: |
@@ -38,6 +40,11 @@
   failed_when: 
       - taint_result.rc != 0
       - '"not found" not in taint_result.stderr'
+- name: Label this master node in Kubernetes (by system hostname)
+  ansible.builtin.shell: |
+    kubectl label node {{ ansible_hostname }} traefik-role=ingress --overwrite
+  environment:
+    KUBECONFIG: /home/provision/.kube/config
 - name: Get join command for worker nodes
   shell: sudo kubeadm token create --print-join-command
   register: join_command

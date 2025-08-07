@@ -38,6 +38,9 @@ ports:
     hostPort: 443
     protocol: TCP
 
+nodeSelector:
+  traefik-role: ingress
+
 certificatesResolvers:
   letsencrypt:
     acme:
