@@ -295,7 +295,12 @@ Before installing OpenCRVS using Helm, ensure you have the following:
         <tr>
             <td>ingress.tls_resolver</td>
             <td>` `</td>
-            <td>Traefik TLS Resolver</td>
+            <td>If traefik was deployed with custom resolver, please define resolver name here. Resolver will be attached to Traefik CRD IngressRoute, otherwise default Traefik SSL Certificate will be used.</td>
+        </tr>
+        <tr>
+            <td>ingress.tls_secret_name</td>
+            <td>` `</td>
+            <td>Custom SSL Certificate for IngressRoute, check traefik documentation for details</td>
         </tr>
         <tr>
             <td>service_type</td>

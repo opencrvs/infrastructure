@@ -1,19 +1,27 @@
 # General information
 
-Helm chart does deployment of OpenCRVS dependencies. Helm Chart is capable for testing and pilot projects.
+Helm chart does deployment of OpenCRVS dependencies including monitoring stack. Helm Chart is capable for testing and pilot projects.
 
-List of deployed services:
+> NOTE: See [values.yaml](values.yaml) for exact versions
 
-| Service name | Docker image | Default port | Notes |
-|---|---|---|---|
-| mongodb | mongo:4.4 | 27017 |  |
-| minio | minio/minio:RELEASE.2023-08-16T20-17-30Z.hotfix.a51234923 | 3535 / 3536 |  |
-| postgres | postgres:17 | 5432 |  |
-| influxdb | influxdb:1.8.10 | 8086 |  |
-| elasticsearch | docker.elastic.co/elasticsearch/elasticsearch:8.16.4 | 9200 |  |
-| redis | bitnami/redis:latest | 6379 |  |
+- Datastores:
+  - MongoDB
+  - Postgres
+  - Elasticsearch
+  - Redis
+  - MinIO
+  - InfluxDB
+- Observability (Monitoring and Logging):
+  - Kibana
+  - Logstash
+  - Filebeat
+  - Metricbeat
+  - Elastic APM server
+  - Elastalert2
 
-All services are deployed within the same namespace as StatefulSets with data persistence enabled. By default security is turned off and default password or no-password access is used to access the service. Please check appropriate section for each service for more details.
+Datastore services are deployed as StatefulSets with data persistence enabled. By default security is turned off and default password or no-password access is used datastore access. Please check appropriate section for each service for more details.
+
+Monitoring is disabled by default to keep lower resource usage, check [Monitoring](#monitoring) section for more details how to enable monitoring.
 
 Any particular service within this helm chart can be disabled by setting `<service_name>.enabled` flag to `false`. E/g Memorystore on Google Cloud Platform is replacement for Redis, instead running Redis container cloud native solution could be used.
 
@@ -22,9 +30,11 @@ Any particular service within this helm chart can be disabled by setting `<servi
 ## Global configuration options
 
 | Parameter                | Type    | Default | Description                                   |
+|-|-|-|-|
 | hostname| string | farajaland.dev | All chart services will be available under specified domain. Exposed services are MinIO and Kibana, if Monitoring is enabled |
 | ingress.ssl_enabled      | bool    | false   | Enable SSL for IngressRoutes. |
 | ingress.tls_resolver | string | ` ` | If traefik was deployed with custom resolver, please define resolver name here. Resolver will be attached to Traefik CRD IngressRoute, otherwise default Traefik SSL Certificate will be used. |
+| ingress.tls_secret_name | string | ` ` | Custom SSL Certificate for IngressRoute, check traefik documentation for details |
 | storage_type | string | pvc | Kubernetes storage type, available options are `pvc` or `host_path`. More information are at [Storage Configuration](#storage-configuration) |
 | node_selector | dict | `{}` | Label selector for datastore nodes, usually used to keep data persistent |
 | monitoring.enabled | bool | `false` | Enable or disable monitoring, see [Monitoring](#monitoring) |
