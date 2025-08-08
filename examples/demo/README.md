@@ -26,14 +26,16 @@ Following components are included into deployment:
   - Farajaland version: 3314a9a
 - MOSIP package
 
-# TODO: update Prerequisites
+# Prerequisites
 
-1. 3 VMs has at least 8cpu/16G RAM/50G SSD
+1. 3 VMs has at least:
+  - Master 2cpu/4G RAM/10G ssd
+  - Workers 8cpu/16G RAM/50G ssd
 2. Linux distribution Ubuntu 24.04 is installed on VM
-3. VM has public IP, or at least you have option to open ports 80 and 443, otherwise traefik will not be able to issue valid SSL Certificates with lets encrypt http-01 challenge.
+3. At least master VM has public IP, or at least you have option to open ports 80 and 443, otherwise traefik will not be able to issue valid SSL Certificates with lets encrypt http-01 challenge.
 4. Valid Domain name is attached to VM. You need to have 2 `A` records:
-   - Primary domain for your VM IP address (e/g: opencrvs.example.com)
-   - Wildcard for primary domain or list of sub-domains mapped to your VM IP address.
+   - Primary domain for master VMs IP address (e/g: opencrvs.example.com)
+   - Wildcard for primary domain or list of sub-domains mapped to master VMs IP address.
    
    For more information, please check https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.5-setup-dns-a-records#domain-a-records
 5. Provision user is configured according to documentation at [3.3.1-provision-your-server-nodes-with-ssh-access](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.1-provision-your-server-nodes-with-ssh-access)
@@ -183,6 +185,7 @@ Single-node Kubernetes cluster is up and running on your VM.
     ```
 4. Copy secrets from dependencies to main namespace:
    ```
+   ENV=demo
    secrets=(
         "elasticsearch-admin-user"
         "redis-opencrvs-users"
@@ -191,10 +194,10 @@ Single-node Kubernetes cluster is up and running on your VM.
         "postgres-admin-user"
     )
     for secret in "${secrets[@]}"; do
-        kubectl get secret $secret -n opencrvs-deps-dev -o yaml \
-        | sed "s#namespace: opencrvs-deps-dev#namespace: opencrvs-dev#" \
+        kubectl get secret $secret -n opencrvs-deps-${ENV} -o yaml \
+        | sed "s#namespace: opencrvs-deps-${ENV}#namespace: opencrvs-${ENV}#" \
         | grep -vE 'resourceVersion|uid|creationTimestamp' \
-        | kubectl apply -n opencrvs-dev -f - 
+        | kubectl apply -n opencrvs-${ENV} -f - 
     done
    ```
 5. Install OpenCRVS
@@ -202,7 +205,7 @@ Single-node Kubernetes cluster is up and running on your VM.
     ```
     helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
         --timeout 15m \
-        --namespace "opencrvs-dev" \
+        --namespace "opencrvs-demo" \
         -f opencrvs-services/values.yaml \
         --create-namespace \
         --atomic \
@@ -210,11 +213,11 @@ Single-node Kubernetes cluster is up and running on your VM.
     ```
 6. Seed data
     ```
-    helm get values opencrvs --namespace "opencrvs-dev" \
+    helm get values opencrvs --namespace "opencrvs-demo" \
        | helm template -f - \
             --set data_seed.enabled=true \
-            --namespace "opencrvs-dev" \
+            --namespace "opencrvs-demo" \
             -s templates/data-seed-job.yaml \
             oci://ghcr.io/opencrvs/opencrvs-services \
-       | kubectl apply --namespace "opencrvs-dev" -f -
+       | kubectl apply --namespace "opencrvs-demo" -f -
     ```

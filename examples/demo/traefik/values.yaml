@@ -65,6 +65,7 @@ additionalArguments:
   # - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
 
 deployment:
+  hostNetwork: true
   additionalVolumes:
     - name: acme
       hostPath:

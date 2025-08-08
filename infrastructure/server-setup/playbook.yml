@@ -85,6 +85,5 @@
       tags:
         - decrypt-on-boot
 
-
 - import_playbook: k8s.yml
 

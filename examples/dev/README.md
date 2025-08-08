@@ -139,10 +139,10 @@ Single-node Kubernetes cluster is up and running on your VM.
 
 1. Deploy traefik
    ```
-   helm upgrade --install traefik traefik-repo/traefik \
-   --namespace traefik \
-   --create-namespace \
-   -f traefik/values.yaml
+   helm upgrade --install traefik oci://ghcr.io/traefik/helm/traefik \
+      --namespace traefik \
+      --create-namespace \
+      -f traefik/values.yaml
    ```
 2. Install OpenCRVS dependencies
     > ⚠️ Update `<your_host_name>` placeholder before running command

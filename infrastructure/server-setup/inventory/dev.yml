@@ -7,7 +7,6 @@ all:
     single_node: true
     users:
       - name: vmudryi
-        role: 
         ssh_keys:
           - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINgMcsSBwTE0EbMDRSF1T4vJDcN/5HAjKGbi2DqV7g/Q vmudryi@opencrvs.org
         state: present
