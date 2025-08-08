@@ -74,3 +74,6 @@ deployment:
 additionalVolumeMounts:
   - name: acme
     mountPath: /data1
+
+nodeSelector:
+  traefik-role: ingress
