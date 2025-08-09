@@ -4,6 +4,7 @@ kind: Deployment
 metadata:
   labels:
     app: workflow
+    service_name: opencrvs_workflow
   name: workflow
 spec:
   replicas: {{ .Values.workflow.replicas }}
@@ -14,6 +15,7 @@ spec:
     metadata:
       labels:
         app: workflow
+        service_name: opencrvs_workflow
     spec:
       containers:
         - name: workflow

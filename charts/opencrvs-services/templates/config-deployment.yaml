@@ -34,6 +34,7 @@ kind: Deployment
 metadata:
   labels:
     app: config
+    service_name: opencrvs_config
   name: config
 spec:
   replicas: {{ .Values.config.replicas }}
@@ -44,6 +45,7 @@ spec:
     metadata:
       labels:
         app: config
+        service_name: opencrvs_config
     spec:
       containers:
         - name: config

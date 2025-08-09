@@ -4,6 +4,7 @@ kind: Deployment
 metadata:
   labels:
     app: notification
+    service_name: opencrvs_notification
   name: notification
 spec:
   replicas: {{ .Values.notification.replicas }}
@@ -14,6 +15,7 @@ spec:
     metadata:
       labels:
         app: notification
+        service_name: opencrvs_notification
     spec:
       containers:
         - name: notification

@@ -4,6 +4,7 @@ kind: Deployment
 metadata:
   labels:
     app: user-mgnt
+    service_name: opencrvs_user-mgnt
   name: user-mgnt
 spec:
   replicas: {{ .Values.user_mgnt.replicas }}
@@ -14,6 +15,7 @@ spec:
     metadata:
       labels:
         app: user-mgnt
+        service_name: opencrvs_user-mgnt
     spec:
       containers:
         - name: user-mgnt

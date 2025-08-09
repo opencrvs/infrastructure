@@ -35,6 +35,7 @@ kind: Deployment
 metadata:
   labels:
     app: client
+    service_name: opencrvs_client
   name: client
 spec:
   replicas: {{ .Values.client.replicas }}
@@ -45,6 +46,7 @@ spec:
     metadata:
       labels:
         app: client
+        service_name: opencrvs_client
     spec:
       containers:
         - image: "ghcr.io/opencrvs/ocrvs-client:{{ .Values.image.tag }}"

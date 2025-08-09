@@ -70,6 +70,10 @@ spec:
                 secretKeyRef:
                   name: elasticsearch-opencrvs-users
                   key: METRICBEAT_ELASTIC_PASSWORD
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
             - name: NODE_IP
               valueFrom:
                 fieldRef:
@@ -81,7 +85,12 @@ spec:
             - name: config
               mountPath: /usr/share/metricbeat/rollover-policy.json
               subPath: rollover-policy.json
-
+            - name: proc
+              mountPath: /hostfs/proc
+              readOnly: true
+            - name: cgroup
+              mountPath: /hostfs/sys/fs/cgroup
+              readOnly: true
           resources:
             limits:
               memory: 300Mi
@@ -93,7 +102,12 @@ spec:
         - name: config
           configMap:
             name: beats-config
-
+        - name: proc
+          hostPath:
+            path: /proc
+        - name: cgroup
+          hostPath:
+            path: /sys/fs/cgroup
 ---
 # Give appropriate RBAC to Metricbeat
 ---

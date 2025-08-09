@@ -34,6 +34,7 @@ kind: Deployment
 metadata:
   labels:
     app: events
+    service_name: opencrvs_events
   name: events
 spec:
   replicas: {{ .Values.events.replicas }}
@@ -44,6 +45,7 @@ spec:
     metadata:
       labels:
         app: events
+        service_name: opencrvs_events
     spec:
       containers:
         - name: events

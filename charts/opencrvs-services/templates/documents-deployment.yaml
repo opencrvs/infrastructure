@@ -4,6 +4,7 @@ kind: Deployment
 metadata:
   labels:
     app: documents
+    service_name: opencrvs_documents
   name: documents
 spec:
   replicas: {{ .Values.documents.replicas }}
@@ -14,6 +15,7 @@ spec:
     metadata:
       labels:
         app: documents
+        service_name: opencrvs_documents
     spec:
       containers:
         - image: "ghcr.io/opencrvs/ocrvs-documents:{{ .Values.image.tag }}"
