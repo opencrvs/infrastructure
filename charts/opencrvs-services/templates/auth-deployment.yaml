@@ -34,6 +34,7 @@ kind: Deployment
 metadata:
   labels:
     app: auth
+    service_name: opencrvs_auth
   name: auth
 spec:
   replicas: {{ .Values.auth.replicas }}
@@ -44,6 +45,7 @@ spec:
     metadata:
       labels:
         app: auth
+        service_name: opencrvs_auth
     spec:
       containers:
         - image: "ghcr.io/opencrvs/ocrvs-auth:{{ .Values.image.tag }}"

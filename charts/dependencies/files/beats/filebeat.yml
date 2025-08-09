@@ -18,7 +18,6 @@ filebeat.autodiscover:
 
 #================================ Processors ===================================
 processors:
-  - add_cloud_metadata: ~
   - add_kubernetes_metadata: ~
   - add_locale:
       format: offset
@@ -31,6 +30,60 @@ processors:
       max_depth: 1
       target: ""
       overwrite_keys: true
+  # Map level 30 to info
+  - add_fields:
+      when:
+        equals:
+          level: 30
+      fields:
+        log.level.name: "info"
+        level_name: "info"
+        
+  # Map level 40 to warn  
+  - add_fields:
+      when:
+        equals:
+          level: 40
+      fields:
+        log.level.name: "warn"
+        level_name: "warn"
+        
+  # Map level 50 to error
+  - add_fields:
+      when:
+        equals:
+          level: 50
+      fields:
+        log.level.name: "error"
+        level_name: "error"
+        
+  # Map level 20 to debug
+  - add_fields:
+      when:
+        equals:
+          level: 20
+      fields:
+        log.level.name: "debug"
+        level_name: "debug"
+        
+  # Map level 60 to fatal
+  - add_fields:
+      when:
+        equals:
+          level: 60
+      fields:
+        log.level.name: "fatal"
+        level_name: "fatal"
+
+  # DROP OpenCRVS health check logs
+  - drop_event:
+      when:
+        # URL-based filtering
+        and:
+          - equals:
+              req.url: "/ping"
+          - equals:
+              res.statusCode: 200
   - script:
       lang: javascript
       id: copy_msg_to_message
@@ -38,6 +91,39 @@ processors:
         function process(event) {
           if (event.Get("msg") !== null) {
             event.Put("message", event.Get("msg"));
+          }
+        }
+  - script:
+      lang: javascript
+      source: >
+        function process(event) {
+          var k8s = event.Get("kubernetes");
+          if (k8s && k8s.labels && k8s.labels["service_name"]) {
+            event.Put("service.name", k8s.labels["service_name"]);
+          }
+        }
+  # Ensure proper field mapping for Infrastructure correlation
+  - script:
+      lang: javascript
+      source: >
+        function process(event) {
+          var k8s = event.Get("kubernetes");
+          if (k8s) {
+            // Set fields that Infrastructure app expects
+            if (k8s.pod && k8s.pod.name) {
+              event.Put("host.name", k8s.pod.name);
+            }
+            
+            // Ensure container info is properly set
+            if (k8s.container && k8s.container.name) {
+              event.Put("container.name", k8s.container.name);
+            }
+            
+            // Set orchestrator info
+            event.Put("orchestrator.type", "kubernetes");
+            if (k8s.namespace) {
+              event.Put("orchestrator.namespace", k8s.namespace);
+            }
           }
         }
 #========================== Elasticsearch output ===============================

@@ -35,6 +35,7 @@ kind: Deployment
 metadata:
   labels:
     app: gateway
+    service_name: opencrvs_gateway
   name: gateway
 spec:
   replicas: {{ .Values.gateway.replicas }}
@@ -45,6 +46,7 @@ spec:
     metadata:
       labels:
         app: gateway
+        service.name: opencrvs_gateway
     spec:
       containers:
         - name: gateway

@@ -59,6 +59,7 @@ kind: Deployment
 metadata:
   labels:
     app: countryconfig
+    service_name: opencrvs_countryconfig
   name: countryconfig
 spec:
   replicas: {{ .Values.countryconfig.replicas }}
@@ -69,6 +70,7 @@ spec:
     metadata:
       labels:
         app: countryconfig
+        service_name: opencrvs_countryconfig
     spec:
       containers:
         - name: countryconfig

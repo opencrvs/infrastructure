@@ -34,6 +34,7 @@ kind: Deployment
 metadata:
   labels:
     app: webhooks
+    service_name: opencrvs_webhooks
   name: webhooks
 spec:
   replicas: {{ .Values.webhooks.replicas }}
@@ -44,6 +45,7 @@ spec:
     metadata:
       labels:
         app: webhooks
+        service_name: opencrvs_webhooks
     spec:
       containers:
         - name: webhooks
