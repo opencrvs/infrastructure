@@ -4,15 +4,15 @@ kind: DaemonSet
 metadata:
   name: filebeat
   labels:
-    k8s-app: filebeat
+    app: filebeat
 spec:
   selector:
     matchLabels:
-      k8s-app: filebeat
+      app: filebeat
   template:
     metadata:
       labels:
-        k8s-app: filebeat
+        app: filebeat
     spec:
       serviceAccountName: filebeat
       terminationGracePeriodSeconds: 30
