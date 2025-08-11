@@ -19,7 +19,7 @@ jobs:
       image_path: ghcr.io/opencrvs/opencrvs-github-runner
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
