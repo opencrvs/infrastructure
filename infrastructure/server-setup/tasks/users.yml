@@ -4,7 +4,7 @@
     state: '{{ item.state }}'
   with_items: '{{ users }}'
 
-- name: Grant passwordless sudo to the users, but prevent usage of 'su'
+- name: Grant passwordless sudo to {{ item.name }} with admin role, but prevent usage of 'su'
   ansible.builtin.lineinfile:
     path: /etc/sudoers.d/{{ item.name }}
     line: '{{ item.name }} ALL=(ALL) NOPASSWD:ALL, !/usr/bin/su'
@@ -12,6 +12,33 @@
     create: yes
   become: yes
   when: item.state == 'present' and item.role == 'admin'
+  with_items: '{{ users }}'
+
+- name: Grant restricted passwordless sudo to {{ item.name }} with operator role (dynamic matrix)
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/{{ item.name }}
+    content: "{{ item.name }} ALL=(ALL) NOPASSWD: {{ allowed_cmds | join(', ') }}, !/usr/bin/su"
+    owner: root
+    group: root
+    mode: '0440'
+    validate: 'visudo -cf %s'
+  become: yes
+  vars:
+    allowed_commands:
+      - '/bin/cat'
+      - '/usr/bin/less'
+      - '/usr/bin/tail'
+    allowed_dirs:
+      - '/data/*'
+      - '/var/log/*'
+      - '/opt/opencrvs/*'
+    allowed_cmds: >-
+      {{
+        allowed_commands | product(allowed_dirs)
+        | map('join', ' * ')
+        | list
+      }}
+  when: item.state == 'present' and item.role == 'operator'
   with_items: '{{ users }}'
 
 - name: Set authorized keys for users

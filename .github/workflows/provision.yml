@@ -10,10 +10,10 @@ on:
         type: choice
         options:
           - demo
-          - staging
           - dev
           - backup
           - qa
+          - staging
       tags:
         description: 'Tags to apply to the provisioned resources'
         required: true
