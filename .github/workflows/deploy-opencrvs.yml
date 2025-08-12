@@ -28,10 +28,10 @@ on:
         type: choice
         options:
           - demo
-          - staging
           - dev
           - backup
           - qa
+          - staging
       reset:
         description: "Reset environment after deploy"
         required: false

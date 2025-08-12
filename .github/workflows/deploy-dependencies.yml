@@ -10,10 +10,10 @@ on:
         type: choice
         options:
           - demo
-          - staging
           - dev
           - backup
           - qa
+          - staging
 jobs:
   deploy:
     environment: ${{ inputs.environment }}

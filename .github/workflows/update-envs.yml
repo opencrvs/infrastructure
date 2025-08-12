@@ -6,6 +6,7 @@ on:
     branches: ["*"]
     paths:
       - infrastructure/server-setup/inventory/*
+      - .github/workflows/update-envs.yml
 
 jobs:
   update-environments:
@@ -26,8 +27,8 @@ jobs:
         run: |
           workflows=(
             ".github/workflows/provision.yml"
-            ".github/workflows/deploy-deps-on-kubernetes.yml"
-            ".github/workflows/deploy-on-kubernetes.yml"
+            ".github/workflows/deploy-dependencies.yml"
+            ".github/workflows/deploy-opencrvs.yml"
           )
           path=".on.workflow_dispatch.inputs.environment.options"
 
