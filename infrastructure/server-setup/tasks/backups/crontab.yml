@@ -1,5 +1,5 @@
 - name: Set destination server
-  set_fact:
+  ansible.builtin.set_fact:
     backup_hostname: "{{ hostvars[groups['backups'][0]].ansible_host }}"
     backup_port: "{{ hostvars[groups['backups'][0]].ansible_port | default('22') }}"
   tags:
@@ -28,7 +28,7 @@
 ##
 
 - name: Set default value for periodic_restore_from_backup
-  set_fact:
+  ansible.builtin.set_fact:
     periodic_restore_from_backup: false
   when: periodic_restore_from_backup is not defined
 

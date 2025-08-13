@@ -38,6 +38,7 @@ Any particular service within this helm chart can be disabled by setting `<servi
 | storage_type | string | pvc | Kubernetes storage type, available options are `pvc` or `host_path`. More information are at [Storage Configuration](#storage-configuration) |
 | node_selector | dict | `{}` | Label selector for datastore nodes, usually used to keep data persistent |
 | monitoring.enabled | bool | `false` | Enable or disable monitoring, see [Monitoring](#monitoring) |
+| backup.enabled | bool | `true` | Enable or disable backup. Please check [Backup configuration](#backup-configuration) for more options |
 
 ## MongoDB
 
@@ -72,6 +73,8 @@ This section allows you to configure the deployment and authentication settings 
 | use_default_credentials | boolean  | true                   | Deploy Elasticsearch without enabled authentication.                                 |
 | data_storage_size | string | 5Gi | Persistent volume claim size for Elasticsearch data volume |
 | backup_storage_size | string | 1Gi | Persistent volume claim size for Elasticsearch backup volume |
+| backup_schedule | string | `n/a` | Backup cronjob schedule, if not defined then values from `backup.schedule` is used |
+| backup_server_dir | string | `n/a` | Directory to store elasticsearch encrypted backup on backup server, if not defined `backup.backup_server_dir` is used |
 
 ## MinIO
 
@@ -254,4 +257,40 @@ Following tools are included in monitoring suite:
 ```yaml
 elasticsearch:
   use_default_credentials: false
+```
+
+## Backup configuration
+
+Dependencies chart has built-in backup tool for it's internal components and requires external backup server to store backed up files.
+
+Reference available options:
+
+| Parameter                | Type    | Default | Description                                   |
+|-|-|-|-|
+| enabled | bool | `false` | Enable or disable backup |
+| schedule | string | `0 1 * * *` | Cronjob schedule |
+| backup_server_secret | string | `backup-server-ssh-credentials` | Secret name with credentials for backup server |
+| backup_server_dir | string | `n/a` | Backup server remote directory |
+| backup_encryption_secret | string | `backup-encryption-secret` | Secret to store backup encryption key |
+
+
+Backup server connection properties needs to be stored as a kubernetes secret, secret needs to be created before enabling backup:
+- `ssh_key`, ssh private key for remote login to backup server, key should be create on backup server and private part stored in secure place
+- `user`, ssh username to login on backup server, user should have read/write access to backup folder, we strongly recommend don't enable `sudo` or other way of admin access.
+- `host`, backup server IP address or hostname.
+
+Recommended way to create `backup-server-ssh-credentials` secret:
+```
+kubectl create secret backup-server-ssh-credentials
+    --from-literal=user=your-ssh-username \
+    --from-literal=host=your.ssh.host.com \
+    --from-file=ssh_key=backup_id_rsa
+```
+
+If you are using GitHub workflow from OpenCRVS, secret will be created automatically in `opencrvs-deps-<your environment>` namespace.
+
+Recommended way to create `backup-encryption-secret` secret:
+```
+kubectl create secret backup-encryption-secret
+    --from-literal=backup_encryption_key=your-encryption-key
 ```

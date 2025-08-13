@@ -6,6 +6,9 @@ This document describes OpenCRVS Helm chart configuration and provides explanati
 
 Quickstart scenario allows to run OpenCRVS locally on kubernetes cluster like minikube.
 
+> NOTE: Before running commands make sure `helm` and `kubectl` are installed and kubernetes context is set to local cluster.
+
+
 After installation visit http://opencrvs.localhost
 
 **1. Install Traefik Ingress Controller**

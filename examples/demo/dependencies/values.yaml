@@ -1,6 +1,6 @@
 chart_dev_mode: false
 hostname: test-k8s.opencrvs.dev
-
+storage_type: host_path
 node_selector:
   role: data1
 
@@ -24,4 +24,7 @@ postgres:
   use_default_credentials: false
 
 monitoring:
+  enabled: true
+
+backup:
   enabled: true

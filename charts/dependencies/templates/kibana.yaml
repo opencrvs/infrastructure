@@ -22,8 +22,7 @@ spec:
   {{- if .Values.ingress.tls_resolver }}
   tls:
     certResolver: {{ .Values.ingress.tls_resolver }}
-  {{- end }}
-  {{- if .Values.ingress.tls_secret_name }}
+  {{- else if .Values.ingress.tls_secret_name }}
   tls:
     secretName: {{ .Values.ingress.tls_secret_name }}
   {{- end }}
@@ -110,7 +109,7 @@ spec:
                   key: KIBANA_SYSTEM_ELASTIC_PASSWORD
           volumeMounts:
             - mountPath: /scripts
-              name: elasticsearch-on-update-script
+              name: elasticsearch-scripts
       containers:
         - name: kibana
           image: ghcr.io/opencrvs/kibana:8.16.4
@@ -143,8 +142,8 @@ spec:
         - name: kibana-config
           configMap:
             name: kibana-config
-        - name: elasticsearch-on-update-script
+        - name: elasticsearch-scripts
           configMap:
-            name: elasticsearch-on-update-script
+            name: elasticsearch-scripts
             defaultMode: 0755
 {{- end }}

@@ -13,6 +13,7 @@ logs:
 ingressRoute:
   dashboard:
     enabled: false
+
 # Be explicit that we only use CRDs, not ingress/gw support
 providers: 
   kubernetesCRD:
@@ -21,6 +22,7 @@ providers:
     enabled: true
   kubernetesGateway:
     enabled: false
+
 service:
   enabled: true
   single: false
@@ -60,7 +62,7 @@ additionalArguments:
   - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
   - "--certificatesresolvers.letsencrypt.acme.email=vadym@opencrvs.org"
   # Storage for staging certificates:
-  - "--certificatesresolvers.letsencrypt.acme.storage=/data1/acme-staging.json"
+  - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme-staging.json"
   # Storage for staging certificates:
   # - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
 
@@ -71,9 +73,9 @@ deployment:
       hostPath:
         path: /data/traefik
 
-additionalVolumeMounts:
-  - name: acme
-    mountPath: /data1
+# additionalVolumeMounts:
+#   - name: acme
+#     mountPath: /data
 
 nodeSelector:
   traefik-role: ingress

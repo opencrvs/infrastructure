@@ -17,3 +17,5 @@ provisioning_user: provision
 kubernetes_version: "v1.33"
 pod_network_cidr: "192.168.0.0/16"
 calico_version: "v3.26.1"
+backup_server_ssh_credentials_secret: "backup-server-ssh-credentials"
+backup_ssh_key_path: /home/backup/.ssh/id_ed25519

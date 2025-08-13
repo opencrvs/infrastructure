@@ -24,7 +24,7 @@ spec:
             - |
               for i in $(seq 1 30); do
                 curl -sSf http://kibana.{{ .Release.Namespace }}.svc.cluster.local:5601 && exit 0
-                echo "Waiting for my-backend-svc..."
+                echo "Waiting for kibana..."
                 sleep 2
               done
               echo "Kibana did not become available" >&2
