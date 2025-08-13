@@ -6,7 +6,7 @@
   when: single_node is not defined
 
 - name: Get all Node groups 
-  set_fact:
+  ansible.builtin.set_fact:
     child_groups: "{{ groups.keys() | difference(['all', 'ungrouped']) | list }}"
 
 - name: Display child groups

@@ -44,6 +44,6 @@
 
 - name: "Enable UFW with deny by default"
   ufw:
-    state: enabled
+    state: disabled
     default: deny
     direction: incoming

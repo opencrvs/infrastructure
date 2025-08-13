@@ -6,7 +6,7 @@ on:
       environment:
         description: 'Environment to provision'
         required: true
-        default: 'dev'
+        default: 'demo'
         type: choice
         options:
           - demo
@@ -23,19 +23,16 @@ on:
           - all
           - updates
           - users
+          - backup
           - application
           - tools
           - fail2ban
           - decrypt-on-boot
-          - k8s-components
           - checks
           - containerd-setup
           - kubernetes-installation
-          - control-plane-init
-          - cni-plugin-installation
           - join-workers
           - system-preparation
-          - kubeconfig
 jobs:
   provision:
     runs-on:
@@ -70,8 +67,8 @@ jobs:
           requirements: galaxy-requirements.yml
           playbook: playbook.yml
           directory: ./infrastructure/server-setup
+          # Add --verbose to get more output
           options: |-
-            --verbose
             --inventory inventory/${{ inputs.environment }}.yml
             ${{ inputs.tags != 'all' && format('--tags={0}', inputs.tags) || '' }}
             --extra-vars ""${{ steps.ansible-variables.outputs.EXTRA_VARS }}""

@@ -24,8 +24,7 @@ spec:
   {{- if .Values.ingress.tls_resolver }}
   tls:
     certResolver: {{ .Values.ingress.tls_resolver }}
-  {{- end }}
-  {{- if .Values.ingress.tls_secret_name }}
+  {{- else if .Values.ingress.tls_secret_name }}
   tls:
     secretName: {{ .Values.ingress.tls_secret_name }}
   {{- end }}

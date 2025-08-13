@@ -21,6 +21,9 @@ metadata:
     app: elasticsearch-backup
   name: elasticsearch-backup
 spec:
+  {{- if .Values.elasticsearch.backup_storage_class }}
+  storageClassName: {{ .Values.elasticsearch.backup_storage_class }}
+  {{- end }}
   accessModes:
     - ReadWriteOnce
   resources:
@@ -45,6 +48,18 @@ spec:
       targetPort: 9300
   selector:
     app: elasticsearch
+
+{{- if .Values.backup.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elasticsearch-backup-jobs
+data:
+  root: |
+    {{ .Values.elasticsearch.backup_schedule | default .Values.backup.schedule }} /scripts/backup.sh >> /proc/1/fd/1 2>&1
+{{- end }}
+
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -78,20 +93,25 @@ spec:
             {{- end }}
       {{- end }}
       initContainers:
+        # Change ownership to elasticsearch user and group
         - name: volume-permission-fix
           image: busybox
           command:
             - chown
             - -R
-            - "1000:0"  # Change ownership to elasticsearch user and group
+            - "1000:0"
             - /usr/share/elasticsearch/data
+            - /data/backups/elasticsearch
           volumeMounts:
             - name: elasticsearch
               mountPath: /usr/share/elasticsearch/data
+            - mountPath: /data/backups/elasticsearch
+              name: elasticsearch-backup
       containers:
         - env:
+            # FIXME: Make fields configurable
             - name: ES_JAVA_OPTS
-              value: -Xms1024m -Xmx1024m
+              value: -Xms2048m -Xmx8192m
             - name: cluster.routing.allocation.disk.threshold_enabled
               value: 'false'
             - name: discovery.type
@@ -117,9 +137,9 @@ spec:
           name: elasticsearch
           resources:
             requests:
-              memory: "2Gi"     # Memory request is 64 MiB (Optional)
+              memory: "2Gi"
             limits:
-              memory: "2Gi"    # Memory limit is 128 MiB
+              memory: "8Gi"
           ports:
             - containerPort: 9200
               protocol: TCP
@@ -130,6 +150,46 @@ spec:
               name: elasticsearch
             - mountPath: /data/backups/elasticsearch
               name: elasticsearch-backup
+      {{- if .Values.backup.enabled }}
+        - name: backup
+          command: ["crond", "-f", "-L", "/var/log/cron.log"]
+          image: "bash"
+          env:
+          {{- if not .Values.elasticsearch.use_default_credentials }}
+            - name: ELASTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.elasticsearch.admin_user_secret_name }}
+                  key: ELASTIC_PASSWORD
+          {{- end }}
+            - name: ENCRYPT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.backup.backup_encryption_secret }}
+                  key: backup_encryption_key
+            - name: BACKUP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: backup-ssh-key
+                  key: user
+            - name: BACKUP_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: backup-ssh-key
+                  key: host
+            - name: BACKUP_REMOTE_DIR
+              value: "{{ .Values.elasticsearch.backup_server_dir | default .Values.backup.backup_server_dir }}"
+          volumeMounts:
+            - name: backup-ssh-key
+              mountPath: /ssh
+              readOnly: true
+            - mountPath: /backups
+              name: elasticsearch-backup
+            - mountPath: /scripts
+              name: elasticsearch-scripts
+            - name: crontab
+              mountPath: /etc/crontabs
+      {{- end }}
       restartPolicy: Always
       volumes:
         - name: elasticsearch
@@ -149,5 +209,21 @@ spec:
           hostPath:
             path: {{ .Values.elasticsearch.host_backup_path | default "/data/backups/elasticsearch" }}
             type: DirectoryOrCreate
+      {{- end }}
+      {{- if .Values.backup.enabled }}
+        - name: backup-ssh-key
+          secret:
+            secretName: {{ .Values.backup.backup_server_secret }}
+            defaultMode: 0400
+            items:
+              - key: ssh_key
+                path: ssh_key
+        - name: elasticsearch-scripts
+          configMap:
+            name: elasticsearch-scripts
+            defaultMode: 0755
+        - name: crontab
+          configMap:
+            name: elasticsearch-backup-jobs
       {{- end }}
 {{- end }}

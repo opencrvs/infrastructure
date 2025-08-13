@@ -13,9 +13,10 @@
   gather_facts: yes
   ignore_unreachable: false
   become_method: sudo
+  tags: backup
   tasks:
     - include_tasks:
-        file: tasks/checks.yml
+        file: tasks/all/checks.yml
         apply:
           tags:
             - checks
@@ -23,29 +24,21 @@
         - checks
       
     - include_tasks:
-        file: tasks/updates.yml
+        file: tasks/all/updates.yml
         apply:
           tags:
-            - updates   
+            - updates
 
     - include_tasks:
-        file: tasks/users.yml
+        file: tasks/all/users.yml
         apply:
           tags:
             - users
       tags:
         - users
-        
-    - include_tasks:
-        file: tasks/application.yml
-        apply:
-          tags:
-            - application
-      tags:
-        - application
 
     - include_tasks:
-        file: tasks/tools.yml
+        file: tasks/all/tools.yml
         apply:
           tags:
             - tools
@@ -53,37 +46,21 @@
         - tools
 
     - include_tasks:
-        file: tasks/fail2ban.yml
+        file: tasks/all/fail2ban.yml
         apply:
           tags:
             - fail2ban
       tags:
         - fail2ban
 
-    - name: 'Copy logrotate script'
-      copy:
-        src: ../logrotate.conf
-        dest: /etc/
+    # FIXME: Kubernetes has it's own log files
+    # - name: 'Copy logrotate script'
+    #   copy:
+    #     src: ../logrotate.conf
+    #     dest: /etc/
 
-    - name: 'Save system logs to Papertrail'
-      register: papaertrailSystemLogs
-      shell: ' cd / && wget -qO - --header="X-Papertrail-Token: {{ papertrail_token }}" \ https://papertrailapp.com/destinations/16712142/setup.sh | sudo bash >> /var/log/papertrail.log 2>&1'
-      when: papertrail_token is defined
+# Backup server setup goes before k8s cluster
+- import_playbook: backup.yml
 
-    - include_tasks:
-        file: tasks/data-partition.yml
-        apply:
-          tags:
-            - data-partition
-      tags:
-        - data-partition
-    - include_tasks:
-        file: tasks/decrypt-on-boot.yml
-        apply:
-          tags:
-            - decrypt-on-boot
-      tags:
-        - decrypt-on-boot
-
+# This part of playbook contains mostly kubernetes stuff
 - import_playbook: k8s.yml
-
