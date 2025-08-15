@@ -70,7 +70,7 @@ data "aws_iam_policy" "ebs_csi_policy" {
 
 module "irsa-ebs-csi" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
-  version = "5.59.0"
+  version = "6.1.0"
 
   create_role                   = true
   role_name                     = "AmazonEKSTFEBSCSIRole-${module.eks.cluster_name}"
@@ -86,7 +86,7 @@ data "aws_iam_policy" "cloudwatch_observability_policy" {
 
 module "irsa-cloudwatch" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
-  version = "5.59.0"
+  version = "6.1.0"
 
   create_role                   = true
   role_name                     = "AmazonEKSTFCloudWatchRole-${module.eks.cluster_name}"
