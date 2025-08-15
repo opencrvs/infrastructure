@@ -261,13 +261,13 @@ countryconfig:
     # INFOBIP_SENDER_ID: ""
 
     NOTIFICATION_TRANSPORT: email
-
+    USER_NOTIFICATION_DELIVERY_METHOD: email
     SENDER_EMAIL_ADDRESS: noreply@opencrvs.org
     SMTP_HOST: localhost
     SMTP_PASSWORD: ""
     SMTP_PORT: 587
     SMTP_SECURE: "false"
-    SMTP_USERNAME: apikey
+    SMTP_USERNAME: dummy
 dashboards:
   use_default_credentials: true
   replicas: 1
