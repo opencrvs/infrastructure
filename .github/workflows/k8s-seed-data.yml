@@ -28,7 +28,9 @@ jobs:
       - ${{ inputs.environment }}
     steps:
         - name: Get helm release values from namespace ${{ inputs.namespace }}
-          run: helm get values opencrvs -n ${namespace} > ${namespace}.yaml
+          run: |
+            helm get values opencrvs -n ${namespace} > ${namespace}-raw.yaml
+            yq '.image.tag |= tostring' "${namespace}.yaml" > "${namespace}.yaml"
         - name: Seeding data
           run: |
             kubectl delete job -n opencrvs-${ENV} data-seed || true

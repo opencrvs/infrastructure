@@ -30,7 +30,9 @@ jobs:
       - ${{ inputs.environment }}
     steps:
         - name: Get helm release values
-          run: helm get values opencrvs -n ${namespace} > ${namespace}.yaml
+          run: |
+            helm get values opencrvs -n ${namespace} > ${namespace}-raw.yaml
+            yq '.image.tag |= tostring' "${namespace}.yaml" > "${namespace}.yaml"
         - name: Cleanup environment
           run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true data-cleanup
