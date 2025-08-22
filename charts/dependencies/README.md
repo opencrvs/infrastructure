@@ -74,7 +74,7 @@ This section allows you to configure the deployment and authentication settings 
 | data_storage_size | string | 5Gi | Persistent volume claim size for Elasticsearch data volume |
 | backup_storage_size | string | 1Gi | Persistent volume claim size for Elasticsearch backup volume |
 | backup_schedule | string | `n/a` | Backup cronjob schedule, if not defined then values from `backup.schedule` is used |
-| backup_server_dir | string | `n/a` | Directory to store elasticsearch encrypted backup on backup server, if not defined `backup.backup_server_dir` is used |
+| backup_server_dir | string | `n/a` | Directory to store encrypted backup on backup server, if not defined `backup.backup_server_dir` is used |
 
 ## MinIO
 
@@ -83,6 +83,8 @@ This section allows you to configure the deployment and authentication settings 
 | enabled | true | Enable or disable minio service |
 | use_default_credentials | true | Default credentials for MinIO are username `minioadmin` and password `minioadmin`. |
 | data_storage_size | string | 1Gi | Persistent volume claim size for MinIO data volume |
+| backup_schedule | string | `n/a` | Backup cronjob schedule, if not defined then values from `backup.schedule` is used |
+| backup_server_dir | string | `n/a` | Directory to store encrypted backup on backup server, if not defined `backup.backup_server_dir` is used |
 
 Setting `use_default_credentials` to `false` will generate strong password for MinIO.
 
