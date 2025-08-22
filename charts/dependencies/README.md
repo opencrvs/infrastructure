@@ -51,6 +51,9 @@ This section allows you to configure the deployment of MongoDB within your infra
 | version                  | string  | 4.4 | Specify the MongoDB Docker image version to use. See: https://hub.docker.com/_/mongo                                         |
 | use_default_credentials  | bool    | true | If true, deploys MongoDB without authentication. If false, custom databases and users are created as specified below.                                                                                                         |
 | data_storage_size | string | 1Gi | Persistent volume claim size for MongoDB data volume |
+| backup_schedule | string | `n/a` | Backup cronjob schedule, if not defined then values from `backup.schedule` is used |
+| backup_server_dir | string | `n/a` | Directory to store encrypted backup on backup server, if not defined `backup.backup_server_dir` is used |
+
 ## Postgres
 
 Postgres configuration section for Helm values.yaml
