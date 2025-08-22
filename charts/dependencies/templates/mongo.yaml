@@ -108,7 +108,7 @@ spec:
         spec:
           restartPolicy: OnFailure
           containers:
-            - name: mongodump
+            - name: backup
               image: mongo:4.4
               env:
                 - name: MONGODB_HOST
@@ -161,8 +161,5 @@ spec:
               configMap:
                 name: mongodb-scripts
                 defaultMode: 0755
-            - name: crontab
-              configMap:
-                name: mongodb-backup-jobs
 {{- end }}
 {{- end }}
