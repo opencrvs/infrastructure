@@ -91,7 +91,78 @@ spec:
             claimName: mongodb
       {{- else if eq $storageType "host_path" }}
           hostPath:
-            path: {{ .Values.mongodb.host_data_path | default "/data/elasticsearch" }}
+            path: {{ .Values.mongodb.host_data_path | default "/data/mongo" }}
             type: DirectoryOrCreate
       {{- end }}
+{{- if .Values.backup.enabled }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mongodb-backup
+spec:
+  schedule: {{ .Values.mongodb.backup_schedule | default .Values.backup.schedule }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: mongodump
+              image: mongo:4.4
+              env:
+                - name: MONGODB_HOST
+                  value: mongodb-0.mongodb.{{ .Release.Namespace }}.svc.cluster.local:27017
+              {{- if not .Values.mongodb.use_default_credentials }}
+                - name: MONGODB_ADMIN_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.mongodb.admin_user_secret_name }}
+                      key: MONGODB_ADMIN_USER
+                - name: MONGODB_ADMIN_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.mongodb.admin_user_secret_name }}
+                      key: MONGODB_ADMIN_PASSWORD
+              {{- end }}
+                - name: ENCRYPT_PASS
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.backup_encryption_secret }}
+                      key: backup_encryption_key
+                - name: BACKUP_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.backup_server_secret }}
+                      key: user
+                - name: BACKUP_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.backup_server_secret }}
+                      key: host
+                - name: BACKUP_REMOTE_DIR
+                  value: "{{ .Values.mongodb.backup_server_dir | default .Values.backup.backup_server_dir }}"
+              command: ["/scripts/backup.sh"]
+              volumeMounts:
+                - name: backup-ssh-key
+                  mountPath: /ssh
+                  readOnly: true
+                - mountPath: /scripts
+                  name: mongodb-scripts
+          volumes:
+            - name: backup-ssh-key
+              secret:
+                secretName: {{ .Values.backup.backup_server_secret }}
+                defaultMode: 0400
+                items:
+                  - key: ssh_key
+                    path: ssh_key
+            - name: mongodb-scripts
+              configMap:
+                name: mongodb-scripts
+                defaultMode: 0755
+            - name: crontab
+              configMap:
+                name: mongodb-backup-jobs
+{{- end }}
 {{- end }}

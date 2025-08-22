@@ -131,7 +131,7 @@ spec:
             claimName: influxdb
       {{- else if eq $storageType "host_path" }}
           hostPath:
-            path: {{ .Values.postgres.host_data_path | default "/data/influxdb" }}
+            path: {{ .Values.influxdb.host_data_path | default "/data/influxdb" }}
             type: DirectoryOrCreate
       {{- end }}
         - name: influxdb-backup
@@ -140,7 +140,7 @@ spec:
             claimName: influxdb-backup
       {{- else if eq $storageType "host_path" }}
           hostPath:
-            path: {{ .Values.postgres.host_data_path | default "/data/backup/influxdb" }}
+            path: {{ .Values.influxdb.host_data_path | default "/data/backup/influxdb" }}
             type: DirectoryOrCreate
       {{- end }}
 {{- end }}
