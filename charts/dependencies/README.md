@@ -299,3 +299,38 @@ Recommended way to create `backup-encryption-secret` secret:
 kubectl create secret backup-encryption-secret
     --from-literal=backup_encryption_key=your-encryption-key
 ```
+
+## Restore configuration
+
+Dependencies chart has built-in restore tool for it's internal components. Tools downloads backup files from external backup server over ssh and does restore.
+
+Reference available options:
+
+| Parameter                | Type    | Default | Description                                   |
+|-|-|-|-|
+| enabled | bool | `false` | Enable or disable backup |
+| backup_server_secret | string | `backup-server-ssh-credentials` | Secret name with credentials for backup server |
+| backup_server_dir | string | `n/a` | Backup server remote directory |
+| backup_encryption_secret | string | `backup-encryption-secret` | Secret to store backup encryption key |
+
+
+Backup server connection properties needs to be stored as a kubernetes secret, secret needs to be created before enabling backup:
+- `ssh_key`, ssh private key for remote login to backup server, key should be create on backup server and private part stored in secure place
+- `user`, ssh username to login on backup server, user should have read/write access to backup folder, we strongly recommend don't enable `sudo` or other way of admin access.
+- `host`, backup server IP address or hostname.
+
+Recommended way to create `backup-server-ssh-credentials` secret:
+```
+kubectl create secret backup-server-ssh-credentials
+    --from-literal=user=your-ssh-username \
+    --from-literal=host=your.ssh.host.com \
+    --from-file=ssh_key=backup_id_rsa
+```
+
+If you are using GitHub workflow from OpenCRVS, secret will be created automatically in `opencrvs-deps-<your environment>` namespace.
+
+Recommended way to create `restore-encryption-secret` secret:
+```
+kubectl create secret restore-encryption-secret
+    --from-literal=restore_encryption_key=your-encryption-key
+```
