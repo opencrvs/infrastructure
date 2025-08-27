@@ -117,5 +117,21 @@ backup:
   # - host, hostname / IP of backup server
   # - ssh_key, ssh key for passwordless connection
   backup_server_secret: backup-server-ssh-credentials
-  backup_server_dir: /home/backup/demo
+  backup_server_dir: /home/backup/demo-staging
   backup_encryption_secret: backup-encryption-secret
+
+# Backup configuration
+restore:
+  enabled: false
+  # Schedule job
+  schedule: "0 0 * * *"
+  # Secret to store backup server connection configuration:
+  # - user, backup server username
+  # - host, hostname / IP of backup server
+  # - ssh_key, ssh key for passwordless connection
+  backup_server_secret: backup-server-ssh-credentials
+  backup_server_dir: /home/backup/demo
+  backup_encryption_secret: restore-encryption-secret
+
+data_cleanup:
+  enabled: false

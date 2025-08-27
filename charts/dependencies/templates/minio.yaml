@@ -70,10 +70,20 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: minio-backup-jobs
+  name: minio-backup-cronjobs
 data:
   root: |
     {{ .Values.minio.backup_schedule | default .Values.backup.schedule }} /scripts/backup.sh >> /proc/1/fd/1 2>&1
+{{- end }}
+{{- if .Values.restore.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minio-restore-cronjobs
+data:
+  root: |
+    {{ .Values.minio.restore_schedule | default .Values.restore.schedule }} /scripts/backup.sh >> /proc/1/fd/1 2>&1
 {{- end }}
 
 ---
@@ -107,7 +117,7 @@ spec:
                 values:
                 - {{ $v }}
             {{- end }}
-      {{- end }}
+    {{- end }}
       containers:
         - args:
             - server
@@ -146,8 +156,11 @@ spec:
           volumeMounts:
             - mountPath: /data
               name: minio
+    {{- if or .Values.backup.enabled .Values.restore.enabled }}
+      initContainers:
       {{- if .Values.backup.enabled }}
         - name: backup
+          restartPolicy: Always
           command: ["crond", "-f", "-L", "/var/log/cron.log"]
           image: "bash"
           env:
@@ -193,6 +206,57 @@ spec:
             - name: crontab
               mountPath: /etc/crontabs
       {{- end }}
+      {{- if .Values.restore.enabled }}
+        - name: restore
+          restartPolicy: Always
+          command: ["crond", "-f", "-L", "/var/log/cron.log"]
+          image: "bash"
+          env:
+            - name: RESTORE_MODE
+              value: "mirror"
+            - name: RESTORE_DATE
+              value: {{ .Values.restore.date }}
+          {{- if not .Values.minio.use_default_credentials }}
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: minio-opencrvs-users
+                  key: MINIO_ROOT_USER
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: minio-opencrvs-users
+                  key: MINIO_ROOT_PASSWORD
+          {{- end }}
+            - name: ENCRYPT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.restore.backup_encryption_secret }}
+                  key: restore_encryption_key
+            - name: BACKUP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.restore.backup_server_secret }}
+                  key: user
+            - name: BACKUP_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.restore.backup_server_secret }}
+                  key: host
+            - name: BACKUP_REMOTE_DIR
+              value: "{{ .Values.minio.backup_server_dir | default .Values.restore.backup_server_dir }}"
+          volumeMounts:
+            - name: backup-ssh-key
+              mountPath: /ssh
+              readOnly: true
+            - mountPath: /data
+              name: minio
+            - mountPath: /scripts
+              name: minio-scripts
+            - name: crontab
+              mountPath: /etc/crontabs
+      {{- end }}
+    {{- end }}
       restartPolicy: Always
       volumes:
         - name: minio
@@ -212,12 +276,26 @@ spec:
             items:
               - key: ssh_key
                 path: ssh_key
+        - name: crontab
+          configMap:
+            name: minio-backup-cronjobs
+      {{- end }}
+      {{- if .Values.restore.enabled }}
+        - name: restore-ssh-key
+          secret:
+            secretName: {{ .Values.restore.backup_server_secret }}
+            defaultMode: 0400
+            items:
+              - key: ssh_key
+                path: ssh_key
+        - name: crontab
+          configMap:
+            name: minio-restore-cronjobs
+      {{- end }}
+      {{- if or .Values.backup.enabled .Values.restore.enabled }}
         - name: minio-scripts
           configMap:
             name: minio-scripts
             defaultMode: 0755
-        - name: crontab
-          configMap:
-            name: minio-backup-jobs
       {{- end }}
 {{- end }}

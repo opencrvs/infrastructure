@@ -23,8 +23,8 @@
 
 - name: Install containerd
   shell: |
-    apt update
-    apt install -y containerd.io
+    apt-get update
+    apt-get install -y containerd.io
 
 - name: Create containerd configuration directory
   shell: mkdir -p /etc/containerd

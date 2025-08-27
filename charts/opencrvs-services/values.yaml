@@ -363,13 +363,3 @@ data_seed:
   env:
     SUPER_USER_PASSWORD: "password"
     ACTIVATE_USERS: "true"
-
-# TODO: Implement this job
-data_backup:
-  enabled: false
-  schedule: "0 0 * * *"
-
-# TODO: Implement this job
-data_restore:
-  enabled: false
-  schedule: "0 0 * * *"
