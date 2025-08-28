@@ -233,7 +233,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.restore.backup_encryption_secret }}
-                  key: restore_encryption_key
+                  key: backup_encryption_key
             - name: BACKUP_USER
               valueFrom:
                 secretKeyRef:

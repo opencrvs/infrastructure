@@ -34,12 +34,19 @@ create_encrypted_backup(){
 backup(){
   for DB in $DATABASES; do
     echo "[$(date +%F\ %H:%M:%S)] Running backup for DB $DB"
-    mongodump --host $MONGODB_HOST \
-      --username "$MONGODB_ADMIN_USER" \
-      --password "$MONGODB_ADMIN_PASSWORD" \
-      --authenticationDatabase admin \
-      --gzip --archive=$BACKUP_DIR/$DB.gz \
-      -d $DB
+    if [ -n "${MONGODB_ADMIN_USER:-}" ] && [ -n "${MONGODB_ADMIN_PASSWORD:-}" ]; then
+      mongodump --host $MONGODB_HOST \
+        --username "$MONGODB_ADMIN_USER" \
+        --password "$MONGODB_ADMIN_PASSWORD" \
+        --authenticationDatabase admin \
+        --gzip --archive=$BACKUP_DIR/$DB.gz \
+        -d $DB
+    else
+      mongodump --host $MONGODB_HOST \
+        --authenticationDatabase admin \
+        --gzip --archive=$BACKUP_DIR/$DB.gz \
+        -d $DB
+    fi
   done
   echo "[$(date +%F\ %H:%M:%S)] Backups completed: $BACKUP_DIR/*.gz"
 }
@@ -56,6 +63,23 @@ else
   exit 1
 fi
   
+}
+
+restore_databases() {
+  for DB in $DATABASES; do
+    DB_DUMP_PATH="$WORK_PATH/$DB"
+    if [ -d "$DB_DUMP_PATH" ]; then
+      echo "[$(date +%F\ %H:%M:%S)] Restoring database: $DB"
+      if [ -n "${MONGODB_ADMIN_USER:-}" ] && [ -n "${MONGODB_ADMIN_PASSWORD:-}" ]; then
+        mongorestore --host "$MONGODB_HOST" --username "$MONGODB_ADMIN_USER" --password "$MONGODB_ADMIN_PASSWORD" \
+          --authenticationDatabase admin --db "$DB" --drop "$DB_DUMP_PATH"
+      else
+        mongorestore --host "$MONGODB_HOST" --db "$DB" --drop "$DB_DUMP_PATH"
+      fi
+    else
+      echo "[$(date +%F\ %H:%M:%S)] [WARN] Dump path for $DB not found: $DB_DUMP_PATH" >&2
+    fi
+  done
 }
 
 backup
