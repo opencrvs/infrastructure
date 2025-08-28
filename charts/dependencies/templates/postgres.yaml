@@ -46,6 +46,7 @@ spec:
       labels:
         app: postgres
     spec:
+      priorityClassName: datastore-high-priority
     {{- $node_selector := default .Values.node_selector .Values.postgres.node_selector }}
     {{- if $node_selector }}
       affinity:

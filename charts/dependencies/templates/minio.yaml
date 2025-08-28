@@ -104,6 +104,7 @@ spec:
       labels:
         app: minio
     spec:
+      priorityClassName: datastore-high-priority
     {{- $node_selector := default .Values.node_selector .Values.minio.node_selector }}
     {{- if $node_selector }}
       affinity:
