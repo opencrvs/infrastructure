@@ -302,6 +302,8 @@ kubectl create secret backup-encryption-secret
 
 ## Restore configuration
 
+> NOTE: CHAPTER IS IN PROGRESS
+
 Dependencies chart has built-in restore tool for it's internal components. Tools downloads backup files from external backup server over ssh and does restore.
 
 Reference available options:

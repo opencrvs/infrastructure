@@ -78,6 +78,7 @@ spec:
       labels:
         app: elasticsearch
     spec:
+      priorityClassName: datastore-high-priority
     {{- $node_selector := default .Values.node_selector .Values.elasticsearch.node_selector }}
     {{- if $node_selector }}
       affinity:
