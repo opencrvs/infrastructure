@@ -29,7 +29,7 @@ create_encrypted_backup(){
 }
 backup(){
   echo "[$(date +%F\ %H:%M:%S)] Running backup for DB $DB"
-  influxd backup -portable -host $INFLUXDB_HOST $BACKUP_DIR
+  influxd backup -portable -host $INFLUXDB_HOST:$INFLUXDB_PORT $BACKUP_DIR
 }
 
 transfer_to_backup_host(){
