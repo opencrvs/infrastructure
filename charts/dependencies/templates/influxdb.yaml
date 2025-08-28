@@ -164,7 +164,7 @@ spec:
                 - name: INFLUXDB_HOST
                   value: influxdb-0.influxdb.{{ .Release.Namespace }}.svc.cluster.local
                 - name: INFLUXDB_PORT
-                  value: 8088
+                  value: "8088"
                 - name: ENCRYPT_PASS
                   valueFrom:
                     secretKeyRef:
@@ -222,7 +222,7 @@ spec:
                 - name: INFLUXDB_HOST
                   value: influxdb-0.influxdb.{{ .Release.Namespace }}.svc.cluster.local
                 - name: INFLUXDB_PORT
-                  value: 8088
+                  value: "8088"
                 - name: ENCRYPT_PASS
                   valueFrom:
                     secretKeyRef:
