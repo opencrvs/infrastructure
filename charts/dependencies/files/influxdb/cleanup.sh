@@ -12,5 +12,4 @@
 # Database
 DB=ocrvs
 echo "[$(date +%F\ %H:%M:%S)] Cleaning up InfluxDB database $DB"
-sleep 1000
 influx -host $INFLUXDB_HOST -execute "DROP DATABASE $DB"
