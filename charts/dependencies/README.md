@@ -334,5 +334,5 @@ If you are using GitHub workflow from OpenCRVS, secret will be created automatic
 Recommended way to create `restore-encryption-secret` secret:
 ```
 kubectl create secret restore-encryption-secret
-    --from-literal=restore_encryption_key=your-encryption-key
+    --from-literal=backup_encryption_key=your-encryption-key
 ```
