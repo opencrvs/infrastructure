@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+# OpenCRVS is also distributed under the terms of the Civil Registration
+# & Healthcare Disclaimer located at http://opencrvs.org/license.
+#
+# Copyright (C) The OpenCRVS Authors located at https://github.com/opencrvs/opencrvs-core/blob/master/AUTHORS.
+
+
 # Databases backup list, space (" ") separated list, only events database needs to be backed up
 DATABASES=${DATABASES:-"events"}
 # Initial variables configuration
@@ -10,7 +20,7 @@ BACKUP_DIR="/backups"
 # Remote directory on backup server
 REMOTE_DIR="${BACKUP_REMOTE_DIR:-"/home/$BACKUP_USER"}/$BACKUP_DATE"
 # Temporal archive path inside container
-ARCHIVE_PATH="/tmp/postgres_backup_${BACKUP_DATE}.dump"
+ARCHIVE_PATH="/tmp/postgres_backup_${BACKUP_DATE}.tar.gz"
 # Remote directory on backup server
 REMOTE_DIR="${BACKUP_REMOTE_DIR:-"/home/$BACKUP_USER"}/$BACKUP_DATE"
 
@@ -21,15 +31,22 @@ apt-get update
 apt-get install -y openssh-client rsync
 
 backup(){
-  # FIXME: Add for loop to iterate over databases
-  echo "[$(date +%F\ %H:%M:%S)] Backing up PostgreSQL 'events' database"
-  pg_dump -h $POSTGRES_HOST -U $POSTGRES_USER -d events -F c -f $ARCHIVE_PATH
-  echo "[$(date +%F\ %H:%M:%S)] Backups completed: $BACKUP_DIR/*.gz"
+  for DB in $DATABASES; do
+    echo "[$(date +%F\ %H:%M:%S)] Backing up PostgreSQL '$DB' database"
+    pg_dump -h $POSTGRES_HOST -U $POSTGRES_USER -d $DB -F c -f $BACKUP_DIR/${DB}.dump
+    echo "[$(date +%F\ %H:%M:%S)] Backups completed: $BACKUP_DIR/${DB}.dump"
+  done
+  # Dump roles without passwords
+  echo "[$(date +%F\ %H:%M:%S)] Backup database roles"
+  pg_dumpall -h $POSTGRES_HOST -U $POSTGRES_USER --roles-only | grep -v "ALTER ROLE.*PASSWORD" > $BACKUP_DIR/roles.sql
 }
 
 create_encrypted_backup(){
-  echo "[$(date +%F\ %H:%M:%S)] Encrypt backup at $ARCHIVE_PATH"
-  # FIXME: Add for loop to iterate over databases
+  echo "[$(date +%F\ %H:%M:%S)] Archive and Encrypt backup at $ARCHIVE_PATH"
+  # Tar/gzip all snapshot content
+  tar cvzf "$ARCHIVE_PATH" -C "$BACKUP_DIR" .
+
+  # Encrypt
   openssl enc -aes-256-cbc -pbkdf2 -salt -in "$ARCHIVE_PATH" -out "${ARCHIVE_PATH}.enc" -pass env:ENCRYPT_PASS
   rm -f "$ARCHIVE_PATH"
   echo "[$(date +%F\ %H:%M:%S)] Backup encrypted at ${ARCHIVE_PATH}.enc"

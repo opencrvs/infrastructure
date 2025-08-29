@@ -85,7 +85,9 @@ spec:
       labels:
         app: influxdb
     spec:
+    {{- if .Values.priority_class.enabled }}
       priorityClassName: datastore-high-priority
+    {{- end }}
     {{- $node_selector := default .Values.node_selector .Values.influxdb.node_selector }}
     {{- if $node_selector }}
       affinity:

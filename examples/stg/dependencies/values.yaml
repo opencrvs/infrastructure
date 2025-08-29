@@ -1,5 +1,5 @@
 chart_dev_mode: false
-hostname: test-k8s.opencrvs.dev
+hostname: test-stg-k8s.opencrvs.dev
 storage_type: host_path
 node_selector:
   role: data2
@@ -28,6 +28,11 @@ monitoring:
 
 backup:
   enabled: true
+  backup_server_dir: /home/backup/demo-staging
 
 restore:
+  enabled: true
+  backup_server_dir: /home/backup/demo
+
+priority_class:
   enabled: true
