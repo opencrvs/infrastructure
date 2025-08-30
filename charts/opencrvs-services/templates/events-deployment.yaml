@@ -70,6 +70,8 @@ spec:
               value: "events"
             - name: USER_MANAGEMENT_URL
               value: "http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/"
+            - name: CONFIG_URL
+              value: "http://config.{{ .Release.Namespace }}.svc.cluster.local:2021/"
           {{- if not (eq .Values.postgres.auth_mode "managed") }}
             - name: EVENTS_POSTGRES_URL
               valueFrom:
