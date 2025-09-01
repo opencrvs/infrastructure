@@ -29,6 +29,8 @@ spec:
                   key: SEARCH_ELASTIC_HOST
                   name: {{ .Values.elasticsearch.urls_secret }}
           {{- end }}
+            - name: SEARCH_URL
+              value: http://search.{{ .Release.Namespace }}.svc.cluster.local:9090/
             - name: EVENTS_URL
               value: http://events.{{ .Release.Namespace }}.svc.cluster.local:5555/
             - name: AUTH_URL
