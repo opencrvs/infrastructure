@@ -108,7 +108,14 @@ spec:
           ports:
             - containerPort: {{ .Values.events.port }}
               protocol: TCP
-          # TODO: Implement liveness and readiness probes
+          livenessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up x
+              port: {{ .Values.events.port }}
+          readinessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up
+              port: {{ .Values.events.port }}
       restartPolicy: Always
 
 {{- include "service-helper" (dict "service_name" "events" "Values" .Values) }}
