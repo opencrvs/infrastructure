@@ -95,6 +95,8 @@ jobs:
             -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/${{ github.ref_name }}/examples/${ENV}/opencrvs-services/values.yaml \
             --create-namespace \
             --atomic \
+            --wait \
+            --wait-for-jobs \
             --set image.tag="$CORE_IMAGE_TAG" \
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set hostname=${{ vars.DOMAIN }}
