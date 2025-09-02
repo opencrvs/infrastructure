@@ -115,6 +115,6 @@ spec:
                   name: {{ .Values.minio.users_secret }}
           {{- end }}
             - name: WAIT_HOSTS
-              value: "{{ .Values.postgres.host }}:5432,{{ .Values.mongodb.host }}:27017,{{ .Values.influxdb.host }}:{{ .Values.influxdb.port }},{{ .Values.minio.host }}:{{ .Values.minio.port }},{{ .Values.elasticsearch.host }}:{{ .Values.elasticsearch.port }}"
+              value: "{{ .Values.mongodb.host }}:27017,{{ .Values.influxdb.host }}:{{ .Values.influxdb.port }},{{ .Values.minio.host }}:{{ .Values.minio.port }},{{ .Values.elasticsearch.host }}:{{ .Values.elasticsearch.port }}"
           {{- include "render-env-vars" (dict "service_name" "migration" "Values" .Values) }}
       restartPolicy: "OnFailure"
