@@ -110,20 +110,12 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /ping
+              path: /ping # FIXME: not real healthz, just checking if http server is up x
               port: {{ .Values.events.port }}
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /ping
+              path: /ping # FIXME: not real healthz, just checking if http server is up
               port: {{ .Values.events.port }}
-            initialDelaySeconds: 10
-            periodSeconds: 5
-            timeoutSeconds: 3
-            failureThreshold: 3
       restartPolicy: Always
 
 {{- include "service-helper" (dict "service_name" "events" "Values" .Values) }}
