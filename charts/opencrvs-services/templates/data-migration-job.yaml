@@ -95,13 +95,19 @@ spec:
                   key: EVENTS_MONGO_URL
                   name: {{ .Values.mongodb.urls_secret }}
           {{- end }}
-          {{- if not (eq .Values.postgres.auth_mode "managed") }}
+          {{- if or (eq .Values.postgres.auth_mode "auto") (eq .Values.postgres.auth_mode "disabled") }}
             - name: EVENTS_POSTGRES_URL
               valueFrom:
                 secretKeyRef:
                   key: events_migrator_db_url
                   name: {{ .Values.postgres.urls_secret }}
+            - name: EVENTS_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  key: EVENTS_APP_POSTGRES_USER
+                  name: {{ .Values.postgres.users_secret }}
           {{- end }}
+
           {{- if or (eq .Values.minio.auth_mode "auto") (eq .Values.minio.auth_mode "use_secret") }}
             - name: MINIO_ACCESS_KEY
               valueFrom:
