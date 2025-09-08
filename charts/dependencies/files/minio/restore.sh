@@ -29,18 +29,18 @@ REMOTE_DIR="${BACKUP_REMOTE_DIR:-"/home/$BACKUP_USER"}/$RESTORE_DATE"
 RESTORE_MODE=${RESTORE_MODE:-"fs"}
 
 # Install necessary tools (if running in an Alpine-based container)
-apk add --no-cache bash curl openssl openssh jq rsync minio-client
+apk add --no-cache bash curl openssl openssh jq rsync minio-client coreutils
 
 echo "[$(date +%F\ %H:%M:%S)] Starting MinIO restore operation"
 
-# Step 1. Decrypt backup
+# Decrypt backup
 decrypt_backup() {
   echo "[$(date +%F\ %H:%M:%S)] Decrypting backup file"
   openssl enc -d -aes-256-cbc -pbkdf2 -salt -in "${ARCHIVE_PATH}.enc" -out "$ARCHIVE_PATH" -pass env:ENCRYPT_PASS
   echo "[$(date +%F\ %H:%M:%S)] Decrypted archive at $ARCHIVE_PATH"
 }
 
-# Step 2. Restore files from filesystem backup
+# Restore files from filesystem backup
 restore_fs() {
   echo "[$(date +%F\ %H:%M:%S)] Restoring MinIO data using filesystem method"
   rm -rf "${RESTORE_DIR:?}"/*  # Clean current contents!

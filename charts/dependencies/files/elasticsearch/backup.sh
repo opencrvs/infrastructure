@@ -13,7 +13,7 @@
 # Today's date is used for filenames if LABEL is not provided
 BACKUP_DATE=$(date +%Y-%m-%d)
 # Local directory inside container
-BACKUP_DIR="/backups"
+BACKUP_DIR="/data/backups/elasticsearch"
 # Temporal archive path inside container
 ARCHIVE_PATH="/tmp/elasticsearch_backup_${BACKUP_DATE}.tar.gz"
 # Remote directory on backup server
@@ -25,6 +25,7 @@ ELASTIC_HOST=${ELASTIC_HOST:-"elasticsearch:9200"}
 # Backup encryption password
 ENCRYPT_PASS=${ENCRYPT_PASS:?Must provide ENCRYPT_PASS}
 
+SNAPSHOT_NAME=${SNAPSHOT_NAME:-"snapshot_${BACKUP_DATE}"}
 # Install required tools
 apk add --no-cache bash curl openssl openssh jq rsync
 
@@ -53,6 +54,7 @@ create_elasticsearch_snapshot_repository() {
     OUTPUT=$(curl -sS -X PUT -H "Content-Type: application/json;charset=UTF-8" \
       "http://$(elasticsearch_host)/_snapshot/ocrvs" \
       -d '{"type":"fs","settings":{"location":"/data/backups/elasticsearch","compress":true}}')
+
     if [ "$OUTPUT" = '{"acknowledged":true}' ]; then
       echo "[$(date +%F\ %H:%M:%S)] Repository registered"
       return 0
@@ -76,8 +78,15 @@ create_elasticsearch_backup() {
   for i in $(seq 1 $retries); do
     local output
     output=$(curl -sS -X PUT -H "Content-Type: application/json;charset=UTF-8" \
-      "http://$(elasticsearch_host)/_snapshot/ocrvs/snapshot_${LABEL:-$BACKUP_DATE}?wait_for_completion=true&pretty" \
-      -d "{ \"indices\": \"${indices}\" }")
+      "http://$(elasticsearch_host)/_snapshot/ocrvs/${SNAPSHOT_NAME}?wait_for_completion=true&pretty" \
+      -d "{
+        \"indices\": \"${indices}\",
+        \"include_global_state\": false,
+        \"metadata\": {
+          \"taken_by\": \"backup script\",
+          \"taken_because\": \"scheduled backup\"
+        }
+      }")
     if echo "$output" | jq -e '.snapshot.state == "SUCCESS"' > /dev/null; then
       echo "[$(date +%F\ %H:%M:%S)] Snapshot state is SUCCESS"
       return 0
@@ -87,7 +96,7 @@ create_elasticsearch_backup() {
     sleep 5
   done
   echo "[$(date +%F\ %H:%M:%S)] ERROR: Could not complete snapshot after $retries attempts."
-  return 1
+  exit 1
 }
 
 delete_all_snapshots() {
@@ -128,6 +137,8 @@ fi
 echo "[$(date +%F\ %H:%M:%S)] Running backup container"
 
 delete_all_snapshots
+
+echo "[$(date +%F\ %H:%M:%S)] Indices available for backup: $(get_target_indices)"
 
 create_elasticsearch_snapshot_repository
 

@@ -83,7 +83,7 @@ metadata:
   name: minio-restore-cronjobs
 data:
   root: |
-    {{ .Values.minio.restore_schedule | default .Values.restore.schedule }} /scripts/backup.sh >> /proc/1/fd/1 2>&1
+    {{ .Values.minio.restore_schedule | default .Values.restore.schedule }} /scripts/restore.sh >> /proc/1/fd/1 2>&1
 {{- end }}
 
 ---
