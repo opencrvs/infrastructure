@@ -2,7 +2,7 @@
 # 🚧 Work in Progress
 
 > NOTE:
-> All scripts within this repository are relevant to OpenCRVS version 1.8.0 and higher.
+> All scripts within this repository are relevant to OpenCRVS version 1.9.0 and higher.
 
 Please note that not all features from the Docker Swarm solution are supported yet and not all pipelines are implemented
 

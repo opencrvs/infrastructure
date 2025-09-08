@@ -216,6 +216,7 @@ env:
 
 # OpenCRVS core image tag:
 image:
+  # FIXME: Put stable release version 
   tag: develop
 
 # Per service configuration:
@@ -249,6 +250,7 @@ config:
 countryconfig:
   image:
     name: opencrvs/ocrvs-countryconfig
+    # FIXME: Put stable release version
     tag: develop
   replicas: 1
   port: 3040
