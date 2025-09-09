@@ -64,16 +64,16 @@ jobs:
             sleep 30;
             kubectl logs job/data-migration -f -n ${namespace} || true
             kubectl wait --for=condition=complete job/data-migration -n ${namespace} --timeout=600s;
-        - name: Re-run postgres on-deploy
-          run: |
-            kubectl delete job -n ${namespace} --ignore-not-found=true postgres-on-deploy;
-            helm template -f ${namespace}.yaml \
-                -s templates/postgres-on-update.yaml \
-                --namespace ${namespace} \
-                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
-            sleep 30;
-            kubectl logs job/postgres-on-deploy -f --all-containers=true -n ${namespace};
-            kubectl wait --for=condition=complete job/postgres-on-deploy -n ${namespace} --timeout=600s;
+        # - name: Re-run postgres on-deploy
+        #   run: |
+        #     kubectl delete job -n ${namespace} --ignore-not-found=true postgres-on-deploy;
+        #     helm template -f ${namespace}.yaml \
+        #         -s templates/postgres-on-update.yaml \
+        #         --namespace ${namespace} \
+        #         oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
+        #     sleep 30;
+        #     kubectl logs job/postgres-on-deploy -f --all-containers=true -n ${namespace};
+        #     kubectl wait --for=condition=complete job/postgres-on-deploy -n ${namespace} --timeout=600s;
         - name: Seeding data
           run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true data-seed
