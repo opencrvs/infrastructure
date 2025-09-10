@@ -9,7 +9,7 @@ apm-server:
     enabled: 'auto'
     setup:
       enabled: true
-      overwrite: false
+      overwrite: true # allow overwriting the policy on redeploy
       require_policy: true
       mapping:
         - event_type: 'error'
@@ -44,6 +44,10 @@ apm-server:
                   set_priority:
                     priority: 50
                   readonly: {}
+              delete:
+                min_age: '2d'
+                actions:
+                  delete: {}
 queue:
   mem:
     events: 12096
