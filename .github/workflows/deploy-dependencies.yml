@@ -11,9 +11,6 @@ on:
         options:
           - demo
           - dev
-          - backup
-          - qa
-          - staging
 jobs:
   deploy:
     environment: ${{ inputs.environment }}
@@ -24,19 +21,21 @@ jobs:
       - k8s
       - ${{ inputs.environment }}
     steps:
+      - name: checkout repository
+        uses: actions/checkout@v5
       - name: Install traefik
         run: |
           kubectl scale deployment traefik --replicas=0 --namespace traefik || true
           helm upgrade --install traefik oci://ghcr.io/traefik/helm/traefik \
             --namespace traefik \
             --create-namespace \
-            -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/${{ github.ref_name }}/examples/${ENV}/traefik/values.yaml
+            -f environments/${ENV}/traefik/values.yaml
           kubectl scale deployment traefik --replicas=1 --namespace traefik
       - name: Install OpenCRVS dependencies
         run: |
           helm upgrade --install opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart \
             --namespace "opencrvs-deps-${ENV}" \
-            -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/${{ github.ref_name }}/examples/${ENV}/dependencies/values.yaml \
+            -f environments/${ENV}/dependencies/values.yaml \
             --create-namespace \
             --set hostname=${{ vars.DOMAIN }} \
             --set storage_type=host_path \

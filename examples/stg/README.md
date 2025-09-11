@@ -1,6 +1,8 @@
 
 # General information
 
+# TODO: UPDATE REQUIRED, please check examples/dev
+
 This example shows how to deploy OpenCRVS with Farajaland data on multi-node kubernetes cluster. OpenCRVS can be deployed manually or using GitHub Action Workflows.
 
 # Information about deployment package

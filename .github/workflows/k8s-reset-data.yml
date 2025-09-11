@@ -1,29 +1,26 @@
 name: Reset environment
-run-name: "Reset ${{ inputs.environment }} environment (namespace: ${{ inputs.namespace }})"
+run-name: "Reset ${{ inputs.environment }} environment"
 # FIXME:
 # - replace sleep 30 with kubectl wait for job completion
 on:
-    workflow_dispatch:
-      inputs:
-        namespace:
-          description: "Target namespace"
-          required: true
-          type: string
-        environment:
-          description: "Target environment"
-          required: true
-          type: string
-    workflow_call:
-      inputs:
-        namespace:
-          type: string
-        environment:
-          type: string
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - demo
+  workflow_call:
+    inputs:
+      environment:
+        type: string
 jobs:
   reset:
     environment: ${{ inputs.environment }}
     env:
-      namespace: ${{ inputs.namespace }}
+      namespace: opencrvs-${{ inputs.environment }}
     runs-on:
       - self-hosted
       - k8s

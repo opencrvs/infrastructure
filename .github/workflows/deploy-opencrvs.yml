@@ -29,9 +29,6 @@ on:
         options:
           - demo
           - dev
-          - backup
-          - qa
-          - staging
       reset:
         description: "Reset environment after deploy"
         required: false
@@ -112,6 +109,5 @@ jobs:
     needs: deploy
     uses: ./.github/workflows/k8s-reset-data.yml
     with:
-      namespace: "opencrvs-${{ inputs.environment }}"
       environment: ${{ inputs.environment }}
     secrets: inherit

@@ -1,90 +1,153 @@
+# General Information
 
-# General information
+This guide describes how to deploy **OpenCRVS** with **Farajaland** sample data on a single-node Kubernetes cluster running on a virtual machine.
 
-This example shows how to deploy OpenCRVS with Farajaland data on single-node kubernetes cluster. OpenCRVS can be deployed manually or using GitHub Action Workflows.
+OpenCRVS can be deployed either:
+
+* **Manually** (using Helm and CLI commands), see [README-on-existing-cluster](README-on-existing-cluster.md) or
+* **Automatically** (using the provided GitHub Action Workflows).
+
+---
 
 # Prerequisites
 
-1. VM has at least 8cpu/16G RAM/50G SSD
-2. Linux distribution Ubuntu 24.04 is installed on VM
-3. VM has public IP, or at least you have option to open ports 80 and 443, otherwise traefik will not be able to issue valid SSL Certificates with lets encrypt http-01 challenge.
-4. Valid Domain name is attached to VM. You need to have 2 `A` records:
-   - Primary domain for your VM IP address (e/g: opencrvs.example.com)
-   - Wildcard for primary domain or list of sub-domains mapped to your VM IP address.
-   
-   For more information, please check https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.5-setup-dns-a-records#domain-a-records
-5. Provision user is configured according to documentation at [3.3.1-provision-your-server-nodes-with-ssh-access](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.1-provision-your-server-nodes-with-ssh-access)
+Before starting the deployment, ensure the following requirements are met:
 
-# Information about deployment package
+**1. Virtual Machine resources**
 
-Following components are included into deployment:
-- Traefik v3.4.3, official helm chart is used (traefik-36.3.0)
-- Datastores, see OpenCRVS dependencies helm chart for exact versions:
-  - MongoDB
-  - Postgres
-  - Elasticsearch
-  - Redis
-  - MinIO
-  - InfluxDB
-- Monitoring and Logging, see OpenCRVS dependencies helm chart for exact versions:
-  - Kibana
-  - Logstash
-  - Filebeat
-  - Metricbeat
-  - Elastic APM server
-  - Elastalert2
-- OpenCRVS services are deployed with Farajaland data and MOSIP integration enabled:
-  - Core packages version: 0f10027
-  - Farajaland version: 3314a9a
-- MOSIP package
+   * Minimum: **8 CPU cores, 16 GB RAM, 50 GB SSD**.
 
-# Deploy OpenCRVS with Github Actions workflows
+**2. Operating System**
 
-## Prerequisites
+   * VM is running **Ubuntu 24.04 LTS**.
 
-> NOTE: `(Optional)` steps should be performed only once per multiple environments
+**3. Networking and Domain Configuration**
 
-1. (Optional) Fork repository: https://github.com/opencrvs/infrastructure
-2. (Optional) Create repository level secrets:
-   - GH_TOKEN with read/write access to workflows
-   - K8S_RUNNER_TOKEN, Kubernetes self-hosted runner secret
-2. Create GitHub environment `demo`
-3. Create following GitHub secrets  under `demo` environment:
-   - ENCRYPTION_KEY, `/data` partition encryption key, store secret to password manager for future usage
-4. Create following GitHub variables under `demo` environment:
-   - DISK_SPACE, encrypted partition disk size, for testing 5g is more then sufficient
-   - DOMAIN, domain name attached to your VM
+* The VM must have a **public IP address**, or ports **80** and **443** must be accessible.
+* A **valid domain name** must be configured and point to the VM.
+* Required DNS records:
 
-## Bootstrap github self-hosted runner
+  * An **A record** pointing the primary domain to the VM IP (e.g., `opencrvs.example.com`).
+  * A **wildcard A record** (e.g., `*.opencrvs.example.com`) or individual subdomains pointing to the same VM IP.
+* These settings are required for **Traefik** to issue valid SSL certificates using Let’s Encrypt (`http-01` challenge).
 
-Make sure you have following values:
-- github org name: `<your account or org name>`
-- github repository name: `<your repository name>`
-- github PAT with access to repository code and workflow: `<K8S_RUNNER_TOKEN or dedicated runner token>`
-- environment name: `dev`
+> See the [OpenCRVS documentation on DNS setup](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.5-setup-dns-a-records#domain-a-records) for details.
 
-Run following command on VM (master node):
-```
+> If you don't have public IP Address please follow guide "How to run traefik with self-signed SSL Certificate", see [TODO](#link-goes-here)
+
+**4. Provisioning User**
+
+   * The VM must be provisioned with an SSH user account according to [Provision Your Server Nodes with SSH Access](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.1-provision-your-server-nodes-with-ssh-access).
+
+---
+
+# Deployment Package Contents
+
+The deployment package includes the following components:
+
+* **Ingress**
+
+  * [Traefik](https://doc.traefik.io/traefik/)
+
+* **Datastores** (via the [OpenCRVS dependencies Helm chart](../../charts/dependencies/)):
+
+  * MongoDB
+  * PostgreSQL
+  * Elasticsearch
+  * Redis
+  * MinIO
+  * InfluxDB
+
+* **Monitoring and Logging** (via the dependencies Helm chart):
+
+  * Kibana
+  * Logstash
+  * Filebeat
+  * Metricbeat
+  * Elastic APM Server
+  * Elastalert2
+
+* **OpenCRVS Services** deployed with **Farajaland data** and **MOSIP integration** enabled:
+  * Core packages version: `0f10027`
+  * Farajaland version: `3314a9a`
+  * MOSIP integration version: `latest`
+
+
+
+# Deploy OpenCRVS with GitHub Actions Workflows
+
+This section describes how to deploy OpenCRVS using the provided GitHub Action workflows. The workflows automate provisioning of the infrastructure, deployment of dependencies, and deployment of OpenCRVS services.
+
+---
+
+## 1. Prepare GitHub Repository
+
+1. **Fork the repository**
+
+   * Fork [opencrvs/infrastructure](https://github.com/opencrvs/infrastructure) into your own GitHub account or organization.
+
+2. **Create a GitHub environment**
+
+   * In your forked repository, create an environment named `dev`.
+
+3. **Add GitHub secrets** under the `dev` environment:
+
+   * **`GH_TOKEN`** – GitHub token with **read/write access** to workflows (repository or environment level).
+   * **`ENCRYPTION_KEY`** – encryption key for the `/data` partition.
+
+     > 🔑 Store this key in a secure password manager for future use.
+
+4. **Add GitHub variables** under the `dev` environment:
+
+   * **`DISK_SPACE`** – disk size for the encrypted partition. For testing, `5g` is sufficient.
+   * **`DOMAIN`** – the domain name associated with your VM.
+
+---
+
+## 2. Bootstrap GitHub Self-Hosted Runner
+
+The self-hosted runner must be installed on the VM (or master node).
+
+You will need to provide the following values while installation:
+
+* GitHub organization or account name: `<your-org-or-account>`
+* GitHub repository name: `<your-repository>`
+* GitHub PAT (personal access token) with access to repository code and workflows: `<GH_TOKEN or dedicated token>`
+* Environment name: `dev`
+
+Run the following command on the VM:
+
+```bash
 curl -s https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/github-runner/node-runner.sh -o runner.sh && bash runner.sh
 ```
-You should see a message:
+
+If successful, you will see a confirmation message:
+
 ```
 ✅ Runner '....-runner' is installed and started!
 ```
-In your github repository you should see a self-hosted runner under settings/actions/runners
 
-## Prepare inventory file
+In your GitHub repository, navigate to **Settings → Actions → Runners** and verify that the runner appears as a self-hosted runner.
 
-1. Go to `infrastructure/server-setup/inventory` folder
-2. Create configuration file for your dev VM, name should match with GitHub environment name, e/g if your environment name is `dev` then file name should be `dev.yml`. See example.
-3. Commit your changes
-4. Make sure update-envs workflow completed before moving to the next section.
+---
 
-Configuration file example:
+## 3. Prepare Inventory File for Infrastructure Deployment
+
+1. Navigate to the `infrastructure/server-setup/inventory` folder.
+2. Create a configuration file for your environment, see example.
+
+   * The file name must match the GitHub environment name.
+   * Example: if your environment is `dev`, the file name should be `dev.yml`.
+3. Commit your changes.
+4. Ensure the **`update-envs` workflow** has completed successfully before proceeding.
+
+Example configuration file (`dev.yml`):
+
 ```yaml
 all:
   vars:
     kube_api_sans: []
+    # FIXME: -o StrictHostKeyChecking=no should not be required
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
     ansible_user: provision
     single_node: true
@@ -99,105 +162,46 @@ all:
     master:
       hosts:
         test-k8s-master:
-          ansible_host: <your ip>
+          ansible_host: <your-vm-ip>
 ```
 
-## Run provision
+---
 
-- Run provision workflow
-- Make sure kubernetes self-hosted runner is available at settings/actions/runners
+## 4. Run Infrastructure Provision
 
-## Run Dependencies deployment workflow
+* Trigger the **provision workflow** from your repository.
+* Verify that the Kubernetes self-hosted runner is visible under **Settings → Actions → Runners**.
 
-Review file `examples/dev/dependencies/values.yaml` and if needed adjust values, defaults should be good for starting point
+---
 
-- Run Dependencies deployment workflow
-- Make sure minio and kibana are available
+## 5. Prepare and Run Dependencies Deployment
 
-## Run OpenCRVS deployment workflow
+> NOTE: One kubernetes cluster (even single node) is capable to host multiple OpenCRVS instances. Environment name (`dev`) may differ from OpenCRVS dependencies installation environment.
 
-Review file `examples/dev/opencrvs-services/values.yaml` and if needed adjust values, defaults should be good for starting point
+1. Copy the default values file:
 
-- Run OpenCRVS deployment workflow
-- Make sure login page is available
-
-# Manual Deployment on existing kubernetes cluster
-
-> NOTE: If you would like to provision infrastructure and kubernetes cluster with ansible scripts developed by OpenCRVS Team, please use [Deploy with Github](#deploy-with-github) scenario. Manual deployment scenario covers only OpenCRVS and dependencies installation.
-
-## Prerequisites
-
-Single-node Kubernetes cluster is up and running on your VM.
-   Make sure you are able connect to the cluster with kubectl
+   ```bash
+   cp examples/dev/dependencies/values.yaml environments/dev/dependencies/values.yaml
    ```
-   kubectl get nodes
-   ```
+2. Adjust values if needed. The provided defaults are usually sufficient to start.
+3. Run the **Dependencies deployment workflow**.
+4. Verify that **MinIO** and **Kibana** are available.
 
-## Installation process
+---
 
-> ℹ️ All commands should be started from `examples/dev` directory
+## 6. Prepare and Run OpenCRVS Deployment
+> NOTE: One kubernetes cluster (even single node) is capable to host multiple OpenCRVS instances. Environment name (`dev`) may differ from OpenCRVS dependencies installation environment.
 
-1. Deploy traefik
+1. Copy the default values file:
+
+   ```bash
+   cp examples/dev/opencrvs-services/values.yaml environments/dev/opencrvs-services/values.yaml
    ```
-   helm upgrade --install traefik oci://ghcr.io/traefik/helm/traefik \
-      --namespace traefik \
-      --create-namespace \
-      -f traefik/values.yaml
-   ```
-2. Install OpenCRVS dependencies
-    > ⚠️ Update `<your_host_name>` placeholder before running command
-    ```
-    helm upgrade --install opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart \
-    --namespace "opencrvs-deps-dev" \
-    -f examples/dev/dependencies/values.yaml \
-    --create-namespace \
-    --set storage_type=host_path \
-    --set hostname=<your_host_name>
-    ```
-3. Install OpenCRVS MOSIP integration
-    > ⚠️ Update `<your_host_name>` placeholder before running command
-    ```
-    helm upgrade --install mosip-api oci://ghcr.io/opencrvs/opencrvs-mosip \
-        --namespace "opencrvs-dev" \
-        -f mosip-api/values.yaml \
-        --create-namespace \
-        --atomic \
-        --set hostname=<your_host_name>
-    ```
-4. Copy secrets from dependencies to main namespace:
-   ```
-   secrets=(
-        "elasticsearch-admin-user"
-        "redis-opencrvs-users"
-        "minio-opencrvs-users"
-        "mongodb-admin-user"
-        "postgres-admin-user"
-    )
-    for secret in "${secrets[@]}"; do
-        kubectl get secret $secret -n opencrvs-deps-dev -o yaml \
-        | sed "s#namespace: opencrvs-deps-dev#namespace: opencrvs-dev#" \
-        | grep -vE 'resourceVersion|uid|creationTimestamp' \
-        | kubectl apply -n opencrvs-dev -f - 
-    done
-   ```
-5. Install OpenCRVS
-    > ⚠️ Update `<your_host_name>` placeholder before running command
-    ```
-    helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
-        --timeout 15m \
-        --namespace "opencrvs-dev" \
-        -f opencrvs-services/values.yaml \
-        --create-namespace \
-        --atomic \
-        --set hostname=<your_host_name>
-    ```
-6. Seed data
-    ```
-    helm get values opencrvs --namespace "opencrvs-dev" \
-       | helm template -f - \
-            --set data_seed.enabled=true \
-            --namespace "opencrvs-dev" \
-            -s templates/data-seed-job.yaml \
-            oci://ghcr.io/opencrvs/opencrvs-services \
-       | kubectl apply --namespace "opencrvs-dev" -f -
-    ```
+2. Adjust values if needed. The provided defaults are usually sufficient to start.
+3. Run the **OpenCRVS deployment workflow**.
+4. Verify that the **OpenCRVS login page** is accessible via your configured domain.
+
+---
+
+✅ At this point, OpenCRVS should be successfully deployed on your single-node Kubernetes cluster.
+

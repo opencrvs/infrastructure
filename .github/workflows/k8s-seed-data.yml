@@ -1,27 +1,24 @@
 name: Seed data
-run-name: "Seed data to ${{ inputs.environment }} environment (namespace: ${{ inputs.namespace }})"
+run-name: "Seed data to ${{ inputs.environment }} environment"
 on:
     workflow_dispatch:
       inputs:
-        namespace:
-          description: "Target namespace"
-          required: true
-          type: string
         environment:
           description: "Target environment"
           required: true
-          type: string
+          default: "dev"
+          type: choice
+          options:
+            - demo
     workflow_call:
       inputs:
-        namespace:
-          type: string
         environment:
           type: string
 jobs:
   seed:
     environment: ${{ inputs.environment }}
     env:
-      namespace: ${{ inputs.namespace }}
+      namespace: opencrvs-${{ inputs.environment }}
     runs-on:
       - self-hosted
       - k8s

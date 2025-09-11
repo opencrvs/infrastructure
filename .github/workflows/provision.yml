@@ -9,11 +9,11 @@ on:
         default: 'demo'
         type: choice
         options:
-          - demo
           - dev
-          - backup
-          - qa
           - staging
+          - qa
+          - backup
+          - demo
       tags:
         description: 'Tags to apply to the provisioned resources'
         required: true
@@ -52,7 +52,7 @@ jobs:
         env:
           encrypted_disk_size: ${{ vars.DISK_SPACE }}
           disk_encryption_key: ${{ secrets.ENCRYPTION_KEY }}
-          k8s_runner_token: ${{ secrets.K8S_RUNNER_TOKEN }}
+          k8s_runner_token: ${{ secrets.GH_TOKEN }}
           repository: ${{ github.repository }}
           k8s_cluster_env: ${{ inputs.environment }}
       - name: checkout repository

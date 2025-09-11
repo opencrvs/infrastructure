@@ -90,7 +90,7 @@ spec:
         app: elasticsearch
     spec:
     {{- if .Values.priority_class.enabled }}
-      priorityClassName: datastore-high-priority
+      priorityClassName: {{ .Values.priority_class.name }}
     {{- end }}
     {{- $node_selector := default .Values.node_selector .Values.elasticsearch.node_selector }}
     {{- if $node_selector }}
