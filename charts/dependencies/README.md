@@ -38,7 +38,9 @@ Any particular service within this helm chart can be disabled by setting `<servi
 | storage_type | string | pvc | Kubernetes storage type, available options are `pvc` or `host_path`. More information are at [Storage Configuration](#storage-configuration) |
 | node_selector | dict | `{}` | Label selector for datastore nodes, usually used to keep data persistent |
 | monitoring.enabled | bool | `false` | Enable or disable monitoring, see [Monitoring](#monitoring) |
-| backup.enabled | bool | `true` | Enable or disable backup. Please check [Backup configuration](#backup-configuration) for more options |
+| priority_class.enabled | bool | `false` | Enable or disable priority class for datastores. Enabling this option will avoid unnecessary pod eviction. |
+| backup.enabled | bool | `true` | Enable or disable data backup. Please check [Backup configuration](#backup-configuration) for more options. Usually this option is enabled on Production environment |
+| restore.enabled | bool | `true` | Enable or disable data restore. Please check [Restore configuration](#restore-configuration) for more options. Usually this option is enabled on Staging environment |
 
 ## MongoDB
 
@@ -264,75 +266,121 @@ elasticsearch:
   use_default_credentials: false
 ```
 
-## Backup configuration
+## Backup Configuration
 
-Dependencies chart has built-in backup tool for it's internal components and requires external backup server to store backed up files.
+The dependencies chart includes a built-in backup feature that supports automated backups for internal components. Backups are stored on an external server via an SSH connection.
 
-Reference available options:
+Supported datastores:
 
-| Parameter                | Type    | Default | Description                                   |
-|-|-|-|-|
-| enabled | bool | `false` | Enable or disable backup |
-| schedule | string | `0 1 * * *` | Cronjob schedule |
-| backup_server_secret | string | `backup-server-ssh-credentials` | Secret name with credentials for backup server |
-| backup_server_dir | string | `n/a` | Backup server remote directory |
-| backup_encryption_secret | string | `backup-encryption-secret` | Secret to store backup encryption key |
+* Elasticsearch
+* MongoDB
+* PostgreSQL
+* MinIO
+* InfluxDB
 
+Each datastore has its own backup job, configured as a Kubernetes `CronJob`.
+Backup settings are defined in the `backup` section of the chart values.
+You can configure a separate backup schedule and remote directory for each datastore.
 
-Backup server connection properties needs to be stored as a kubernetes secret, secret needs to be created before enabling backup:
-- `ssh_key`, ssh private key for remote login to backup server, key should be create on backup server and private part stored in secure place
-- `user`, ssh username to login on backup server, user should have read/write access to backup folder, we strongly recommend don't enable `sudo` or other way of admin access.
-- `host`, backup server IP address or hostname.
+---
 
-Recommended way to create `backup-server-ssh-credentials` secret:
-```
-kubectl create secret backup-server-ssh-credentials
-    --from-literal=user=your-ssh-username \
-    --from-literal=host=your.ssh.host.com \
-    --from-file=ssh_key=backup_id_rsa
-```
+### 1. Preparing Secrets
 
-If you are using GitHub workflow from OpenCRVS, secret will be created automatically in `opencrvs-deps-<your environment>` namespace.
+Before enabling backups, you must create the Kubernetes secrets that store connection details and encryption keys.
 
-Recommended way to create `backup-encryption-secret` secret:
-```
-kubectl create secret backup-encryption-secret
-    --from-literal=backup_encryption_key=your-encryption-key
-```
+#### a. Backup Server Credentials (`backup-server-ssh-credentials`)
 
-## Restore configuration
+> NOTE: If you are using GitHub workflow from OpenCRVS, secret will be created automatically in `opencrvs-deps-<your infra environment>` namespace. E/g If provision workflow ran for `dev` environment you will find namespace `opencrvs-deps-dev` on your newly created cluster. This namespace will contain secret `backup-server-ssh-credentials`
 
-> NOTE: CHAPTER IS IN PROGRESS
+This secret contains the SSH credentials used to connect to the backup server. It must be created before enabling backups.
 
-Dependencies chart has built-in restore tool for it's internal components. Tools downloads backup files from external backup server over ssh and does restore.
+Required fields:
 
-Reference available options:
+* **`ssh_key`** – SSH private key used for authentication. The corresponding public key must be installed on the backup server.
+* **`user`** – SSH username. This user must have read/write access to the backup directory.
 
-| Parameter                | Type    | Default | Description                                   |
-|-|-|-|-|
-| enabled | bool | `false` | Enable or disable backup |
-| backup_server_secret | string | `backup-server-ssh-credentials` | Secret name with credentials for backup server |
-| backup_server_dir | string | `n/a` | Backup server remote directory |
-| backup_encryption_secret | string | `backup-encryption-secret` | Secret to store backup encryption key |
+  > ⚠️ Do not grant `sudo` or administrative access.
+* **`host`** – Backup server IP address or hostname.
 
+Create the secret:
 
-Backup server connection properties needs to be stored as a kubernetes secret, secret needs to be created before enabling backup:
-- `ssh_key`, ssh private key for remote login to backup server, key should be create on backup server and private part stored in secure place
-- `user`, ssh username to login on backup server, user should have read/write access to backup folder, we strongly recommend don't enable `sudo` or other way of admin access.
-- `host`, backup server IP address or hostname.
-
-Recommended way to create `backup-server-ssh-credentials` secret:
-```
-kubectl create secret backup-server-ssh-credentials
-    --from-literal=user=your-ssh-username \
-    --from-literal=host=your.ssh.host.com \
-    --from-file=ssh_key=backup_id_rsa
+```bash
+kubectl create secret generic backup-server-ssh-credentials \
+  --from-literal=user=<your-ssh-username> \
+  --from-literal=host=<your.ssh.host> \
+  --from-file=ssh_key=<backup_id_rsa key file>
 ```
 
-If you are using GitHub workflow from OpenCRVS, secret will be created automatically in `opencrvs-deps-<your environment>` namespace.
+---
 
-Recommended way to create `restore-encryption-secret` secret:
+#### b. Backup Encryption Key (`backup-encryption-secret`)
+
+This secret stores the encryption key used to protect backup files.
+
+Create the secret:
+
+```bash
+kubectl create secret generic backup-encryption-secret \
+  --from-literal=backup_encryption_key=<your-encryption-key>
 ```
-kubectl create secret restore-encryption-secret
-    --from-literal=backup_encryption_key=your-encryption-key
+
+---
+
+### 2. Backup Configuration Reference
+
+The following parameters are available in the `backup` section of the chart values:
+
+| Parameter                  | Type   | Default                         | Description                                                         |
+| -------------------------- | ------ | ------------------------------- | ------------------------------------------------------------------- |
+| `enabled`                  | bool   | `false`                         | Enable or disable backups.                                          |
+| `schedule`                 | string | `0 1 * * *`                     | Cron schedule for backup jobs.                                      |
+| `backup_server_secret`     | string | `backup-server-ssh-credentials` | Name of the Kubernetes secret with backup server credentials.       |
+| `backup_server_dir`        | string | `n/a`                           | Remote directory on the backup server where backups will be stored. |
+| `backup_encryption_secret` | string | `backup-encryption-secret`      | Name of the Kubernetes secret containing the backup encryption key. |
+
+
+
+## Restore Configuration
+
+The dependencies chart provides a built-in restore feature for internal components.
+The restore process downloads backup files from the external backup server over SSH and restores them into the target datastore.
+
+---
+
+### 1. Preparing Secrets
+
+The restore feature uses the same type of secrets as the backup feature.
+Please follow the instructions in the [Backup Configuration](#backup-configuration) section to create:
+
+* **`backup-server-ssh-credentials`** – connection details for the backup server.
+* **`restore-encryption-secret`** – secret containing the encryption key used to decrypt backup files.
+
+> 🔑 Note: The `restore-encryption-secret` may differ from the `backup-encryption-secret`.
+> If you need to restore backups from a production environment into a staging environment, copy the encryption key from production into the staging `restore-encryption-secret`.
+
+Example command to create the restore encryption secret:
+
+```bash
+kubectl create secret generic restore-encryption-secret \
+  --from-literal=backup_encryption_key=<your-encryption-key>
 ```
+
+---
+
+### 2. Restore Configuration Reference
+
+The following parameters are available in the `restore` section of the chart values:
+
+| Parameter                  | Type   | Default                         | Description                                                          |
+| -------------------------- | ------ | ------------------------------- | -------------------------------------------------------------------- |
+| `enabled`                  | bool   | `false`                         | Enable or disable restore.                                           |
+| `backup_server_secret`     | string | `backup-server-ssh-credentials` | Name of the Kubernetes secret with backup server credentials.        |
+| `backup_server_dir`        | string | `n/a`                           | Remote directory on the backup server containing backups.            |
+| `backup_encryption_secret` | string | `restore-encryption-secret`     | Name of the Kubernetes secret containing the restore encryption key. |
+
+---
+
+### 3. Typical Usage
+
+* **Production environments** – usually run **backups only**.
+* **Staging environments** – may have both **backup and restore enabled**, allowing you to restore production backups for testing or validation.

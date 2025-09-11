@@ -53,8 +53,7 @@ Following components are included into deployment:
 
 1. (Optional) Fork repository: https://github.com/opencrvs/infrastructure
 2. (Optional) Create repository level secrets:
-   - GH_TOKEN with read/write access to workflows
-   - K8S_RUNNER_TOKEN, Kubernetes self-hosted runner secret
+   - GH_TOKEN with read/write access to workflows for Kubernetes self-hosted runner secret
 2. Create GitHub environment `demo`
 3. Create following GitHub secrets  under `demo` environment:
    - ENCRYPTION_KEY, `/data` partition encryption key, store secret to password manager for future usage

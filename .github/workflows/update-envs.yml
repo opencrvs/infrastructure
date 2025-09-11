@@ -17,29 +17,49 @@ jobs:
         with:
             token: ${{ secrets.GH_TOKEN }}
 
-      - name: Extract inventory names
-        id: extract
+      - name: Extract available infrastructure names
+        id: extract_infrastructure
         run: |
-          ENVIRONMENTS=(`find infrastructure/server-setup/inventory -type f -name "*.yml" -exec basename {} .yml \;`)
+          INFRA_ENVIRONMENTS=(`find infrastructure/server-setup/inventory -type f -name "*.yml" -exec basename {} .yml \;`)
+          echo "env_list=${INFRA_ENVIRONMENTS[@]}" >> "$GITHUB_OUTPUT"
+          echo "List of existing infrastructure configurations:"
+          echo "${INFRA_ENVIRONMENTS[@]}"
+      - name: Extract available environment names
+        id: extract_environment
+        run: |
+          ENVIRONMENTS=(`ls -1 environments`)
           echo "env_list=${ENVIRONMENTS[@]}" >> "$GITHUB_OUTPUT"
+          echo "List of existing environment configurations:"
           echo "${ENVIRONMENTS[@]}"
-      - name: Update workflows
+      - name: Update workflows with new infrastructure configurations
         run: |
           workflows=(
             ".github/workflows/provision.yml"
-            ".github/workflows/deploy-dependencies.yml"
-            ".github/workflows/deploy-opencrvs.yml"
           )
           path=".on.workflow_dispatch.inputs.environment.options"
 
-          IFS=' ' read -r -a envs <<< "${{ steps.extract.outputs.env_list }}"
+          IFS=' ' read -r -a envs <<< "${{ steps.extract_infrastructure.outputs.env_list }}"
           list=$(printf '"%s", ' "${envs[@]}")
           list="[${list%, }]"
           for wf in "${workflows[@]}"; do
             echo "Updating $wf with: ${list}"
             yq e "$path = $list" "$wf" -i
           done
+      - name: Update workflows with new environment configurations
+        run: |
+          workflows=(
+            ".github/workflows/deploy-dependencies.yml"
+            ".github/workflows/deploy-opencrvs.yml"
+          )
+          path=".on.workflow_dispatch.inputs.environment.options"
 
+          IFS=' ' read -r -a envs <<< "${{ steps.extract_environment.outputs.env_list }}"
+          list=$(printf '"%s", ' "${envs[@]}")
+          list="[${list%, }]"
+          for wf in "${workflows[@]}"; do
+            echo "Updating $wf with: ${list}"
+            yq e "$path = $list" "$wf" -i
+          done
       - name: Show diff
         run: git diff
       - name: Commit changes
