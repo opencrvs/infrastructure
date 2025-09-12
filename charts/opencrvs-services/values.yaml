@@ -136,7 +136,6 @@ mongodb:
       user: events
       roles: "[{ role: 'readWrite', db: 'events' }, {role: 'read', db: 'user-mgnt'}]"
 
-# TODO: Implement
 postgres:
   # Postgres hostname configuration
   host: postgres-0.postgres.opencrvs-deps-dev.svc.cluster.local

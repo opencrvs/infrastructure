@@ -1,0 +1,109 @@
+name: Sync GitHub env to Kubernetes
+run-name: Sync GitHub env to Kubernetes for ${{ inputs.environment }}
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "demo"
+        type: choice
+        options:
+          - demo
+      mapping_file:
+        description: "Secrets mapping template"
+        default: "opencrvs"
+        type: choice
+        options:
+          - opencrvs
+          - deps     
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        default: demo
+
+jobs:
+
+  sync-env:
+    environment: ${{ inputs.environment }}
+    runs-on:
+      - self-hosted
+      - k8s
+      - ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Export all secrets and environment variables
+        run: |
+            # Create a temporary file for environment variables
+            ENV_FILE=$(mktemp)
+            jq -n -r '
+                [${{ toJSON(secrets) }}, ${{ toJSON(vars) }}] 
+                | add
+                | to_entries
+                | map(select(.value | test("\n") | not))
+                | map("\(.key)=\"\(.value)\"")
+                | .[]
+            ' > $ENV_FILE
+
+            echo env_file=$ENV_FILE >> $GITHUB_ENV
+            cat $ENV_FILE
+      - name: Preprocess mapping into Secret YAMLs
+        env:
+          mapping_file: ${{ inputs.mapping_file || 'opencrvs' }}
+        run: |
+          set -euo pipefail
+          mkdir -p k8s-secrets
+
+          mapping_file=".github/TEMPLATES/secret-mapping-${mapping_file}.yml"
+
+          # Iterate over all kubernetes secret names in mapping
+          for secret_name in $(yq e 'keys | .[]' "$mapping_file"); do
+            echo "🔧 Generating Secret: $secret_name"
+
+            {
+              echo "apiVersion: v1"
+              echo "kind: Secret"
+              echo "metadata:"
+              echo "  name: $secret_name"
+              echo "type: Opaque"
+              echo "stringData:"
+              for key in $(yq e ".\"$secret_name\"[]" "$mapping_file"); do
+                if echo "$mapping" | grep -q ":"; then
+                  github_var=$(echo "$mapping" | cut -d: -f1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                  k8s_var=$(echo "$mapping" | cut -d: -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                else
+                  github_var="$mapping"
+                  k8s_var="$mapping"
+                fi
+                value=$(grep "^$github_var=" "$env_file" | cut -d= -f2- || true)
+                if [ -n "$value" ]; then
+                  echo "  $k8s_var: $value"
+                else
+                  echo "⚠️  Warning: $github_var not found in env_file → setting $k8s_var as empty" >&2
+                  echo "  $k8s_var: ''"
+                fi
+              done
+            } > "k8s-secrets/$secret_name.yaml"
+          done
+
+          echo "✅ Generated manifests:"
+          ls -l k8s-secrets
+
+      - name: Apply secrets to Kubernetes
+        env:
+          namespace: opencrvs-${{ inputs.environment }}
+        run: |
+          set -euo pipefail
+          for f in k8s-secrets/*.yaml; do
+            echo "🚀 Applying $f"
+            yq eval . "$f" > /dev/null && echo "✅ $f is valid YAML" || echo "❌ $f has YAML errors"
+            kubectl apply -n $namespace -f "$f"
+          done
+
+      - name: Cleanup secrets and variables
+        if: always()
+        run: |
+          rm -fv $env_file
+          rm -fvr k8s-secrets
+
