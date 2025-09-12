@@ -11,6 +11,8 @@ on:
         type: string
       reset:
         type: boolean
+      deploy_mosip:
+        type: boolean
   workflow_dispatch:
     inputs:
       core-image-tag:
@@ -31,6 +33,11 @@ on:
           - dev
       reset:
         description: "Reset environment after deploy"
+        required: false
+        default: false
+        type: boolean
+      deploy_mosip:
+        description: "Deploy MOSIP integration"
         required: false
         default: false
         type: boolean
@@ -61,10 +68,11 @@ jobs:
           echo "base_ref: ${{ github.base_ref }}"
           echo "branch: ${BRANCH}"
       - name: Deploy OpenCRVS MOSIP API
+        if: inputs.deploy_mosip
         run: |
           helm upgrade --install mosip-api oci://ghcr.io/opencrvs/opencrvs-mosip \
           --namespace "opencrvs-${ENV}" \
-          -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/${{ github.ref_name }}/examples/${ENV}/mosip-api/values.yaml \
+          -f environments/${ENV}/mosip-api/values.yaml \
           --set hostname=${{ vars.DOMAIN }} \
           --create-namespace \
           --atomic
@@ -89,7 +97,7 @@ jobs:
           helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
             --timeout 15m \
             --namespace "opencrvs-${ENV}" \
-            -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/${{ github.ref_name }}/examples/${ENV}/opencrvs-services/values.yaml \
+            -f environments/${ENV}/opencrvs-services/values.yaml \
             --create-namespace \
             --atomic \
             --wait \
