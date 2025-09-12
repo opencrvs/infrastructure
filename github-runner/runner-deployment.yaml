@@ -13,6 +13,8 @@ spec:
       image: ghcr.io/opencrvs/opencrvs-github-runner:latest
       labels:
         - self-hosted
+        - k8s
+        - demo
       env:
         - name: DOCKER_ENABLED
           value: "true"

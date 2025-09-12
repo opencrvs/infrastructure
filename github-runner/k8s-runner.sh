@@ -2,6 +2,8 @@
 # Reference documentation page: Quickstart for Actions Runner Controller
 # https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners-with-actions-runner-controller/quickstart-for-actions-runner-controller
 
+SCRIPT_DIR=$(dirname $0)
+
 [ "$GITHUB_PAT" == "" ] && \
   echo "Please add GitHub Personal access token as environment variable GITHUB_PAT before running this script" && exit 1
 [ "$GIT_REPOSITORY" == "" ] && \
@@ -29,7 +31,7 @@ helm upgrade --install actions-runner-controller actions-runner-controller/actio
     --set authSecret.github_token=${GITHUB_PAT}
 
 echo "👷 Creating runner deployment in namespace "
-sed "s#REPOSITORY_PLACEHOLDER#$GIT_REPOSITORY#" github-runner/runner-deployment.yaml | kubectl apply -f -
+sed "s#REPOSITORY_PLACEHOLDER#$GIT_REPOSITORY#" ${SCRIPT_DIR}/runner-deployment.yaml | kubectl apply -f -
 
 echo "🔒 Apply all required permissions for self-hosted runner service account"
-kubectl apply -f service-account.yaml
+kubectl apply -f ${SCRIPT_DIR}/service-account.yaml
