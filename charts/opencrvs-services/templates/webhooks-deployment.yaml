@@ -54,8 +54,6 @@ spec:
               value: http://hearth.{{ .Release.Namespace }}.svc.cluster.local:3447/fhir
             - name: REDIS_HOST
               value: {{ .Values.redis.host | quote }}
-            - name: QA_ENV
-              value: "false"
             - name: AUTH_URL
               value: http://auth.{{ .Release.Namespace }}.svc.cluster.local:4040
             - name: CERT_PUBLIC_KEY_PATH
