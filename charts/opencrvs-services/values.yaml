@@ -216,8 +216,8 @@ env:
 
 # OpenCRVS core image tag:
 image:
-  # FIXME: Put stable release version 
-  tag: develop
+  # FIXME: Put stable release version
+  tag: 391c964
 
 # Per service configuration:
 auth:
@@ -249,9 +249,10 @@ config:
 
 countryconfig:
   image:
-    name: opencrvs/ocrvs-countryconfig
+    # FIXME: put opencrvs/ocrvs-countryconfig
+    name: opencrvs/ocrvs-farajaland
     # FIXME: Put stable release version
-    tag: develop
+    tag: 88c0e07
   replicas: 1
   port: 3040
   env:
