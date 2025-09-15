@@ -1,17 +1,5 @@
 chart_dev_mode: true
-# All OpenCRVS services will be available under domain:
-hostname: opencrvs.localhost
 
-# Access OpenCRVS services at http://opencrvs.localhost
-# If SSL is enabled, You need to accept SSL Certificate on localhost for multiple endpoints:
-# - login
-# - register
-# - countryconfig
-# - config
-# - client
-# - ...
-# That makes it easier to test the application locally without SSL
-# On local environment SSL is disabled by default:
 ingress:
   ssl_enabled: false
 
@@ -33,24 +21,3 @@ pdb:
 env:
   LOG_LEVEL: debug 
   MINIO_BUCKET: "ocrvs"
-
-# OpenCRVS core image tag:
-image:
-  tag: develop
-
-# FIXME: drop section after testing
-config:
-  resources:
-    memoryRequest: "2Gi"
-    cpuRequest: "250m"
-    memoryLimit: "2Gi"
-    cpuLimit: "2"
-
-countryconfig:
-  image:
-    # Replace countryconfig with farajaland to test data
-    # name: opencrvs/ocrvs-farajaland
-    name: opencrvs/ocrvs-countryconfig
-    # tag: develop
-    # tag: ec53c12
-    tag: local
