@@ -1,10 +1,6 @@
 ingress:
   ssl_enabled: false
 
-# On local environment services are exposed at NodePort as well and are available from Tilt
-# To access service you need to click on the service name in Tilt UI:
-service_type: LoadBalancer
-
 # Horizontal Pod Autoscaler (HPA) configuration:
 # Disabled by default for local environment.
 hpa:
