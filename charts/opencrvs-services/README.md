@@ -8,9 +8,6 @@ Quickstart scenario allows to run OpenCRVS locally on kubernetes cluster like do
 
 > NOTE: Before running commands make sure `helm` and `kubectl` are installed and kubernetes context is set to local cluster.
 
-
-After installation visit http://opencrvs.localhost
-
 **1. Install Traefik Ingress Controller**
 
 ```
@@ -28,16 +25,17 @@ OpenCRVS requires supporting services (MongoDB, Postgres, MinIO, InfluxDB, Elast
 helm upgrade --install opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart \
     --namespace "opencrvs-deps-dev" \
     --create-namespace \
-    --set hostname=opencrvs.localhost \
     --atomic \
     -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/examples/localhost/dependencies/values-dev.yaml
 ```
 
 **3. Install OpenCRVS Chart**
 
+> NOTE: Timeout (`--timeout`) is set to 1 hour to avoid helm install failure on slow internet connection.
+
 ```
 helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
-    --timeout 15m \
+    --timeout 1h \
     --namespace "opencrvs-dev" \
     --create-namespace \
     --atomic \
@@ -60,46 +58,13 @@ helm get values opencrvs --namespace "opencrvs-dev" \
     | kubectl apply --namespace "opencrvs-dev" -f -
 ```
 
-<!--
-# Prerequisites
+**5. After installation visit http://opencrvs.localhost**
 
-
-> TODO: Do we need this section?
-
-Before installing OpenCRVS using Helm, ensure you have the following:
-
-
+> ➡️ Next steps:
+> - Follow up step by step single node installation guide with GitHub Actions workflow, see [here](../../examples/dev/README.md)
+> - Read more about advanced configurations options available here and for [Dependencies helm chart](../dependencies/README.md)
 
 ---
-
-## 🛠 Prerequisites
-
-Before installing OpenCRVS using Helm, ensure you have the following:
-
-- **A Kubernetes Cluster:**  
-  - Kubernetes version 1.21 or higher (lower versions may work but are not tested).
-  - Sufficient resources to run OpenCRVS and dependencies (recommend at least 4 CPUs, 8Gi RAM; adjust for production deployments).
-
-- **kubectl Installed:**  
-  - [kubectl](https://kubernetes.io/docs/tasks/tools/) configured to access your cluster.
-
-- **Helm 3.x Installed:**  
-  - [Install Helm](https://helm.sh/docs/intro/install/).
-
-- **Persistent Volume Provisioner:**  
-  - Your Kubernetes cluster should support dynamic persistent volume provisioning for MongoDB, MinIO, etc.
-
-- **Traefik Ingress Controller:**  
-  - OpenCRVS requires an Ingress controller for HTTP/S routing.  
-  - [Traefik](https://doc.traefik.io/traefik/) is recommended; see Quickstart for installation steps.
-
-- **(Optional, Recommended) DNS Access:**  
-  - You'll need to configure DNS to route your OpenCRVS hostname to the ingress controller's external IP.
-
-- **OpenCRVS Optional Dependencies:**  
-  - If you wish to bring your own MongoDB, MinIO, Elasticsearch, Redis, or InfluxDB, ensure they are already deployed and accessible to your cluster.
-  - Otherwise, install the provided `opencrvs-deps` chart as shown in the Quickstart.
--->
 
 # Configuration options
 
@@ -431,12 +396,13 @@ OpenCRVS has more then 10 microservices that require authentication to multiple 
 
 Table contains list of required secrets for each `auth_mode` grouped by datastore:
 
-| Datastore     | auth_mode: auto        | auth_mode: use_secret |
-|-------------- |------------------------|-----------------------|
-| MongoDB       | admin_user_secret_name | urls_secret           |
-| MinIO         | not supported          | users_secret          |
-| Elasticsearch | admin_user_secret_name | urls_secret           |
-| Redis         | not supported          | users_secret          |
+| Datastore     | auth_mode: auto        | default secret name      | auth_mode: use_secret | default secret name         |
+|-------------- |------------------------|--------------------------|-----------------------|-----------------------------|
+| MongoDB       | admin_user_secret_name | mongodb-admin-user       | urls_secret           | mongodb-urls                |
+| Postgres      | admin_user_secret_name | postgres-admin-user      | urls_secret           | postgres-urls               |
+| Elasticsearch | admin_user_secret_name | elasticsearch-admin-user | urls_secret           | elasticsearch-opencrvs-urls |
+| MinIO         | not supported          |                          | users_secret          | minio-opencrvs-users        |
+| Redis         | not supported          |                          | users_secret          | redis-opencrvs-users        |
 
 ## Secrets specification
 
@@ -663,13 +629,7 @@ Summary:
 
 # Data maintenance jobs
 
-## Backup
-
-TODO
-
-## Restore
-
-TODO
+> NOTE: Databases backup and restore configuration is described at [Dependencies backup](../dependencies/README.md#backup-configuration) and [Dependencies restore](../dependencies/README.md#restore-configuration)
 
 ## Migration
 
@@ -742,11 +702,11 @@ When deploying OpenCRVS with MongoDB authentication enabled (`auth_mode: auto`),
 Following table shows list of available parameters:
 
 | Parameter                | Type    | Default | Description                                                                                                                                                                                                                   |
-|--------------------------|---------|----|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| databases                | list    | See values.yaml | List of databases and users to create when authentication is enabled (`auth_mode: auto`). Each item supports the following fields:                                       |
-| databases[].prefix       | string  | -//- | Prefix used to generate environment variable names for the database, user, password, and roles.                                                                                        |
-| databases[].db           | string  | -//- |  Name of the MongoDB database to create.                                                                                                                                                |
-| databases[].user         | string  | -//- | Name of the MongoDB user to create and assign to the database.                                                                                                                         |
+|--------------------------|---------|------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| databases                | list    | See values.yaml | List of databases and users to create when authentication is enabled (`auth_mode: auto`). Each item supports the following fields:                                   |
+| databases[].prefix       | string  | -//- | Prefix used to generate environment variable names for the database, user, password, and roles.                                                                                 |
+| databases[].db           | string  | -//- |  Name of the MongoDB database to create.                                                                                                                                        |
+| databases[].user         | string  | -//- | Name of the MongoDB user to create and assign to the database.                                                                                                                  |
 | databases[].roles        | string  | -//- | (Optional) JSON string specifying roles to assign to the user. If not provided, the user is granted the `readWrite` role on the specified database by default. When specifying custom roles, ensure to include `readWrite` or `read` for the database defined at `databases[].db` field.                        |
 
 **Example:**
