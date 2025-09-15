@@ -1,3 +1,6 @@
+# FIXME: Feature to Temporary disable dashboards on m1
+# Defaults: dashboards.enabled = true
+{{- if .Values.dashboards.enabled }}
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
@@ -99,3 +102,6 @@ spec:
 {{- include "hpa-helper" (dict "service_name" "dashboards" "Values" .Values) }}
 
 {{- include "pdb-helper" (dict "service_name" "dashboards" "Values" .Values) }}
+
+# FIXME: Feature to Temporary disable dashboards on m1
+{{- end }}

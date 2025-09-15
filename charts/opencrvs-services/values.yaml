@@ -273,6 +273,7 @@ config:
     SMTP_SECURE: "false"
     SMTP_USERNAME: apikey
 dashboards:
+  enabled: true
   use_default_credentials: true
   replicas: 1
   port: 4444

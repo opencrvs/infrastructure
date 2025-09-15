@@ -14,3 +14,8 @@ hpa:
 # Disabled by default for local environment.
 pdb:
   enabled: false
+
+# Dashboards is disabled by default to allow easy deployment on Apple Silicon
+# If you are using x86 device, feel free to enable:
+dashboards:
+  enabled: false
