@@ -256,7 +256,6 @@ config:
   secrets: {}
 
   replicas: 1
-  port: 3040
   env:
     ALERT_EMAIL: kibana-alerts-aaaafy3oysoklmlsqcjxad7rfi@opencrvsworkspace.slack.com
     CHECK_INVALID_TOKEN: true
