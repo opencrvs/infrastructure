@@ -225,37 +225,25 @@ countryconfig:
     # FIXME: Put stable release version
     tag: v1.9.0-beta-1
   port: 3040
-  replicas: 1
 
 # Per service configuration:
 auth:
-  replicas: 1
   port: 4040
-  hpa:
-    maxReplicas: 10
 
 client:
-  replicas: 1
   port: 3000
   env:
     DECLARED_DECLARATION_SEARCH_QUERY_COUNT: 100
 
 # `config` Microservice configuration example:
 config:
-  replicas: 1
   port: 2021
-  hpa:
-    minReplicas: 1
-    maxReplicas: 1
-  # Service level environment variables
-  env:
-    DOMAIN: "*"
-    CHECK_INVALID_TOKEN: true
+
+
   # Mapping for external secrets goes here:
   # README.md for more details
   secrets: {}
-
-  replicas: 1
+  # Service level environment variables
   env:
     ALERT_EMAIL: kibana-alerts-aaaafy3oysoklmlsqcjxad7rfi@opencrvsworkspace.slack.com
     CHECK_INVALID_TOKEN: true
@@ -275,11 +263,7 @@ config:
 dashboards:
   enabled: true
   use_default_credentials: true
-  replicas: 1
   port: 4444
-  hpa:
-    minReplicas: 1
-    maxReplicas: 1
   env:
     OPENCRVS_METABASE_MAP_NAME: Full country
     OPENCRVS_METABASE_MAP_REGION_KEY: State
@@ -300,11 +284,9 @@ data_seeder:
 
 
 documents:
-  replicas: 1
   port: 9050
 
 gateway:
-  replicas: 1
   port: 7070
   env:
     CHECK_INVALID_TOKEN: "true"
@@ -316,11 +298,9 @@ gateway:
     LANGUAGES: "en,fr"
 
 login:
-  replicas: 1
   port: 3020
 
 metrics:
-  replicas: 1
   port: 1050
 
 notification:
@@ -330,24 +310,19 @@ notification:
   port: 2020
 
 search:
-  replicas: 1
   port: 9090
 
 user_mgnt:
-  replicas: 1
   port: 3030
   
 
 webhooks:
-  replicas: 1
   port: 2525
 
 workflow:
-  replicas: 1
   port: 5050
 
 events:
-  replicas: 1
   port: 5555
 
 scheduler: {}

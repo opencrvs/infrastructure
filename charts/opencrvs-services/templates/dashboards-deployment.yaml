@@ -38,7 +38,7 @@ metadata:
     app: dashboards
   name: dashboards
 spec:
-  replicas: {{ .Values.dashboards.replicas }}
+  replicas: {{ .Values.dashboards.replicas | default 1 }}
   selector:
     matchLabels:
       app: dashboards

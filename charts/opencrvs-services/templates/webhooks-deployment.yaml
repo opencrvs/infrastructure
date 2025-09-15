@@ -36,7 +36,7 @@ metadata:
     service_name: opencrvs_webhooks
   name: webhooks
 spec:
-  replicas: {{ .Values.webhooks.replicas }}
+  replicas: {{ .Values.webhooks.replicas | default 1 }}
   selector:
     matchLabels:
       app: webhooks

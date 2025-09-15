@@ -37,7 +37,7 @@ metadata:
     service_name: opencrvs_gateway
   name: gateway
 spec:
-  replicas: {{ .Values.gateway.replicas }}
+  replicas: {{ .Values.gateway.replicas | default 1 }}
   selector:
     matchLabels:
       app: gateway
