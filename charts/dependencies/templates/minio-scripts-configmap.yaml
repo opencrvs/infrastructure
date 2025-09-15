@@ -1,4 +1,4 @@
-{{- if or .Values.backup.enabled .Values.restore.enabled .Values.data_cleanup.enabled }}
+{{- if or .Values.backup.enabled .Values.restore.enabled }}
 apiVersion: v1
 data:
 {{- range $path, $file := .Files.Glob "files/minio/*" }}
