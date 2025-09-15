@@ -7,7 +7,7 @@ metadata:
     service_name: opencrvs_notification
   name: notification
 spec:
-  replicas: {{ .Values.notification.replicas }}
+  replicas: {{ .Values.notification.replicas | default 1 }}
   selector:
     matchLabels:
       app: notification

@@ -61,7 +61,7 @@ metadata:
     service_name: opencrvs_countryconfig
   name: countryconfig
 spec:
-  replicas: {{ .Values.countryconfig.replicas }}
+  replicas: {{ .Values.countryconfig.replicas | default 1 }}
   selector:
     matchLabels:
       app: countryconfig

@@ -6,7 +6,7 @@ metadata:
     app: metrics
   name: metrics
 spec:
-  replicas:  {{ .Values.metrics.replicas }}
+  replicas:  {{ .Values.metrics.replicas | default 1 }}
   selector:
     matchLabels:
       app: metrics

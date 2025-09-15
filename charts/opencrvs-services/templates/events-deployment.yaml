@@ -36,7 +36,7 @@ metadata:
     service_name: opencrvs_events
   name: events
 spec:
-  replicas: {{ .Values.events.replicas }}
+  replicas: {{ .Values.events.replicas | default 1 }}
   selector:
     matchLabels:
       app: events

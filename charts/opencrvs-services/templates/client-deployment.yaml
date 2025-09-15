@@ -37,7 +37,7 @@ metadata:
     service_name: opencrvs_client
   name: client
 spec:
-  replicas: {{ .Values.client.replicas }}
+  replicas: {{ .Values.client.replicas | default 1 }}
   selector:
     matchLabels:
       app: client

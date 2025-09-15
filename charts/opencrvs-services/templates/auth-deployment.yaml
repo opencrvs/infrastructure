@@ -36,7 +36,7 @@ metadata:
     service_name: opencrvs_auth
   name: auth
 spec:
-  replicas: {{ .Values.auth.replicas }}
+  replicas: {{ .Values.auth.replicas | default 1 }}
   selector:
     matchLabels:
       app: auth

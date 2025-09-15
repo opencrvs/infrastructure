@@ -36,7 +36,7 @@ metadata:
     app: login
   name: login
 spec:
-  replicas: {{ .Values.login.replicas }}
+  replicas: {{ .Values.login.replicas | default 1 }}
   selector:
     matchLabels:
       app: login

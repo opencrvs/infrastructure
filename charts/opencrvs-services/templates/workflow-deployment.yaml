@@ -7,7 +7,7 @@ metadata:
     service_name: opencrvs_workflow
   name: workflow
 spec:
-  replicas: {{ .Values.workflow.replicas }}
+  replicas: {{ .Values.workflow.replicas | default 1 }}
   selector:
     matchLabels:
       app: workflow
