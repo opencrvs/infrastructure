@@ -200,7 +200,7 @@ resources:
 
 hearth:
   enabled: true
-
+  port: 3447
 # Global environment variables applied to
 # all OpenCRVS microservices (Kubernetes PODs):
 env:
