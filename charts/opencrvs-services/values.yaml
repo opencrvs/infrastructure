@@ -165,7 +165,7 @@ postgres:
 
 # Hostname for OpenCRVS application, without wildcard or subdomain.
 # All OpenCRVS services will be available under domain:
-hostname: opencrvs.org
+hostname: opencrvs.localhost
 
 
 ingress:
