@@ -225,6 +225,8 @@ countryconfig:
     name: opencrvs/ocrvs-farajaland
     # FIXME: Put stable release version
     tag: v1.9.0-beta-1
+  port: 3040
+  replicas: 1
 
 # Per service configuration:
 auth:
