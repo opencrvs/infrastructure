@@ -1,5 +1,3 @@
-chart_dev_mode: true
-
 ingress:
   ssl_enabled: false
 
@@ -16,8 +14,3 @@ hpa:
 # Disabled by default for local environment.
 pdb:
   enabled: false
-
-# Define the environment variables for the OpenCRVS services at global level.
-env:
-  LOG_LEVEL: debug 
-  MINIO_BUCKET: "ocrvs"

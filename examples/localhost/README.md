@@ -5,7 +5,7 @@
 helm upgrade --install traefik oci://ghcr.io/traefik/helm/traefik \
     --namespace traefik \
     --create-namespace \
-    -f traefik/values.yaml
+    -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/examples/localhost/traefik/values.yaml
 ```
 2. Install dependencies
 ```
@@ -14,7 +14,7 @@ helm upgrade --install opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencie
     --create-namespace \
     --set hostname=opencrvs.localhost \
     --atomic \
-    -f dependencies/values-dev.yaml
+    -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/examples/localhost/dependencies/values-dev.yaml
 ```
 3. Install OpenCRVS
 ```
@@ -23,8 +23,7 @@ helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
     --namespace "opencrvs-dev" \
     --create-namespace \
     --atomic \
-    --set hostname=opencrvs.localhost \
-    -f opencrvs-services/values.yaml
+    -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/examples/localhost/opencrvs-services/values-dev.yaml
 ```
 4. Seed data
 ```

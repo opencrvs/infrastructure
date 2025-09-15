@@ -4,7 +4,7 @@ This document describes OpenCRVS Helm chart configuration and provides explanati
 
 # 🚀 Quickstart
 
-Quickstart scenario allows to run OpenCRVS locally on kubernetes cluster like minikube.
+Quickstart scenario allows to run OpenCRVS locally on kubernetes cluster like docker-desktop or minikube.
 
 > NOTE: Before running commands make sure `helm` and `kubectl` are installed and kubernetes context is set to local cluster.
 
@@ -14,12 +14,10 @@ After installation visit http://opencrvs.localhost
 **1. Install Traefik Ingress Controller**
 
 ```
-helm repo add traefik https://traefik.github.io/charts
-helm repo update
-helm upgrade --install traefik traefik/traefik \
+helm upgrade --install traefik oci://ghcr.io/traefik/helm/traefik \
     --namespace traefik \
     --create-namespace \
-    -f examples/localhost/traefik/values.yaml
+    -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/examples/localhost/traefik/values.yaml
 ```
 
 **2. Install the OpenCRVS Dependencies Chart (Database & Storage Components)**
@@ -27,26 +25,40 @@ helm upgrade --install traefik traefik/traefik \
 OpenCRVS requires supporting services (MongoDB, Postgres, MinIO, InfluxDB, Elasticsearch, Redis):
 
 ```
-helm upgrade opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart \
-    --install \
+helm upgrade --install opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart \
     --namespace "opencrvs-deps-dev" \
-    -f examples/localhost/dependencies/values-dev.yaml \
-    --create-namespace
+    --create-namespace \
+    --set hostname=opencrvs.localhost \
+    --atomic \
+    -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/examples/localhost/dependencies/values-dev.yaml
 ```
 
 **3. Install OpenCRVS Chart**
 
 ```
-helm upgrade opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
-    --install \
+helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
+    --timeout 15m \
     --namespace "opencrvs-dev" \
-    -f examples/localhost/opencrvs-services/values.yaml \
     --create-namespace \
-    --set image.tag=v1.8.0 \
-    --set countryconfig.image.tag=v1.8.0
+    --atomic \
+    -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/examples/localhost/opencrvs-services/values-dev.yaml
 ```
 
 [Configuration options](#configuration-options) table gives brief overview of options available within helm chart. Copy and modify `examples/localhost/opencrvs-services/values.yaml` to suit your needs.
+
+**4. Seed data**
+
+Populate initial demo data
+
+```
+helm get values opencrvs --namespace "opencrvs-dev" \
+    | helm template -f - \
+        --set data_seed.enabled=true \
+        --namespace "opencrvs-dev" \
+        -s templates/data-seed-job.yaml \
+        oci://ghcr.io/opencrvs/opencrvs-services \
+    | kubectl apply --namespace "opencrvs-dev" -f -
+```
 
 <!--
 # Prerequisites
