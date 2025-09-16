@@ -23,7 +23,7 @@ Before starting the deployment, ensure the following requirements are met:
 
 **3. Networking and Domain Configuration**
 
-* The VM must have a **public IP address**, or ports **80** and **443** must be accessible.
+* The VM must have a **public IP address** and (or) ports **80** and **443** must be accessible.
 * A **valid domain name** must be configured and point to the VM.
 * Required DNS records:
 
@@ -68,8 +68,8 @@ The deployment package includes the following components:
   * Elastalert2
 
 * **OpenCRVS Services** deployed with **Farajaland data** and **MOSIP integration** enabled:
-  * Core packages version: `0f10027`
-  * Farajaland version: `3314a9a`
+  * Core packages version: `v1.9.0-beta-1`
+  * Farajaland version: `v1.9.0-beta-1`
   * MOSIP integration version: `latest`
 
 

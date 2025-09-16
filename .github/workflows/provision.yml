@@ -12,7 +12,6 @@ on:
           - dev
           - staging
           - qa
-          - backup
           - demo
       tags:
         description: 'Tags to apply to the provisioned resources'

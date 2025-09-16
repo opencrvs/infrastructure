@@ -1,5 +1,4 @@
 import { Octokit } from '@octokit/core'
-import { spawn } from 'child_process'
 import dotenv from 'dotenv'
 import kleur from 'kleur'
 import prompts, { PromptObject } from 'prompts'
@@ -17,35 +16,11 @@ import {
   updateVariable
 } from './github'
 
-import editor from '@inquirer/editor'
 import { readFileSync, writeFileSync } from 'fs'
-import { join } from 'path'
 import { error, info, log, success, warn } from './logger'
-import { verifyConnection } from './ssh'
 
 const notEmpty = (value: string | number) =>
   value.toString().trim().length > 0 ? true : 'Please enter a value'
-
-function runInteractiveShell(
-  command: string,
-  args: string[] = []
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const shell = spawn(command, args, { stdio: 'inherit' })
-
-    shell.on('close', (code) => {
-      if (code === 0) {
-        resolve(`Shell exited with code ${code}`)
-      } else {
-        reject(new Error(`Shell exited with code ${code}`))
-      }
-    })
-
-    shell.on('error', (err) => {
-      reject(err)
-    })
-  })
-}
 
 type Question<T extends string> = PromptObject<T> & {
   name: T
@@ -322,54 +297,6 @@ const dockerhubQuestions = [
     validate: notEmpty,
     initial: process.env.DOCKER_TOKEN,
     scope: 'REPOSITORY' as const
-  }
-]
-const sshQuestions = [
-  {
-    name: 'sshHost',
-    type: 'text' as const,
-    message:
-      'What is the target server IP address? (Note: For "production" environment with 2, 3 or 5 servers, this is the IP address of the manager server)',
-    valueType: 'VARIABLE' as const,
-    validate: notEmpty,
-    valueLabel: 'SSH_HOST',
-    initial: process.env.SSH_HOST,
-    scope: 'ENVIRONMENT' as const
-  },
-  {
-    name: 'sshPort',
-    type: 'number' as const,
-    message:
-      'What port number is used in establishing the SSH connection? This usually is the default 22. If you are an advanced user, and have set a different port, provide it here.',
-    valueType: 'VARIABLE' as const,
-    validate: notEmpty,
-    valueLabel: 'SSH_PORT',
-    initial: process.env.SSH_PORT ? parseInt(process.env.SSH_PORT) : 22,
-    scope: 'ENVIRONMENT' as const
-  },
-  {
-    name: 'sshArgs',
-    type: 'text' as const,
-    message:
-      'Specify any additional SSH arguments to be used when connecting to the target machine. For example, if you need to connect via a jump server, you can specify the jump server here.',
-    valueType: 'VARIABLE' as const,
-    valueLabel: 'SSH_ARGS',
-    format: (value: string) => value.trim(),
-    initial: process.env.SSH_ARGS,
-    scope: 'ENVIRONMENT' as const
-  }
-]
-
-const sshKeyQuestions = [
-  {
-    name: 'sshKey',
-    type: 'text' as const,
-    message: `Paste the SSH private key for SSH_USER (provision) here:`,
-    valueType: 'SECRET' as const,
-    validate: notEmpty,
-    valueLabel: 'SSH_KEY',
-    initial: process.env.SSH_KEY,
-    scope: 'ENVIRONMENT' as const
   }
 ]
 
@@ -723,14 +650,6 @@ const derivedVariables = [
     scope: 'REPOSITORY'
   },
   {
-    name: 'SSH_USER',
-    valueLabel: 'SSH_USER',
-    valueType: 'SECRET',
-    type: 'disabled',
-    scope: 'ENVIRONMENT',
-    value: 'provision'
-  },
-  {
     name: 'BACKUP_ENCRYPTION_PASSPHRASE',
     valueLabel: 'BACKUP_ENCRYPTION_PASSPHRASE',
     valueType: 'SECRET',
@@ -763,9 +682,8 @@ const metabaseAdminQuestions = [
 
 ALL_QUESTIONS.push(
   ...githubTokenQuestion,
-  ...dockerhubQuestions,
-  ...sshQuestions,
-  ...sshKeyQuestions,
+  // Temporarily disable Docker Hub questions
+  // ...dockerhubQuestions,
   ...infrastructureQuestions,
   ...countryQuestions,
   ...databaseAndMonitoringQuestions,
@@ -786,7 +704,7 @@ ALL_QUESTIONS.push(
 const SPECIAL_NON_APPLICATION_ENVIRONMENTS = ['jump', 'backup']
 
 ;(async () => {
-  const { type: environment } = await prompts<string>(
+  const { type: environment_type } = await prompts<string>(
     [
       {
         name: 'type',
@@ -794,21 +712,36 @@ const SPECIAL_NON_APPLICATION_ENVIRONMENTS = ['jump', 'backup']
         scope: 'ENVIRONMENT' as const,
         message: 'Purpose for the environment?',
         choices: [
-          { title: 'Quality assurance (no PII data)', value: 'qa' },
+          { title: 'Development/Quality assurance/Testing (no PII data)', value: 'non-prod' },
           {
             title: 'Staging (hosts PII data, no backups)',
-            value: 'staging'
+            value: 'production'
           },
-          { title: 'Backup', value: 'backup' },
           {
             title: 'Production (hosts PII data, requires frequent backups)',
             value: 'production'
           },
-          { title: 'Jump / Bastion', value: 'jump' },
-          { title: 'Other', value: 'development' }
         ]
       }
     ].map(questionToPrompt)
+  )
+  
+  const { environment } = await prompts(
+     [
+          {
+      name: 'environment',
+      type: 'text' as const,
+      message: 'What is the name of your environment?',
+      validate: notEmpty,
+      initial: process.env.ENV,
+      scope: 'REPOSITORY' as const
+    }
+    ].map(questionToPrompt),
+    {
+      onCancel: () => {
+        process.exit(1)
+      }
+    }
   )
 
   // Read users .env file based on the environment name they gave above, e.g. .env.production
@@ -892,86 +825,6 @@ const SPECIAL_NON_APPLICATION_ENVIRONMENTS = ['jump', 'backup']
     log(kleur.green('\nSuccessfully logged in to Github\n'))
   }
 
-  log('\n', kleur.bold().underline('SSH'))
-  const { sshPort, sshArgs, sshHost } = await promptAndStoreAnswer(
-    environment,
-    sshQuestions,
-    existingValues
-  )
-
-  const SSH_KEY_EXISTS = existingValues.find(
-    (value) => value.name === 'SSH_KEY' && value.scope === 'ENVIRONMENT'
-  )
-
-  if (!SSH_KEY_EXISTS) {
-    const sshKey = await editor({
-      message: `Paste the SSH private key for ${kleur.cyan(
-        'SSH_USER (provision)'
-      )} here:`
-    })
-
-    const formattedSSHKey = sshKey.endsWith('\n') ? sshKey : sshKey + '\n'
-    ALL_ANSWERS.push({ sshKey: formattedSSHKey })
-    /*
-     * ssh2 library for Node.js doesn't support the same command line parameters
-     * as we store in the secrets, thus we cannot reliably do the connection verification here.
-     */
-    if (!sshArgs) {
-      info('Testing SSH connection...')
-      try {
-        await verifyConnection(sshHost, sshPort, 'provision', formattedSSHKey)
-      } catch (err) {
-        error(
-          'Failed to connect to the target server.',
-          'Please try again.',
-          'If connecting to the server requires a VPN connection, please connect your VPN client before trying again.',
-          'If your connection is via a jump server, please specify the jump server in the SSH_ARGS variable.'
-        )
-        error('Reason:', err.message)
-        process.exit(1)
-      }
-      success(
-        "Successfully connected to the target server's SSH. Now closing connection..."
-      )
-    }
-  }
-
-  log('\n', kleur.bold().underline('Docker Hub'))
-
-  await promptAndStoreAnswer(environment, dockerhubQuestions, existingValues)
-
-  if (SPECIAL_NON_APPLICATION_ENVIRONMENTS.includes(environment)) {
-    try {
-      await runInteractiveShell(`sh`, [
-        join(__dirname, './update-known-hosts.sh'),
-        sshHost,
-        sshPort
-      ])
-    } catch (error) {
-      warn(
-        'Failed to update hosts file. Notice that unknown domains will cause a "host key verification failed" error on deployment.'
-      )
-    }
-  } else {
-    log('\n', kleur.bold().underline('Server setup'))
-    const { domain } = await promptAndStoreAnswer(
-      environment,
-      infrastructureQuestions,
-      existingValues
-    )
-
-    try {
-      await runInteractiveShell(`sh`, [
-        join(__dirname, './update-known-hosts.sh'),
-        domain,
-        sshPort
-      ])
-    } catch (error) {
-      warn(
-        'Failed to update hosts file. Notice that unknown domains will cause a "host key verification failed" error on deployment.'
-      )
-    }
-
     log('\n', kleur.bold().underline('Databases & monitoring'))
 
     await promptAndStoreAnswer(
@@ -1028,7 +881,7 @@ const SPECIAL_NON_APPLICATION_ENVIRONMENTS = ['jump', 'backup']
     if (notificationTransport.includes('sms')) {
       await promptAndStoreAnswer(environment, smsQuestions, existingValues)
     }
-  }
+  
 
   const allAnswers = ALL_ANSWERS.reduce((acc, answer) => {
     return { ...acc, ...answer }
@@ -1073,21 +926,9 @@ const SPECIAL_NON_APPLICATION_ENVIRONMENTS = ['jump', 'backup']
       ),
       scope: 'REPOSITORY' as const
     },
-    {
-      name: 'SSH_USER',
-      type: 'SECRET' as const,
-      scope: 'ENVIRONMENT' as const,
-      value: 'provision',
-      didExist: findExistingValue(
-        'SSH_USER',
-        'SECRET',
-        'ENVIRONMENT',
-        existingValues
-      )
-    }
   ]
 
-  if (['production', 'staging'].includes(environment)) {
+  if ('production' === environment_type) {
     derivedUpdates.push({
       name: 'BACKUP_ENCRYPTION_PASSPHRASE',
       type: 'SECRET' as const,
@@ -1247,7 +1088,7 @@ const SPECIAL_NON_APPLICATION_ENVIRONMENTS = ['jump', 'backup']
     {
       type: 'VARIABLE' as const,
       name: 'ACTIVATE_USERS',
-      value: ['production', 'staging'].includes(environment) ? 'false' : 'true',
+      value: 'production' === environment_type ? 'false' : 'true',
       didExist: findExistingValue(
         'ACTIVATE_USERS',
         'VARIABLE',

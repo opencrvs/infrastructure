@@ -211,7 +211,7 @@ export async function createEnvironment(
       }
     )
     return true
-  } catch (err) {
+  } catch (err: any) {
     error(
       `Cannot create environment: [${err.status}] ${err.response.data.message}`
     )

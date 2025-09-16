@@ -99,7 +99,6 @@ jobs:
             | kubectl apply -n opencrvs-${ENV} -f - \
             || echo "Secret $secret doesn't exist in opencrvs-deps-${ENV} namespace"
           done
-
       - name: Deploy with Helm
         run: |
           helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
