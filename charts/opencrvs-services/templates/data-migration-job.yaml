@@ -10,7 +10,7 @@ metadata:
     # Move this job to post-deploy hooks
   labels:
     app: migration
-  name: data-migration
+  name: {{ .Values.data_migration.job_name | default "data-migration" }}
 spec:
   template:
     metadata:
