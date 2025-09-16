@@ -1,3 +1,5 @@
+node_modules/
+.env.*
 dump.temporal.env
 .terraform
 .terraform.lock.hcl

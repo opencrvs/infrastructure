@@ -22,11 +22,15 @@ on:
       environment:
         type: string
         default: demo
+      mapping_file:
+        type: string
+        default: opencrvs 
 
 jobs:
-
   sync-env:
     environment: ${{ inputs.environment }}
+    env:
+      mapping_file: ${{ inputs.mapping_file || 'opencrvs' }}
     runs-on:
       - self-hosted
       - k8s
@@ -49,8 +53,6 @@ jobs:
             echo env_file=$ENV_FILE >> $GITHUB_ENV
             cat $ENV_FILE
       - name: Preprocess mapping into Secret YAMLs
-        env:
-          mapping_file: ${{ inputs.mapping_file || 'opencrvs' }}
         run: |
           set -euo pipefail
           mkdir -p k8s-secrets
@@ -99,10 +101,15 @@ jobs:
           ls -l k8s-secrets
 
       - name: Apply secrets to Kubernetes
-        env:
-          namespace: opencrvs-${{ inputs.environment }}
         run: |
           set -euo pipefail
+          if [ "$mapping_file" = "opencrvs" ]; then
+            namespace="opencrvs-${{ inputs.environment || 'demo' }}"
+          else
+            namespace="opencrvs-deps-${{ inputs.environment || 'demo' }}"
+          fi
+          echo "ℹ️  Using namespace: $namespace"
+
           for f in k8s-secrets/*.yaml; do
             echo "🚀 Applying $f"
             yq eval . "$f" > /dev/null && echo "✅ $f is valid YAML" || echo "❌ $f has YAML errors" && cat "$f"
@@ -114,4 +121,3 @@ jobs:
         run: |
           rm -fv $env_file
           rm -fvr k8s-secrets
-
