@@ -1,10 +1,10 @@
-name: Provision Environment
+name: Provision Infrastructure
 run-name: "Provision ${{ inputs.environment }} (tag: ${{ inputs.tags }})"
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to provision'
+        description: 'Infrastructure to provision'
         required: true
         default: 'demo'
         type: choice
