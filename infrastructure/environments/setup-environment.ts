@@ -336,17 +336,17 @@ const infrastructureQuestions = [
     initial: process.env.DOMAIN,
     scope: 'ENVIRONMENT' as const
   },
-  {
-    name: 'replicas',
-    type: 'number' as const,
-    message:
-      'What is the number of servers? Note: This should be 1 for qa, staging and backup environments. For "production" environment server cluster should consists of 2, 3 or 5 servers.',
-    valueType: 'VARIABLE' as const,
-    validate: notEmpty,
-    valueLabel: 'REPLICAS',
-    initial: process.env.REPLICAS ? parseInt(process.env.REPLICAS, 10) : 1,
-    scope: 'ENVIRONMENT' as const
-  }
+  // {
+  //   name: 'replicas',
+  //   type: 'number' as const,
+  //   message:
+  //     'What is the number of servers? Note: This should be 1 for qa, staging and backup environments. For "production" environment server cluster should consists of 2, 3 or 5 servers.',
+  //   valueType: 'VARIABLE' as const,
+  //   validate: notEmpty,
+  //   valueLabel: 'REPLICAS',
+  //   initial: process.env.REPLICAS ? parseInt(process.env.REPLICAS, 10) : 1,
+  //   scope: 'ENVIRONMENT' as const
+  // },
 ]
 
 const databaseAndMonitoringQuestions = [
@@ -827,6 +827,11 @@ const SPECIAL_NON_APPLICATION_ENVIRONMENTS = ['jump', 'backup']
 
     log('\n', kleur.bold().underline('Databases & monitoring'))
 
+    await promptAndStoreAnswer(
+      environment,
+      infrastructureQuestions,
+      existingValues
+    )
     await promptAndStoreAnswer(
       environment,
       databaseAndMonitoringQuestions,
