@@ -126,6 +126,10 @@ spec:
               name: public-key
               subPath: public-key.pem
       restartPolicy: Always
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       volumes:
         - configMap:
             items:

@@ -630,6 +630,20 @@ const derivedVariables = [
     scope: 'ENVIRONMENT'
   },
   {
+    name: 'POSTGRES_USER',
+    valueLabel: 'POSTGRES_USER',
+    valueType: 'SECRET',
+    type: 'disabled',
+    scope: 'ENVIRONMENT'
+  },
+  {
+    name: 'POSTGRES_PASSWORD',
+    valueLabel: 'POSTGRES_PASSWORD',
+    valueType: 'SECRET',
+    type: 'disabled',
+    scope: 'ENVIRONMENT'
+  },
+  {
     name: 'SUPER_USER_PASSWORD',
     valueLabel: 'SUPER_USER_PASSWORD',
     valueType: 'SECRET',
@@ -684,7 +698,7 @@ const metabaseAdminQuestions = [
 ALL_QUESTIONS.push(
   ...githubTokenQuestion,
   // Temporarily disable Docker Hub questions
-  // ...dockerhubQuestions,
+  ...dockerhubQuestions,
   ...infrastructureQuestions,
   ...countryQuestions,
   ...databaseAndMonitoringQuestions,
@@ -697,12 +711,6 @@ ALL_QUESTIONS.push(
   ...metabaseAdminQuestions
 )
 
-/*
- * These environment only need a subset of the environment variables
- * as they are not used for application hosting
- */
-
-const SPECIAL_NON_APPLICATION_ENVIRONMENTS = ['jump', 'backup']
 
 ;(async () => {
   const { type: environment_type } = await prompts<string>(
@@ -825,6 +833,10 @@ const SPECIAL_NON_APPLICATION_ENVIRONMENTS = ['jump', 'backup']
   } else {
     log(kleur.green('\nSuccessfully logged in to Github\n'))
   }
+
+  log('\n', kleur.bold().underline('Docker Hub'))
+
+  await promptAndStoreAnswer(environment, dockerhubQuestions, existingValues)
 
     log('\n', kleur.bold().underline('Databases & monitoring'))
 
@@ -1238,9 +1250,9 @@ const SPECIAL_NON_APPLICATION_ENVIRONMENTS = ['jump', 'backup']
     }
   ]
 
-  if (!SPECIAL_NON_APPLICATION_ENVIRONMENTS.includes(environment)) {
-    derivedUpdates.push(...applicationServerUpdates)
-  }
+
+  derivedUpdates.push(...applicationServerUpdates)
+
 
   const updates = getAnswers(existingValues)
     .concat(

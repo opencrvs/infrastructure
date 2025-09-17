@@ -41,8 +41,8 @@ resources:
   memoryLimit: "2Gi"
   cpuLimit: "1"
 
-image:
-  tag: 0f10027
+imagePullSecrets:
+  - name: dockerhub-credentials
 
 dashboards:
   use_default_credentials: false

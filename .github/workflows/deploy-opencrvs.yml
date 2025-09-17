@@ -55,6 +55,7 @@ jobs:
       BRANCH: ${{ github.ref_name }}
       CORE_IMAGE_TAG: ${{ inputs.core-image-tag }}
       COUNTRYCONFIG_IMAGE_TAG: ${{ inputs.countryconfig-image-tag }}
+      COUNTRYCONFIG_IMAGE_NAME: ${{ secrets.DOCKERHUB_ACCOUNT || 'opencrvs' }}/${{ secrets.DOCKERHUB_REPO || 'ocrvs-farajaland'}}
     runs-on:
       - self-hosted
       - k8s
@@ -98,6 +99,7 @@ jobs:
             --wait-for-jobs \
             --set image.tag="$CORE_IMAGE_TAG" \
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
+            --set countryconfig.image.name="$COUNTRYCONFIG_IMAGE_NAME" \
             --set hostname=${{ vars.DOMAIN }}
       - name: Cleanup Helm Locks
         if: failure() || cancelled()

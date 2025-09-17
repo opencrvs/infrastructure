@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-
+import { log } from './logger'
 /**
  * Replace placeholders in file content.
  * Customize the replacements map to your needs.
@@ -36,6 +36,10 @@ export function copyChartsValues(env: string, replacements: Record<string, strin
         copyRecursive(path.join(src, item), path.join(dest, item));
       }
     } else {
+      if (fs.existsSync(dest)) {
+        log(`⚠️ Skipping existing file: ${dest}`);
+        return;
+      }
       // read file
       const content = fs.readFileSync(src, "utf8");
 
@@ -44,6 +48,7 @@ export function copyChartsValues(env: string, replacements: Record<string, strin
 
       // write updated file
       fs.writeFileSync(dest, updated, "utf8");
+      log(`✅ Created: ${dest}`);
     }
   }
 
@@ -65,12 +70,14 @@ export function generateInventory(env: string, number_of_servers: number, values
   const env_type_template = number_of_servers > 1 ? "multi-node" : "single-node";
   const templatePath = path.join(__dirname, "templates", "inventory", `${env_type_template}.yml`);
   const outputPath = path.join(__dirname, "..", "server-setup", "inventory", `${env}.yml`);
-
+  if (fs.existsSync(outputPath)) {
+    log(`⚠️ Skipping ${templatePath}, file already exists at ${outputPath}`);
+    return;
+  }
   let template = fs.readFileSync(templatePath, "utf-8");
   const updated = replacePlaceholders(template, values);
 
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, updated);
-
-  console.log(`Inventory file generated: ${outputPath}`);
+  log(`✅ Generated inventory file at ${outputPath}`);
 }
