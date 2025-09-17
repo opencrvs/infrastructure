@@ -83,22 +83,7 @@ jobs:
           --set hostname=${{ vars.DOMAIN }} \
           --create-namespace \
           --atomic
-      - name: Copy secrets from dependencies into application namespace
-        run: |
-          secrets=(
-            "elasticsearch-admin-user"
-            "redis-opencrvs-users"
-            "minio-opencrvs-users"
-            "mongodb-admin-user"
-            "postgres-admin-user"
-          )
-          for secret in "${secrets[@]}"; do
-            kubectl get secret $secret -n opencrvs-deps-${ENV} -o yaml \
-            | sed "s#namespace: opencrvs-deps-${ENV}#namespace: opencrvs-${ENV}#" \
-            | grep -vE 'resourceVersion|uid|creationTimestamp' \
-            | kubectl apply -n opencrvs-${ENV} -f - \
-            || echo "Secret $secret doesn't exist in opencrvs-deps-${ENV} namespace"
-          done
+
       - name: Deploy with Helm
         run: |
           helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
