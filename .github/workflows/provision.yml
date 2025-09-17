@@ -10,8 +10,6 @@ on:
         type: choice
         options:
           - dev
-          - staging
-          - qa
           - demo
       tags:
         description: 'Tags to apply to the provisioned resources'

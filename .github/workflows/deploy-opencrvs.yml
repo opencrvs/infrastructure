@@ -83,7 +83,6 @@ jobs:
           --set hostname=${{ vars.DOMAIN }} \
           --create-namespace \
           --atomic
-
       - name: Deploy with Helm
         run: |
           helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \

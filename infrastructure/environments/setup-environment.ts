@@ -18,6 +18,7 @@ import {
 
 import { readFileSync, writeFileSync } from 'fs'
 import { error, info, log, success, warn } from './logger'
+import { generateInventory, copyChartsValues } from './templates'
 
 const notEmpty = (value: string | number) =>
   value.toString().trim().length > 0 ? true : 'Please enter a value'
@@ -315,6 +316,17 @@ const countryQuestions = [
 
 const infrastructureQuestions = [
   {
+    name: 'numberOfServers',
+    type: 'number' as const,
+    message:
+      'What is the number of servers? Note: This should be 1 for development, qa and staging. For "production" environment server cluster should consists of 2, 3 or 5 servers.',
+    valueType: 'VARIABLE' as const,
+    validate: notEmpty,
+    valueLabel: 'NUMBER_OF_SERVERS',
+    initial: process.env.NUMBER_OF_SERVERS ? parseInt(process.env.NUMBER_OF_SERVERS, 10) : 1,
+    scope: 'ENVIRONMENT' as const
+  },
+  {
     name: 'diskSpace',
     type: 'text' as const,
     message: `What is the amount of diskspace that should be dedicated to OpenCRVS data and will become the size of an encrypted cryptfs data directory.
@@ -336,17 +348,6 @@ const infrastructureQuestions = [
     initial: process.env.DOMAIN,
     scope: 'ENVIRONMENT' as const
   },
-  // {
-  //   name: 'replicas',
-  //   type: 'number' as const,
-  //   message:
-  //     'What is the number of servers? Note: This should be 1 for qa, staging and backup environments. For "production" environment server cluster should consists of 2, 3 or 5 servers.',
-  //   valueType: 'VARIABLE' as const,
-  //   validate: notEmpty,
-  //   valueLabel: 'REPLICAS',
-  //   initial: process.env.REPLICAS ? parseInt(process.env.REPLICAS, 10) : 1,
-  //   scope: 'ENVIRONMENT' as const
-  // },
 ]
 
 const databaseAndMonitoringQuestions = [
@@ -827,11 +828,14 @@ const SPECIAL_NON_APPLICATION_ENVIRONMENTS = ['jump', 'backup']
 
     log('\n', kleur.bold().underline('Databases & monitoring'))
 
-    await promptAndStoreAnswer(
+    const infrastructure = await promptAndStoreAnswer(
       environment,
       infrastructureQuestions,
       existingValues
     )
+    const number_of_servers = parseInt(infrastructure.numberOfServers, 10);
+    generateInventory(environment, number_of_servers, {})
+    copyChartsValues(environment, { env: environment})
     await promptAndStoreAnswer(
       environment,
       databaseAndMonitoringQuestions,

@@ -1,8 +1,7 @@
 all:
   vars:
     kube_api_sans:
-      - 5.78.158.131
-    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+      - test-k8s.opencrvs.dev
     ansible_user: provision
     single_node: true
     users:
