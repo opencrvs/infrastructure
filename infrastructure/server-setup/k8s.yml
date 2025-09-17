@@ -73,6 +73,8 @@
       include_tasks: tasks/k8s/self-hosted-runner.yml
     - name: Create backup server secret
       include_tasks: tasks/k8s/backup-secret.yml
+    - name: Add DockerHub credentials
+      include_tasks: tasks/k8s/dockerhub-secret.yml
 
 - name: Additional configuration
   become: yes
@@ -84,7 +86,6 @@
       include_tasks: tasks/k8s/kube-api-add-extra-sans.yml
     - name: Distribute kubeconfig into users directory
       include_tasks: tasks/k8s/user-kubeconfig.yml
-
 - name: Setup Kubernetes Cluster UFW
   hosts: master, workers
   become: yes

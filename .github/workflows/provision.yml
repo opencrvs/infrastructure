@@ -52,6 +52,8 @@ jobs:
           k8s_runner_token: ${{ secrets.GH_TOKEN }}
           repository: ${{ github.repository }}
           k8s_cluster_env: ${{ inputs.environment }}
+          docker_username: ${{ secrets.DOCKER_USERNAME }}
+          docker_password: ${{ secrets.DOCKER_TOKEN }}
       - name: checkout repository
         uses: actions/checkout@v5
       - name: Run Ansible Playbook
