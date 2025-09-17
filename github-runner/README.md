@@ -1,12 +1,32 @@
+# General information
+
+This folder contains scripts for deploying GitHub Action self-runners and Dockerfile for building kubernetes self-hosted runner image.
+
+
 > NOTE: Choose one of available options:
 > - For On-Premise infrastructure managed by GitHub actions workflows please use node self-hosted runner.
-> - For OpenCRVS hosted on Cloud infrastructure or On-Premise K8s cluster managed manually please use self-hosted runner on kubernetes. 
+> - For OpenCRVS hosted on Cloud infrastructure or On-Premise K8s cluster managed manually please use self-hosted runner on kubernetes.
 
 # How to deploy self-hosted runner on Kubernetes cluster?
 
 Self-hosted k8s runner is compatible with any kubernetes cluster including minikube on Linux or Apple Silicon. Certificate manager is required as hard dependency and is included in installation script. 
 
-Run following command:
+Make sure you are connected to correct cluster:
+```
+kubectl config current-context
+```
+
+Example output:
+```
+vmudryi@public-k8s
+```
+Output format:
+```
+<username>@<cluster-name>
+```
+
+
+Install runner by running following command:
 ```
 export GITHUB_PAT=<your PAT with access to repository code and workflows>
 export GIT_REPOSITORY=<your repository>
@@ -18,8 +38,7 @@ Check you repository configuration -> action runners
 # How to deploy self-hosted runner on Node?
 
 > **NOTE:** Don't use node-runner for Cloud infrastructure.
-
-Node runner is used for running GitHub Actions provision workflow to deploy Kubernetes cluster and configure node (VM) for OpenCRVS.
+> Node runner is used for running GitHub Actions provision workflow to deploy Kubernetes cluster and configure node (VM) for OpenCRVS.
 
 
 Run following command:

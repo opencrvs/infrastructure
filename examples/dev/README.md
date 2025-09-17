@@ -78,9 +78,7 @@ The deployment package includes the following components:
 
 This section describes how to deploy OpenCRVS using the provided GitHub Action workflows. The workflows automate provisioning of the infrastructure, deployment of dependencies, and deployment of OpenCRVS services.
 
----
-
-## 1. Prepare GitHub Repository
+Fork [opencrvs/infrastructure](https://github.com/opencrvs/infrastructure) into your own GitHub account or organization.
 
 You will need to provide the following values while installation multiple times:
 
@@ -88,117 +86,141 @@ You will need to provide the following values while installation multiple times:
 * GitHub repository name: `<your-repository>`
 * GitHub PAT (personal access token) with access to repository code and workflows: `<GH_TOKEN or dedicated token>`
 * Environment name: `<env name>`
-
-1. **Fork the repository**
-
-   * Fork [opencrvs/infrastructure](https://github.com/opencrvs/infrastructure) into your own GitHub account or organization.
-
-2. **Create a GitHub environment**
-
-   * Clone your forked repository
-   * Install yarn dependencies:
-     ```
-     yarn
-     ```
-   * Create environment:
-     ```
-     yarn environment:init
-     ```
 ---
 
-## 2. Bootstrap GitHub Self-Hosted Runner
+## 1. Bootstrap GitHub Self-Hosted Runner
 
 The self-hosted runner must be installed on the single VM (or master node).
 
-Login as `provision` user
+1. Login as `provision` user
 
-Run the following command on the VM:
+2. Run the following command on the VM:
+    ```bash
+    curl -s https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/github-runner/node-runner.sh -o runner.sh && bash runner.sh
+    ```
 
-```bash
-curl -s https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/github-runner/node-runner.sh -o runner.sh && bash runner.sh
-```
+**Verify runner is available**
 
-If successful, you will see a confirmation message:
-
-```
-✅ Runner '....-runner' is installed and started!
-```
-
-In your GitHub repository, navigate to **Settings → Actions → Runners** and verify that the runner appears as a self-hosted runner.
+1. If successful, you will see a confirmation message:
+    ```
+    ✅ Runner '....-runner' is installed and started!
+    ```
+2. In your GitHub repository, navigate to **Settings → Actions → Runners** and verify that the runner appears as a self-hosted runner.
 
 ---
+## 2.  Create a GitHub environment
 
-## 3. Prepare Inventory File for Infrastructure Deployment
+* Checkout forked repository into any folder on your laptop
+  ```
+  git clone <repository url>
+  ```
+* Install yarn dependencies:
+  ```
+  yarn
+  ```
+* Create environment:
+  ```
+  yarn environment:init
+  ```
 
-1. Navigate to the `infrastructure/server-setup/inventory` folder.
-2. Create a configuration file for your environment, see example.
+### 2.1 Update infrastructure configuration
 
-   * The file name must match the GitHub environment name.
-   * Example: if your environment is `dev`, the file name should be `dev.yml`.
-3. Commit your changes.
-4. Ensure the **`update-envs` workflow** has completed successfully before proceeding.
+* Navigate to the `infrastructure/server-setup/inventory` folder.
+* Open a configuration file for your environment, see example.
+
+  > NOTE: The file name must match the GitHub environment name.
+  >
+  > Example: if your environment is `dev`, the file name should be `dev.yml`.
+* Make sure all variables in your file are correct.
+  * Add your user name to `users`
+  * Add domain or IP you would like to use for connecting to kubernetes cluster to `kube_api_sans`
+  * For multi-node environment update `workers` section with correct IP addresses
+  * If backup server is enabled, update `backup` section with correct IP address
+4. Commit your changes.
+5. Ensure the **Update workflow environments**. You should see updates to all other GitHub workflows.
+
 
 Example configuration file (`dev.yml`):
 
 ```yaml
 all:
   vars:
+    # Add IP address for communication with your cluster from your laptop
+    # - If you are behind VPN, use private IP address
+    # - If your server is exposed (not recommeded), use public IP address
+    # - If you would like to run kubectl commands from the remote server, leave this field empty
     kube_api_sans: []
-    # FIXME: -o StrictHostKeyChecking=no should not be required
-    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+    # Keep default
     ansible_user: provision
+    # For development/qa/testing/staging keep true
+    # For production keep false
     single_node: true
     users:
+      # Add as many users as you wish
       - name: myuser
         ssh_keys:
           - ssh-ed25519 AAAAC3N...cN/5HAjKGbi2DqV7g/Q
         state: present
         # FIXME: https://github.com/opencrvs/opencrvs-core/issues/6267
+        # Keep admin for now, feature is not documented
         role: admin
   children:
     master:
       hosts:
+        # Update with your real host name
         test-k8s-master:
-          ansible_host: <your-vm-ip>
+          ansible_host: localhost
+          ansible_connection: local
 ```
 
+### 2.2 Update OpenCRVS environment configuration files
+
+At environment creation phase environment files are stored into `environments/<env name>` folder. Navigate to this folder and update files one by one. Folder contains configuration for the following helm charts:
+- traefik, Usually helm chart doesn't require updates.
+- opencrvs dependencies, Usually helm chart doesn't require updates.
+- opencrvs application, Usually helm chart doesn't require updates.
+
+Commit your changes.
+
 ---
 
-## 4. Run Infrastructure Provision
+## 3. Run Infrastructure Provision
 
 * Trigger the **provision workflow** from your repository.
+
+Verification steps:
 * Verify that the Kubernetes self-hosted runner is visible under **Settings → Actions → Runners**.
+* You should be able to logic with any user defined under `users` section of inventory file.
+* You should have access to kubernetes cluster after login, run command `kubectl config current-context`
+---
+
+## 4. Run Dependencies Deployment
+
+* Run the **Deploy dependencies**.
+* Verify that **MinIO** and **Kibana** are available:
+  - Kibana URL: `https://kibana.<your domain>`
+  - MinIO URL: `https://minio.<your domain>`
+  > NOTE: Credentials are stored at GitHub secrets or can be fetched namespace `opencrvs-deps-<env>`.
 
 ---
 
-## 5. Prepare and Run Dependencies Deployment
+## 6. Run OpenCRVS Deployment
 
-> NOTE: One kubernetes cluster (even single node) is capable to host multiple OpenCRVS instances. Environment name (`dev`) may differ from OpenCRVS dependencies installation environment.
+In this configuration OpenCRVS is deployed with MOSIP integration enabled and Farajaland base image.
+Data seed script also executed at the end of deployment workflow.
 
-1. Copy the default values file:
-
-   ```bash
-   cp examples/dev/dependencies/values.yaml environments/dev/dependencies/values.yaml
-   ```
-2. Adjust values if needed. The provided defaults are usually sufficient to start.
-3. Run the **Dependencies deployment workflow**.
-4. Verify that **MinIO** and **Kibana** are available.
-
----
-
-## 6. Prepare and Run OpenCRVS Deployment
-> NOTE: One kubernetes cluster (even single node) is capable to host multiple OpenCRVS instances. Environment name (`dev`) may differ from OpenCRVS dependencies installation environment.
-
-1. Copy the default values file:
-
-   ```bash
-   cp examples/dev/opencrvs-services/values.yaml environments/dev/opencrvs-services/values.yaml
-   ```
-2. Adjust values if needed. The provided defaults are usually sufficient to start.
-3. Run the **OpenCRVS deployment workflow**.
+* Run the **Deploy OpenCRVS** workflow with following properties:
+  - Tag of the core image: v1.9.0-beta-1
+  - Tag of the countryconfig image: v1.9.0-beta-1
+  - Target environment: `<your env>` (dev)
+  - Reset environment after deploy: ✅ (checked)
+  - Deploy MOSIP integration: ✅ (checked)
 4. Verify that the **OpenCRVS login page** is accessible via your configured domain.
 
 ---
 
 ✅ At this point, OpenCRVS should be successfully deployed on your single-node Kubernetes cluster.
 
+Verification steps:
+- Go to login page: `https://<your domain>`
+- Login using demo users: https://documentation.opencrvs.org/setup/3.-installation/3.1-set-up-a-development-environment/3.1.4-log-in-to-opencrvs-locally
