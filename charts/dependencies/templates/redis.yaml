@@ -31,7 +31,8 @@ spec:
         app: redis
     spec:
       containers:
-        - image: bitnami/redis:latest
+        # FIXME: https://github.com/opencrvs/opencrvs-core/issues/10173
+        - image: public.ecr.aws/bitnami/redis:8.2
           name: redis
           env:
           {{- if eq .Values.redis.auth_mode "acl" }}
