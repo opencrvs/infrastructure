@@ -83,6 +83,9 @@ jobs:
           --set hostname=${{ vars.DOMAIN }} \
           --create-namespace \
           --atomic
+      - name: "FIXME: temporary remove data-migration job due to issues"
+        run: |
+          kubectl delete job -n "opencrvs-${ENV}" --ignore-not-found=true data-migration || true
       - name: Deploy with Helm
         run: |
           helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
