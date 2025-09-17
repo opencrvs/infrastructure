@@ -1,0 +1,12 @@
+all:
+  vars:
+    kube_api_sans: {}
+    ansible_user: provision
+    single_node: true
+    users: {}
+  children:
+    master:
+      hosts:
+        test-k8s-master:
+          ansible_host: localhost
+          ansible_connection: local

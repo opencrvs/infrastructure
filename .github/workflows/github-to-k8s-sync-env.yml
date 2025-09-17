@@ -109,7 +109,7 @@ jobs:
             namespace="opencrvs-deps-${{ inputs.environment || 'demo' }}"
           fi
           echo "ℹ️  Using namespace: $namespace"
-
+          kubectl get namespace $namespace >/dev/null 2>&1 || kubectl create namespace $namespace
           for f in k8s-secrets/*.yaml; do
             echo "🚀 Applying $f"
             yq eval . "$f" > /dev/null && echo "✅ $f is valid YAML" || echo "❌ $f has YAML errors" && cat "$f"

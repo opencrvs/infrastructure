@@ -3,7 +3,7 @@
     k8s_nodes_to_label: >-
       {{
         (
-          groups['master'] + groups['workers']
+          groups['master'] + (groups['workers'] | default([]))
         ) | map('extract', hostvars) |
         selectattr('labels', 'defined')
       }}
