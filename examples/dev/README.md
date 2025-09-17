@@ -35,7 +35,7 @@ Before starting the deployment, ensure the following requirements are met:
 
 > If you don't have public IP Address please follow guide "How to run traefik with self-signed SSL Certificate", see [TODO](#link-goes-here)
 
-**4. Provisioning User**
+**4. Create provisioning User**
 
    * The VM must be provisioned with an SSH user account according to [Provision Your Server Nodes with SSH Access](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.1-provision-your-server-nodes-with-ssh-access).
 
@@ -192,6 +192,7 @@ Verification steps:
 * Verify that the Kubernetes self-hosted runner is visible under **Settings → Actions → Runners**.
 * You should be able to logic with any user defined under `users` section of inventory file.
 * You should have access to kubernetes cluster after login, run command `kubectl config current-context`
+* Copy `.kube/config` to your laptop and configure `kubectl` locally instead of remote connection
 ---
 
 ## 4. Run Dependencies Deployment
