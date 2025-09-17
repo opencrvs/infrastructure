@@ -82,38 +82,35 @@ This section describes how to deploy OpenCRVS using the provided GitHub Action w
 
 ## 1. Prepare GitHub Repository
 
+You will need to provide the following values while installation multiple times:
+
+* GitHub organization or account name: `<your-org-or-account>`
+* GitHub repository name: `<your-repository>`
+* GitHub PAT (personal access token) with access to repository code and workflows: `<GH_TOKEN or dedicated token>`
+* Environment name: `<env name>`
+
 1. **Fork the repository**
 
    * Fork [opencrvs/infrastructure](https://github.com/opencrvs/infrastructure) into your own GitHub account or organization.
 
 2. **Create a GitHub environment**
 
-   * In your forked repository, create an environment named `dev`.
-
-3. **Add GitHub secrets** under the `dev` environment:
-
-   * **`GH_TOKEN`** – GitHub token with **read/write access** to workflows (repository or environment level).
-   * **`ENCRYPTION_KEY`** – encryption key for the `/data` partition.
-
-     > 🔑 Store this key in a secure password manager for future use.
-
-4. **Add GitHub variables** under the `dev` environment:
-
-   * **`DISK_SPACE`** – disk size for the encrypted partition. For testing, `5g` is sufficient.
-   * **`DOMAIN`** – the domain name associated with your VM.
-
+   * Clone your forked repository
+   * Install yarn dependencies:
+     ```
+     yarn
+     ```
+   * Create environment:
+     ```
+     yarn environment:init
+     ```
 ---
 
 ## 2. Bootstrap GitHub Self-Hosted Runner
 
-The self-hosted runner must be installed on the VM (or master node).
+The self-hosted runner must be installed on the single VM (or master node).
 
-You will need to provide the following values while installation:
-
-* GitHub organization or account name: `<your-org-or-account>`
-* GitHub repository name: `<your-repository>`
-* GitHub PAT (personal access token) with access to repository code and workflows: `<GH_TOKEN or dedicated token>`
-* Environment name: `dev`
+Login as `provision` user
 
 Run the following command on the VM:
 
