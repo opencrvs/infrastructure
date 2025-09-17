@@ -15,4 +15,5 @@ all:
     master:
       hosts:
         test-k8s-master:
-          ansible_host: 5.78.158.131
+          ansible_host: localhost
+          ansible_connection: local
