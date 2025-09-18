@@ -3,9 +3,11 @@
 This folder contains scripts for deploying GitHub Action self-runners and Dockerfile for building kubernetes self-hosted runner image.
 
 
-> NOTE: Choose one of available options:
-> - For On-Premise infrastructure managed by GitHub actions workflows please use node self-hosted runner.
-> - For OpenCRVS hosted on Cloud infrastructure or On-Premise K8s cluster managed manually please use self-hosted runner on kubernetes.
+Choose one of available options:
+| Infrastructure configuration | Runner deployment scenario |
+|---|---|
+| **On-Premise infrastructure managed by GitHub actions provision workflows**. Node level runner will handle provision workflow only. Provision workflow will manage k8s runner setup. | Node runner |
+| **Cloud infrastructure**. On Cloud environments only k8s runner is needed to handle deployment, data seed, data reset and other OpenCRVS related workflows. | K8s runner |
 
 # How to deploy self-hosted runner on Kubernetes cluster?
 
