@@ -36,7 +36,9 @@ spec:
         fsGroup: 999
       containers:
         - image: redis:8
+          {{- if eq .Values.redis.auth_mode "acl" }}
           command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+          {{- end }}
           name: redis
           {{- if .Values.redis.env }}
           env:
