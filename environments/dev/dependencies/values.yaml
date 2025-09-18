@@ -17,3 +17,6 @@ postgres:
 
 monitoring:
   enabled: true
+
+redis:
+  auth_mode: acl
