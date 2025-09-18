@@ -30,6 +30,10 @@ spec:
       labels:
         app: redis
     spec:
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
       containers:
         - image: redis:8
           command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
@@ -43,14 +47,23 @@ spec:
               protocol: TCP
           {{- if eq .Values.redis.auth_mode "acl" }}
           volumeMounts:
-            - name: redis-opencrvs-acl
-              mountPath: /usr/local/etc/redis
+            - name: redis-conf
+              mountPath: /usr/local/etc/redis/redis.conf
+              subPath: redis.conf
+              readOnly: true
+            - name: redis-acl
+              mountPath: /usr/local/etc/redis/users.acl
+              subPath: users.acl
+              readOnly: true
           {{- end }}
       restartPolicy: Always
       volumes:
-        {{- if eq .Values.redis.auth_mode "acl" }}
-        - name: redis-opencrvs-acl
+      {{- if eq .Values.redis.auth_mode "acl" }}
+        - name: redis-acl
           secret:
             secretName: redis-opencrvs-acl
-        {{- end }}
+        - name: redis-conf
+          configMap:
+            name: redis-opencrvs-conf
+      {{- end }}
 {{- end }}
