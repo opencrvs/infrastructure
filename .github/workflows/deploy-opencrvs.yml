@@ -91,11 +91,11 @@ jobs:
             "redis-opencrvs-users"
           )
           for secret in "${secrets[@]}"; do
-            kubectl get secret $secret -n opencrvs-deps-e2e -o yaml \
-            | sed "s#namespace: opencrvs-deps-e2e#namespace: opencrvs-${ENV}#" \
+            kubectl get secret $secret -n opencrvs-deps-${ENV} -o yaml \
+            | sed "s#namespace: opencrvs-deps-${ENV}#namespace: opencrvs-${ENV}#" \
             | grep -vE 'resourceVersion|uid|creationTimestamp' \
             | kubectl apply -n opencrvs-${ENV} -f - \
-            || echo "Secret $secret doesn't exist in opencrvs-deps-e2e namespace"
+            || echo "Secret $secret doesn't exist in opencrvs-deps-${ENV} namespace"
           done
       - name: "FIXME: temporary remove data-migration job due to issues"
         run: |
