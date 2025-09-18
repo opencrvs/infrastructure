@@ -31,7 +31,7 @@ mongodb:
   host: mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local
 
 redis:
-  auth_mode: disabled
+  auth_mode: use_secret
   host: redis-0.redis.opencrvs-deps-dev.svc.cluster.local
 
 postgres:

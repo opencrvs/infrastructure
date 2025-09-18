@@ -12,6 +12,7 @@ on:
         type: choice
         options:
           - demo
+          - dev
   workflow_call:
     inputs:
       environment:

@@ -84,6 +84,19 @@ jobs:
           --set hostname=${{ vars.DOMAIN }} \
           --create-namespace \
           --atomic
+      - name: Copy secrets from dependencies into application namespace
+        # Only redis secret for now needs to be copied
+        run: |
+          secrets=(
+            "redis-opencrvs-users"
+          )
+          for secret in "${secrets[@]}"; do
+            kubectl get secret $secret -n opencrvs-deps-e2e -o yaml \
+            | sed "s#namespace: opencrvs-deps-e2e#namespace: opencrvs-${ENV}#" \
+            | grep -vE 'resourceVersion|uid|creationTimestamp' \
+            | kubectl apply -n opencrvs-${ENV} -f - \
+            || echo "Secret $secret doesn't exist in opencrvs-deps-e2e namespace"
+          done
       - name: "FIXME: temporary remove data-migration job due to issues"
         run: |
           kubectl delete job -n "opencrvs-${ENV}" --ignore-not-found=true data-migration || true
