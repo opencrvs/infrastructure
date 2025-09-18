@@ -31,35 +31,20 @@ spec:
         app: redis
     spec:
       containers:
-        # FIXME: https://github.com/opencrvs/opencrvs-core/issues/10173
-        - image: public.ecr.aws/bitnami/redis:8.2
+        - image: redis:8
+          command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
           name: redis
+          {{- if .Values.redis.env }}
           env:
-          {{- if eq .Values.redis.auth_mode "acl" }}
-            - name: REDIS_ACLFILE
-              value: /opt/bitnami/redis/mounted-etc/users.acl
-            - name: REDIS_PASSWORD
-              value: "false"
-          {{- else if eq .Values.redis.auth_mode "password" }}
-            - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: redis-opencrvs-users
-                  key: DEFAULT_REDIS_PASSWORD
-          {{- else }}
-            - name: ALLOW_EMPTY_PASSWORD
-              value: "yes"
-          {{- end }}
-
           {{- include "render-env-vars" (dict "service_name" "redis" "Values" .Values) }}
+          {{- end }}
           ports:
             - containerPort: 6379
               protocol: TCP
           {{- if eq .Values.redis.auth_mode "acl" }}
           volumeMounts:
             - name: redis-opencrvs-acl
-              mountPath: /opt/bitnami/redis/mounted-etc
-              # subPath: redis-acl.conf
+              mountPath: /usr/local/etc/redis
           {{- end }}
       restartPolicy: Always
       volumes:
