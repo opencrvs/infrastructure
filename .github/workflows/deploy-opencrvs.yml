@@ -18,11 +18,11 @@ on:
       core-image-tag:
         description: "Tag of the core image"
         required: true
-        default: "develop"
+        default: "v1.9.0-beta-1"
       countryconfig-image-tag:
         description: "Tag of the countryconfig image"
         required: true
-        default: "develop"
+        default: "v1.9.0-beta-1"
       environment:
         description: "Target environment"
         required: true
@@ -64,17 +64,31 @@ jobs:
       - uses: actions/checkout@v5
       - name: Generate summary
         run: |
-          echo "Deploying environment to https://${{ vars.DOMAIN }}" >> $GITHUB_STEP_SUMMARY
-          echo "Core image tag: ${{ inputs.core-image-tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "Country config image tag: ${{ inputs.countryconfig-image-tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "Reset environment: ${{ inputs.reset }}" >> $GITHUB_STEP_SUMMARY
-      - name: Print deployment parameters
-        run: |
-          echo "Environment: $ENV"
-          echo "Core Image: $CORE_IMAGE_TAG"
-          echo "Country Config Image: $COUNTRYCONFIG_IMAGE_TAG"
-          echo "base_ref: ${{ github.base_ref }}"
-          echo "branch: ${BRANCH}"
+          # set the mark (colored emoji)
+          RESET="${{ inputs.reset }}"
+          if [ "$RESET" = "true" ]; then
+            RESET_MARK="<span style='color:green'>✅ Yes</span>"
+          else
+            RESET_MARK="<span style='color:red'>❌ No</span>"
+          fi
+
+          # build the summary into a variable (unquoted heredoc so $RESET_MARK expands)
+          SUMMARY=$(cat <<EOF
+          ### Deployment Summary
+
+          | Key | Value |
+          |-----|-------|
+          | 🌐 Environment URL | https://${{ vars.DOMAIN }} |
+          | 🛠 Core image tag | \`${{ inputs.core-image-tag }}\` |
+          | 📦 Country config image | \`${{ inputs.countryconfig-image-tag }}\` |
+          | 🌿 Branch name | \`${{ github.ref_name }}\` |
+          | 🔄 Reset environment | $RESET_MARK |
+          EOF
+          )
+
+          # strip the leading 4-space indentation that we used for readability in the workflow,
+          # then append the cleaned output to the GitHub Actions summary (single append)
+          echo "$SUMMARY" | sed 's/^          //' >> $GITHUB_STEP_SUMMARY
       - name: Deploy OpenCRVS MOSIP API
         if: inputs.deploy_mosip
         run: |
@@ -97,9 +111,6 @@ jobs:
             | kubectl apply -n opencrvs-${ENV} -f - \
             || echo "Secret $secret doesn't exist in opencrvs-deps-${ENV} namespace"
           done
-      - name: "FIXME: temporary remove data-migration job due to issues"
-        run: |
-          kubectl delete job -n "opencrvs-${ENV}" --ignore-not-found=true data-migration || true
       - name: Deploy with Helm
         run: |
           helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
