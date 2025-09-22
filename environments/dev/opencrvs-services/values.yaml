@@ -48,7 +48,7 @@ image:
   tag: 0f10027
 
 dashboards:
-  use_default_credentials: false
+  enabled: false
 
 countryconfig:
   image:
