@@ -39,7 +39,7 @@ openssl x509 -req -in "$USER_CSR" -CA "$K8S_CA_CERT" -CAkey "$K8S_CA_KEY" -CAcre
 
 # ====== CLUSTER INFO (using ca.crt and YOUR public IP) ======
 echo "Setting cluster server to https://${PUBLIC_API_SERVER_IP}:${API_SERVER_PORT}"
-CLUSTER_NAME="public-k8s"
+CLUSTER_NAME="public-k8s-$(hostname -s)"
 CA_DATA=$(base64 -w0 "$K8S_CA_CERT")
 CERT_DATA=$(base64 -w0 "$USER_CERT")
 KEY_DATA=$(base64 -w0 "$USER_KEY")
