@@ -6,11 +6,11 @@ metadata:
   # - https://github.com/opencrvs/opencrvs-core/issues/7451
   # - https://opencrvsworkspace.slack.com/archives/C02LU432JGK/p1757940561135439
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "1"
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "2"
   labels:
     app: migration
-  name: {{ .Values.data_migration.job_name | default "data-migration" }}
+  name: postgres-{{ .Values.data_migration.job_name | default "data-migration" }}
 spec:
   template:
     metadata:
@@ -20,6 +20,22 @@ spec:
       containers:
         - name: migration
           image: "ghcr.io/opencrvs/ocrvs-migration:{{ .Values.image.tag }}"
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              # events migrations
+              export EVENTS_DB_USER="${EVENTS_DB_USER:-events_app}"
+              SCRIPT_PATH=/app/packages/migration
+              MIGRATIONS_PATH=$SCRIPT_PATH/src/migrations/events
+              for migration_file in $(ls $MIGRATIONS_PATH)
+              do
+                echo "Updating environment variables in $MIGRATIONS_PATH/$migration_file"
+                envsubst < $MIGRATIONS_PATH/$migration_file > $MIGRATIONS_PATH/$migration_file.tmp
+                mv $MIGRATIONS_PATH/$migration_file.tmp $MIGRATIONS_PATH/$migration_file
+              done
+              DATABASE_URL=${EVENTS_POSTGRES_URL} yarn --cwd $SCRIPT_PATH node-pg-migrate up --schema=app --migrations-dir=./src/migrations/events
+
+          # FIXME: Delete not-used environment variables
           env:
           {{- if eq .Values.elasticsearch.auth_mode "disabled" }}
             - name: ES_HOST
