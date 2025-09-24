@@ -12,6 +12,6 @@
 DATABASES=${DATABASES:-"events"}
 for DB in $DATABASES; do
   echo "[$(date +%F\ %H:%M:%S)] Drop PostgreSQL '$DB' database"
-  psql -h $POSTGRES_HOST -U $POSTGRES_USER -d postgres -c "DROP DATABASE IF EXISTS $DB;"
+  psql -h $POSTGRES_HOST -U $POSTGRES_USER -d postgres -c "DROP DATABASE IF EXISTS $DB WITH (FORCE);"
   psql -h $POSTGRES_HOST -U $POSTGRES_USER -d postgres -c "CREATE DATABASE $DB;"
 done
