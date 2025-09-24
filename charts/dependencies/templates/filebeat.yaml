@@ -31,6 +31,9 @@ spec:
               exit 1
       containers:
       - name: filebeat
+        securityContext:
+          runAsUser: 0
+          privileged: false
         image: {{ .Values.filebeat.image | default "docker.elastic.co/beats/filebeat:8.16.4" }}
         args: [
           "-c", "/etc/filebeat.yml",
@@ -61,7 +64,7 @@ spec:
             subPath: filebeat.yml
           - name: config
             mountPath: /usr/share/filebeat/rollover-policy.json
-            subPath: rollover-policy.json
+            subPath: filebeat-rollover-policy.json
           - name: varlog
             mountPath: /var/log
       volumes:

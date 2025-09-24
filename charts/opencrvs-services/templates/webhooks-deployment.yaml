@@ -50,6 +50,10 @@ spec:
         - name: webhooks
           image: "ghcr.io/opencrvs/ocrvs-webhooks:{{ .Values.image.tag }}"
           env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
             - name: FHIR_URL
               value: http://hearth.{{ .Release.Namespace }}.svc.cluster.local:3447/fhir
             - name: REDIS_HOST

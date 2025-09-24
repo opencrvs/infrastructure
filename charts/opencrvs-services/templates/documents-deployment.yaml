@@ -21,6 +21,10 @@ spec:
         - image: "ghcr.io/opencrvs/ocrvs-documents:{{ .Values.image.tag }}"
           name: documents
           env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
             - name: COUNTRY_CONFIG_URL
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
             - name: DOCUMENTS_PORT

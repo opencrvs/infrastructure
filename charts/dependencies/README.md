@@ -266,6 +266,18 @@ elasticsearch:
   use_default_credentials: false
 ```
 
+For backward compatibility `HTTP_POST2_ALERT_URL` environment variable needs to be added to elastalert configuration. All alerts will be send to country config service and forwarded to email address
+
+See example:
+```yaml
+elastalert:
+  env:
+    HTTP_POST2_ALERT_URL: http://countryconfig.opencrvs-dev.svc.cluster.local:3040/email
+```
+
+> NOTE: This behavior will be changed in future releases, see [#10608](https://github.com/opencrvs/opencrvs-core/issues/10608)
+
+
 ## Backup Configuration
 
 The dependencies chart includes a built-in backup feature that supports automated backups for internal components. Backups are stored on an external server via an SSH connection.

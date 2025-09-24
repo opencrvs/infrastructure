@@ -21,6 +21,10 @@ spec:
         - name: workflow
           image: "ghcr.io/opencrvs/ocrvs-workflow:{{ .Values.image.tag }}"
           env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
             - name: FHIR_URL
               value: http://hearth.{{ .Release.Namespace }}.svc.cluster.local:3447/fhir
             - name: APPLICATION_CONFIG_URL

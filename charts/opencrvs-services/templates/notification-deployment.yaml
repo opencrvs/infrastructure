@@ -21,6 +21,10 @@ spec:
         - name: notification
           image: "ghcr.io/opencrvs/ocrvs-notification:{{ .Values.image.tag }}"
           env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
             - name: CERT_PUBLIC_KEY_PATH
               value: /secrets/public-key.pem
             - name: HOST

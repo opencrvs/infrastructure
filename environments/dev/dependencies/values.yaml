@@ -20,3 +20,7 @@ monitoring:
 
 redis:
   auth_mode: acl
+
+elastalert:
+  env:
+    HTTP_POST2_ALERT_URL: http://countryconfig:3040

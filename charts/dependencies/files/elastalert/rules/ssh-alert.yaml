@@ -28,7 +28,7 @@ filter:
           value: 'Successful SSH login'
 
 alert: post2
-http_post2_url: 'http://countryconfig:3040/email'
+http_post2_url: '${HTTP_POST2_ALERT_URL}'
 http_post2_payload:
   subject: "{% raw %}{{DOMAIN}}{% endraw %}: Login to {{kibana.alert.context['__es-query'].hits[0]._source.user.name}} from {{kibana.alert.context['__es-query'].hits[0]._source.source.ip}} 🚨"
   html: 'Login to https://kibana.{% raw %}{{DOMAIN}}{% endraw %} to view the alert.'

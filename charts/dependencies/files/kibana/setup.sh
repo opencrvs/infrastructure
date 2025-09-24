@@ -9,8 +9,7 @@
 # Copyright (C) The OpenCRVS Authors located at https://github.com/opencrvs/opencrvs-core/blob/master/AUTHORS.
 
 
-set -x
-# set -o pipefail
+set -o pipefail
 apk add curl jq grep
 
 # Define common variables

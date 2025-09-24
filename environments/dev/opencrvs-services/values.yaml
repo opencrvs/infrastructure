@@ -11,6 +11,7 @@ hpa:
 
 env:
   APN_SERVICE_URL: "http://apm-server.opencrvs-deps-dev.svc.cluster.local:8200"
+  QA_ENV: true
 
 hostname: test-k8s.opencrvs.dev
 influxdb:
@@ -53,7 +54,14 @@ dashboards:
 countryconfig:
   image:
     name: opencrvs/ocrvs-farajaland
-
+  secrets:
+    smtp-config:
+      - SENDER_EMAIL_ADDRESS
+      - SMTP_HOST
+      - SMTP_PASSWORD
+      - SMTP_PORT
+      - SMTP_SECURE
+      - SMTP_USERNAME
   env:
     OPENID_PROVIDER_CLAIMS: name,family_name,given_name,middle_name,birthdate,address
     OPENID_PROVIDER_CLIENT_ID: mock-client_id

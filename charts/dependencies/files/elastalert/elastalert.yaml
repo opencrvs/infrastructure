@@ -20,5 +20,7 @@ es_port: "${ES_HOST}"
 # es_password: <passed as environment variables>
 writeback_index: elastalert_status
 
+http_post2_url: "${HTTP_POST2_ALERT_URL}"
+
 alert_time_limit:
   days: 2

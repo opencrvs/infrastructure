@@ -70,6 +70,8 @@ metricbeat: {}
 filebeat: {}
 logstash: {}
 
+elastalert:
+  env: {}
 
 minio:
   # Enable MinIO deployment.

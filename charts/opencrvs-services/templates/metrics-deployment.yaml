@@ -19,6 +19,10 @@ spec:
         - image: "ghcr.io/opencrvs/ocrvs-metrics:{{ .Values.image.tag }}"
           name: metrics
           env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
             - name: FHIR_URL
               value: http://hearth.{{ .Release.Namespace }}.svc.cluster.local:3447/fhir
             - name: METRICS_PORT  # Similar to PORT (Check if it's the same?)
