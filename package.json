@@ -20,7 +20,7 @@
     "@octokit/core": "4.2.1",
     "@types/libsodium-wrappers": "^0.7.10",
     "@types/prompts": "^2.4.9",
-    "husky": "1.0.0-rc.13",
+    "husky": "9.1.7",
     "kleur": "^4.1.5",
     "libsodium-wrappers": "^0.7.13",
     "node-ssh": "^13.2.0",
