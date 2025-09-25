@@ -31,7 +31,7 @@ spec:
               exit 1
       containers:
         - name: metricbeat
-          image: docker.elastic.co/beats/metricbeat:8.19.0
+          image: {{ .Values.metricbeat.image | default "docker.elastic.co/beats/metricbeat:8.19.0" }}
           args: [
             "-e",
             "-c", "/etc/metricbeat.yml"

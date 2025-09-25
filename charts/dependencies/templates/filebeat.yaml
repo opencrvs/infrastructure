@@ -31,7 +31,7 @@ spec:
               exit 1
       containers:
       - name: filebeat
-        image: docker.elastic.co/beats/filebeat:8.19.0
+        image: {{ .Values.filebeat.image | default "docker.elastic.co/beats/filebeat:8.16.4" }}
         args: [
           "-c", "/etc/filebeat.yml",
           "-e"

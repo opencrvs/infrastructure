@@ -65,6 +65,11 @@ elasticsearch:
 monitoring:
   enabled: false
 
+kibana: {}
+metricbeat: {}
+filebeat: {}
+logstash: {}
+
 
 minio:
   # Enable MinIO deployment.

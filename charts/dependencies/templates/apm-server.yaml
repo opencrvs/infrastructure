@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
       - name: apm-server
-        image: docker.elastic.co/apm/apm-server:8.16.4
+        image: {{ .Values.elasticsearch.image | default "docker.elastic.co/apm/apm-server:8.16.4" }}
         args: ["-e", "-c", "/etc/apm-server.yml"]
         ports:
         - containerPort: 8200

@@ -112,7 +112,7 @@ spec:
               name: elasticsearch-scripts
       containers:
         - name: kibana
-          image: ghcr.io/opencrvs/kibana:8.16.4
+          image: {{ .Values.kibana.image | default "docker.elastic.co/kibana/kibana:8.16.4" }}
           env:
             # TODO: When users are not enabled
             - name: ELASTICSEARCH_USERNAME
