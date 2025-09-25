@@ -3,6 +3,8 @@ apiVersion: v1
 data:
   on-deploy.sh: |
     {{- .Files.Get "files/postgres-on-deploy.sh" | indent 8 }}
+  setup-analytics.sh: |
+    {{- .Files.Get "files/setup-analytics.sh" | indent 8 }}
 kind: ConfigMap
 metadata:
   labels:

@@ -115,6 +115,13 @@ spec:
                   key: USER_MGNT_MONGO_URL
                   name: {{ .Values.mongodb.urls_secret }}
           {{- end }}
+          {{- if not (eq .Values.postgres.auth_mode "managed") }}
+            - name: ANALYTICS_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  key: events_analytics_db_url
+                  name: {{ .Values.postgres.urls_secret }}
+          {{- end }}
           {{- include "render-env-vars" (dict "service_name" "countryconfig" "Values" .Values) }}
           {{ include "resources-helper" (dict "service_name" "countryconfig" "Values" .Values) | indent 10 }}
           ports:
