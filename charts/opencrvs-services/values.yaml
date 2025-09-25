@@ -157,6 +157,7 @@ postgres:
   events_db: events
   events_migrator: events_migrator
   events_app: events_app
+  events_analytics: analytics
 
 ###############################################################################
 # Application configuration

@@ -24,6 +24,7 @@ spec:
           args:
             - |
               # events migrations
+              env
               export EVENTS_DB_USER="${EVENTS_DB_USER:-events_app}"
               SCRIPT_PATH=/app/packages/migration
               MIGRATIONS_PATH=$SCRIPT_PATH/src/migrations/events
@@ -33,7 +34,9 @@ spec:
                 envsubst < $MIGRATIONS_PATH/$migration_file > $MIGRATIONS_PATH/$migration_file.tmp
                 mv $MIGRATIONS_PATH/$migration_file.tmp $MIGRATIONS_PATH/$migration_file
               done
-              DATABASE_URL=${EVENTS_POSTGRES_URL} yarn --cwd $SCRIPT_PATH node-pg-migrate up --schema=app --migrations-dir=./src/migrations/events
+              export DATABASE_URL=${EVENTS_POSTGRES_URL}
+              echo "DATABASE_URL: $DATABASE_URL"
+              yarn --cwd $SCRIPT_PATH node-pg-migrate up --schema=app --migrations-dir=./src/migrations/events
 
           # FIXME: Delete not-used environment variables
           env:
