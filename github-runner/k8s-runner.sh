@@ -28,6 +28,7 @@ helm upgrade --install actions-runner-controller actions-runner-controller/actio
     --namespace $RUNNER_NAMESPACE \
     --set githubWebhookServer.enabled=false \
     --set authSecret.create=true \
+    --set webhook.certManager.enabled=true \
     --set authSecret.github_token=${GITHUB_PAT}
 
 echo "👷 Creating runner deployment in namespace "
