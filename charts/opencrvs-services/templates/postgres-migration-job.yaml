@@ -24,7 +24,6 @@ spec:
           args:
             - |
               # events migrations
-              env
               export EVENTS_DB_USER="${EVENTS_DB_USER:-events_app}"
               SCRIPT_PATH=/app/packages/migration
               MIGRATIONS_PATH=$SCRIPT_PATH/src/migrations/events

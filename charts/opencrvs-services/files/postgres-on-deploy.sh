@@ -17,7 +17,6 @@ set -euo pipefail
 : "${EVENTS_MIGRATOR_ROLE:=events_migrator}"
 : "${TARGET_DB:=events}"
 
-env
 
 TARGET_DB=${TARGET_DB//-/_}
 export PGPASSWORD="$POSTGRES_PASSWORD"
