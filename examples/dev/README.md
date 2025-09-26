@@ -110,7 +110,7 @@ The self-hosted runner must be installed on the single VM (or master node).
 ---
 ## 2.  Create a GitHub environment
 
-* Checkout forked repository into any folder on your laptop
+* Checkout forked infrastructure repository into any folder on your laptop
   ```
   git clone <repository url>
   ```
@@ -137,7 +137,7 @@ The self-hosted runner must be installed on the single VM (or master node).
   * For multi-node environment update `workers` section with correct IP addresses
   * If backup server is enabled, update `backup` section with correct IP address
 4. Commit your changes.
-5. Ensure the **Update workflow environments**. You should see updates to all other GitHub workflows.
+5. Ensure the **Update workflow environments** Github Action has run successfully. You should see updates to all other GitHub workflows.
 
 
 Example configuration file (`dev.yml`):
@@ -176,9 +176,9 @@ all:
 ### 2.2 Update OpenCRVS environment configuration files
 
 At environment creation phase environment files are stored into `environments/<env name>` folder. Navigate to this folder and update files one by one. Folder contains configuration for the following helm charts:
-- traefik, Usually helm chart doesn't require updates.
-- opencrvs dependencies, Usually helm chart doesn't require updates.
-- opencrvs application, Usually helm chart doesn't require updates.
+- traefik: Usually helm chart doesn't require updates.
+- dependencies: Usually helm chart doesn't require updates.
+- opencrvs-services: Update countryconfig container image, hostname, environment variables, ingress & Traefik TLS/SSL configuration etc.
 
 Commit your changes.
 
