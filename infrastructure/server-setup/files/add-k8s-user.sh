@@ -6,7 +6,7 @@ K8S_CA_CERT="/etc/kubernetes/pki/ca.crt"
 K8S_CA_KEY="/etc/kubernetes/pki/ca.key"
 K8S_ADMIN_KUBECONFIG="/etc/kubernetes/admin.conf"
 OUTPUT_BASE="./user-kubeconfigs"
-PUBLIC_API_SERVER_IP=${PUBLIC_API_SERVER_IP:-"localhost"}
+PUBLIC_API_SERVER_IP=${PUBLIC_API_SERVER_IP:-"91.99.202.110"}   # <--- <<< replace with your public IP address
 API_SERVER_PORT="6443"
 ZIP_PASSWORD_PROMPT="Enter zip password (leave empty for no password): "
 ASK_PASSWORD=${ASK_PASSWORD:-yes}
@@ -16,7 +16,7 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 # ====== USERNAME INPUT ======
-USERNAME="${1:-}-$(hostname -s)"
+USERNAME="${1:-}"
 if [ -z "$USERNAME" ]; then
   read -rp "Enter username: " USERNAME
   [[ -z "$USERNAME" ]] && echo "Username cannot be empty!" && exit 1
