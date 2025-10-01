@@ -16,3 +16,7 @@ all:
         test-k8s-master:
           ansible_host: localhost
           ansible_connection: local
+    backup:
+      hosts:
+        backup-01:
+          ansible_host: 10.2.1.2
