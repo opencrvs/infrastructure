@@ -28,7 +28,7 @@ filter:
           value: 'Error in service'
 
 alert: post2
-http_post2_url: 'http://countryconfig:3040/email'
+http_post2_url: '${HTTP_POST2_ALERT_URL}'
 http_post2_payload:
   subject: '{% raw %}{{DOMAIN}}{% endraw %} {{event.kind}}: {{rule.name}} {{kibana.alert.context.apm__error_rate.serviceName}} 🚨'
   html: 'Login to https://kibana.{% raw %}{{DOMAIN}}{% endraw %}/app/apm/services/{{kibana.alert.context.apm__error_rate.serviceName}}/overview to view the alert.'

@@ -1,94 +1,42 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at https://mozilla.org/MPL/2.0/.
-#
-# OpenCRVS is also distributed under the terms of the Civil Registration
-# & Healthcare Disclaimer located at http://opencrvs.org/license.
-#
-# Copyright (C) The OpenCRVS Authors located at https://github.com/opencrvs/opencrvs-core/blob/master/AUTHORS.
----
-#-------------------------------- Autodiscovery -------------------------------
-# metricbeat.autodiscover:
-#   providers:
-#     - type: kubernetes
-#       node: ${NODE_IP}
-#       hints.enabled: true
+system.hostfs: /hostfs
 
 metricbeat.modules:
-  #------------------------------- System Module -------------------------------
-  - module: system
-    metricsets:
-      - cpu
-      - load
-      - memory
-      - network
-      - process
-      - process_summary
-      - core
-      - diskio
-      - socket
-    processes: ['.*']
-    process.include_top_n:
-      by_cpu: 5
-      by_memory: 5
-    period: 10s
-    cpu.metrics: ['percentages']
-    core.metrics: ['percentages']
-
-  - module: system
-    period: 1m
-    metricsets:
-      - filesystem
-      - fsstat
-    processors:
-      - drop_event.when.regexp:
-          system.filesystem.mount_point: '^/(sys|cgroup|proc|dev|etc|host|lib)($|/)'
-
-  - module: system
-    period: 15m
-    metricsets:
-      - uptime
-
-  #------------------------------- Kubernetes Module -------------------------------
-  # Kubernetes pod metrics
-  - module: kubernetes
-    period: 10s
-    host: ${NODE_IP}
-    hosts: ["https://${NODE_IP}:10250"]
-    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-    ssl.verification_mode: "none"
-    metricsets: ["node", "pod", "container", "volume"]
-
-#================================ Processors ===================================
+- module: kubernetes
+  period: 10s
+  host: ${NODE_NAME}
+  hosts: ["https://${NODE_IP}:10250"]
+  bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+  ssl.verification_mode: "none"
+  metricsets:
+    - node
+    - pod
+    - container
+    - volume
+    - system
+  add_metadata: true
+- module: system
+  metricsets:
+    - cpu
+    - memory
+    - network
+    - process
+    - diskio
+  period: 10s
+- module: system
+  metricsets:
+    - filesystem
+  period: 60s
+  processors:
+    - drop_event.when.regexp:
+        system.filesystem.mount_point: "^/hostfs/run"
 processors:
-  - add_fields:
-      target: orchestrator.cluster.name
-      fields:
-        name: opencrvs-k8s
-
+  - add_host_metadata: ~
   - add_kubernetes_metadata:
-      host: ${NODE_IP}
-  - add_locale:
-      format: offset
-  - add_host_metadata:
-      netinfo.enabled: true
-  # # Ensure proper field mapping for Infrastructure correlation
-  - script:
-      lang: javascript
-      source: >
-        function process(event) {
-          var k8s = event.Get("kubernetes");
-          if (k8s && k8s.pod && k8s.pod.name) {
-            event.Put("host.name", k8s.pod.name);
-            event.Put("host.hostname", k8s.pod.name);
-            if (k8s.container && k8s.container.name) {
-              event.Put("container.name", k8s.container.name);
-            }
-          if (k8s && k8s.labels && k8s.labels["service_name"]) {
-            event.Put("service.name", k8s.labels["service_name"]);
-          }
-          }
-        }
+      host: ${NODE_NAME}
+      # Enable more indexers for better pod correlation
+      default_indexers.enabled: true
+      default_matchers.enabled: true
+
 #========================== Elasticsearch output ===============================
 output.elasticsearch:
   hosts: ['${ELASTICSEARCH_HOST}']
@@ -97,7 +45,7 @@ output.elasticsearch:
 
 #============================== Dashboards =====================================
 setup.dashboards:
-  enabled: true
+  enabled: false
 
 #============================== Kibana =========================================
 setup.kibana:
@@ -120,4 +68,6 @@ setup.ilm.overwrite: true
 
 #============================== Logging ===============================
 logging.level: info
-logging.to_stderr: true
+logging.selectors: ["*"]
+logging.metrics.enabled: true
+logging.to_files: false

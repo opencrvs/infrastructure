@@ -67,7 +67,7 @@ jobs:
                 -s templates/postgres-on-update-core.yaml \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -;
             kubectl wait --for=condition=complete job/postgres-on-update-core -n ${namespace} --timeout=600s || true
-            kubectl logs job/postgres-on-update-core -f --all-containers=true -n ${namespace}; || true
+            kubectl logs job/postgres-on-update-core -f --all-containers=true -n ${namespace} || true
         - name: Re-run postgres-data-migration
           run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true postgres-data-migration;

@@ -16,6 +16,12 @@ filebeat.autodiscover:
     - type: kubernetes
       hints.enabled: true
 
+filebeat.modules:
+  - module: system
+    syslog:
+      enabled: true
+    auth:
+      enabled: true
 #================================ Processors ===================================
 processors:
   - add_kubernetes_metadata: ~
@@ -66,7 +72,11 @@ processors:
             event.Put("level_name", levelName);
             event.Put("log.level", levelName);  // ECS standard
           }
-          
+        }
+  - script:
+      lang: javascript
+      source: >
+        function process(event) {
           // Kubernetes correlation
           var k8s = event.Get("kubernetes");
           if (k8s) {

@@ -36,7 +36,7 @@ filter:
       minimum_should_match: 1
 
 alert: post2
-http_post2_url: 'http://countryconfig:3040/email'
+http_post2_url: '${HTTP_POST2_ALERT_URL}'
 http_post2_payload:
   subject: '{% raw %}{{DOMAIN}}{% endraw %} {{kibana.alert.context.metrics__alert__inventory__threshold.alertState}}: {{rule.name}} 🚨'
   html: 'Reason: {{kibana.alert.context.metrics__alert__inventory__threshold.reason}}. Login to https://kibana.{% raw %}{{DOMAIN}}{% endraw %} to view the alert.'

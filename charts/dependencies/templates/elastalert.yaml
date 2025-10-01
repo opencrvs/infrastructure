@@ -28,7 +28,6 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.elasticsearch.admin_user_secret_name }}
                   key: ELASTIC_PASSWORD
-          # TODO: Why we need this on docker swarm?
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -49,6 +48,25 @@ spec:
                 echo "Could not delete indices. API returned status code: $delete_status_code"
                 exit 1
               fi
+        - name: setup-rules
+          image: "bash"
+          env:
+          {{- include "render-env-vars" (dict "service_name" "elastalert" "Values" .Values) }}
+          command: 
+            - bash
+            - -c
+            - |
+              apk add envsubst
+              mkdir -p /rules
+              for f in /rules-templates/*.yaml; do
+                echo "processing file $f"
+                envsubst < "$f" > "/rules/$(basename $f)"
+              done
+          volumeMounts:
+            - name: rules
+              mountPath: /rules
+            - name: rules-templates
+              mountPath: /rules-templates
       containers:
         - name: elastalert
           image: jertel/elastalert2:2.25.0
@@ -75,6 +93,8 @@ spec:
           configMap:
             name: elastalert-config
         - name: rules
+          emptyDir: {}
+        - name: rules-templates
           configMap:
             name: elastalert-rules
 {{- end }}

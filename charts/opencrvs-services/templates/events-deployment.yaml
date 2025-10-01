@@ -54,6 +54,10 @@ spec:
         - name: events
           image: "ghcr.io/opencrvs/ocrvs-events:{{ .Values.image.tag }}"
           env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
             - name: AUTH_URL
               value: "http://auth.{{ .Release.Namespace }}.svc.cluster.local:4040"
             - name: COUNTRY_CONFIG_URL
