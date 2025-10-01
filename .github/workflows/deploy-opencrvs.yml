@@ -63,32 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Generate summary
-        run: |
-          # set the mark (colored emoji)
-          RESET="${{ inputs.reset }}"
-          if [ "$RESET" = "true" ]; then
-            RESET_MARK="<span style='color:green'>✅ Yes</span>"
-          else
-            RESET_MARK="<span style='color:red'>❌ No</span>"
-          fi
-
-          # build the summary into a variable (unquoted heredoc so $RESET_MARK expands)
-          SUMMARY=$(cat <<EOF
-          ### Deployment Summary
-
-          | Key | Value |
-          |-----|-------|
-          | 🌐 Environment URL | https://${{ vars.DOMAIN }} |
-          | 🛠 Core image tag | \`${{ inputs.core-image-tag }}\` |
-          | 📦 Country config image | \`${{ inputs.countryconfig-image-tag }}\` |
-          | 🌿 Branch name | \`${{ github.ref_name }}\` |
-          | 🔄 Reset environment | $RESET_MARK |
-          EOF
-          )
-
-          # strip the leading 4-space indentation that we used for readability in the workflow,
-          # then append the cleaned output to the GitHub Actions summary (single append)
-          echo "$SUMMARY" | sed 's/^          //' >> $GITHUB_STEP_SUMMARY
+        run: "# set the mark (colored emoji)\nRESET=\"${{ inputs.reset }}\"\nif [ \"$RESET\" = \"true\" ]; then\n  RESET_MARK=\"<span style='color:green'>✅ Yes</span>\"\nelse\n  RESET_MARK=\"<span style='color:red'>❌ No</span>\"\nfi\n\n# build the summary into a variable (unquoted heredoc so $RESET_MARK expands)\nSUMMARY=$(cat <<EOF\n### Deployment Summary\n\n| Key | Value |\n|-----|-------|\n| \U0001F310 Environment URL | https://${{ vars.DOMAIN }} |\n| \U0001F6E0 Core image tag | \\`${{ inputs.core-image-tag }}\\` |\n| \U0001F4E6 Country config image | \\`${{ inputs.countryconfig-image-tag }}\\` |\n| \U0001F33F Branch name | \\`${{ github.ref_name }}\\` |\n| \U0001F504 Reset environment | $RESET_MARK |\nEOF\n)\n\n# strip the leading 4-space indentation that we used for readability in the workflow,\n# then append the cleaned output to the GitHub Actions summary (single append)\necho \"$SUMMARY\" | sed 's/^          //' >> $GITHUB_STEP_SUMMARY\n"
       - name: Deploy OpenCRVS MOSIP API
         if: inputs.deploy_mosip
         run: |
