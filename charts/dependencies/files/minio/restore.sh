@@ -10,6 +10,9 @@
 # Copyright (C) The OpenCRVS Authors
 
 set -e
+# Install necessary tools (if running in an Alpine-based container)
+apk add --no-cache bash curl openssl openssh jq rsync minio-client coreutils
+
 
 # Initial configuration
 RESTORE_DATE=${RESTORE_DATE:-$(date -d "yesterday" +%Y-%m-%d)}
@@ -21,15 +24,16 @@ mkdir -p "$WORK_PATH"
 # Path for decrypted archive
 ARCHIVE_NAME="minio_backup_${RESTORE_DATE}.tar.gz"
 ARCHIVE_PATH="/tmp/$ARCHIVE_NAME"
-# Password for decryption
-ENCRYPT_PASS=${ENCRYPT_PASS:?Must provide ENCRYPT_PASS}
+
 # Remote directory on backup server
 REMOTE_DIR="${BACKUP_REMOTE_DIR:-"/home/$BACKUP_USER"}/$RESTORE_DATE"
 # Default is filesystem restore, can be "mirror"
 RESTORE_MODE=${RESTORE_MODE:-"fs"}
 
-# Install necessary tools (if running in an Alpine-based container)
-apk add --no-cache bash curl openssl openssh jq rsync minio-client coreutils
+if [ -z "$ENCRYPT_PASS"]; then
+  echo "[$(date +%F\ %H:%M:%S)] [ERROR] Must provide ENCRYPT_PASS environment variable"
+  exit 1
+fi
 
 echo "[$(date +%F\ %H:%M:%S)] Starting MinIO restore operation"
 

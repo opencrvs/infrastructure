@@ -13,23 +13,7 @@ spec:
   resources:
     requests:
       storage: {{ default "5Gi" .Values.elasticsearch.data_storage_size }}
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  labels:
-    app: elasticsearch-backup
-  name: elasticsearch-backup
-spec:
-  {{- if .Values.elasticsearch.backup_storage_class }}
-  storageClassName: {{ .Values.elasticsearch.backup_storage_class }}
-  {{- end }}
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: {{ default "1Gi" .Values.elasticsearch.backup_storage_size }}
-{{- end }}
+
 ---
 apiVersion: v1
 kind: Service
@@ -207,7 +191,6 @@ spec:
       {{- if .Values.restore.enabled }}
         - name: restore
           command: ["crond", "-f", "-L", "/var/log/cron.log"]
-          # command: ["/scripts/restore.sh"]
           image: "bash"
           env:
           {{- if not .Values.elasticsearch.use_default_credentials }}
@@ -247,6 +230,8 @@ spec:
       {{- end }}
       restartPolicy: Always
       volumes:
+        - name: elasticsearch-backup
+          emptyDir: {}
         - name: elasticsearch
       {{- if eq $storageType "pvc" }}
           persistentVolumeClaim:
@@ -254,15 +239,6 @@ spec:
       {{- else if eq $storageType "host_path" }}
           hostPath:
             path: {{ .Values.elasticsearch.host_data_path | default "/data/elasticsearch" }}
-            type: DirectoryOrCreate
-      {{- end }}
-        - name: elasticsearch-backup
-      {{- if eq $storageType "pvc" }}
-          persistentVolumeClaim:
-            claimName: elasticsearch-backup
-      {{- else if eq $storageType "host_path" }}
-          hostPath:
-            path: {{ .Values.elasticsearch.host_backup_path | default "/data/backups/elasticsearch" }}
             type: DirectoryOrCreate
       {{- end }}
       {{- if or .Values.backup.enabled .Values.restore.enabled }}

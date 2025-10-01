@@ -1,4 +1,3 @@
-chart_dev_mode: false
 # NOTES:
 # Liveness and readiness probes defaults are here:
 # We are good to go with defaults for now
@@ -201,6 +200,8 @@ resources:
 hearth:
   enabled: true
   port: 3447
+
+
 # Global environment variables applied to
 # all OpenCRVS microservices (Kubernetes PODs):
 env:
@@ -243,25 +244,9 @@ config:
   # Mapping for external secrets goes here:
   # README.md for more details
   secrets: {}
-  # Service level environment variables
-  env:
-    ALERT_EMAIL: kibana-alerts-aaaafy3oysoklmlsqcjxad7rfi@opencrvsworkspace.slack.com
-    CHECK_INVALID_TOKEN: true
 
-    # INFOBIP_API_KEY: ""
-    # INFOBIP_GATEWAY_ENDPOINT: ""
-    # INFOBIP_SENDER_ID: ""
-
-    NOTIFICATION_TRANSPORT: email
-
-    SENDER_EMAIL_ADDRESS: noreply@opencrvs.org
-    SMTP_HOST: localhost
-    SMTP_PASSWORD: ""
-    SMTP_PORT: 587
-    SMTP_SECURE: "false"
-    SMTP_USERNAME: apikey
 dashboards:
-  enabled: true
+  enabled: false
   use_default_credentials: true
   port: 4444
   env:
@@ -276,15 +261,10 @@ dashboards:
     memoryLimit: "2Gi"
     cpuLimit: "2"
 
-data_seeder:
-  enabled: false
-  env:
-    SUPER_USER_PASSWORD: "password"
-    ACTIVATE_USERS: "true"
-
 
 documents:
   port: 9050
+
 
 gateway:
   port: 7070
@@ -297,11 +277,14 @@ gateway:
     DISABLE_RATE_LIMIT: "true"
     LANGUAGES: "en,fr"
 
+
 login:
   port: 3020
 
+
 metrics:
   port: 1050
+
 
 notification:
   env:
@@ -309,8 +292,10 @@ notification:
   replicas: 1
   port: 2020
 
+
 search:
   port: 9090
+
 
 user_mgnt:
   port: 3030
@@ -319,27 +304,39 @@ user_mgnt:
 webhooks:
   port: 2525
 
+
 workflow:
   port: 5050
+
 
 events:
   port: 5555
 
+
 scheduler: {}
 
-# One Time Jobs configuration:
-data_cleanup:
-  # TODO: Add more restrictive flag to avoid someone running this job by mistake
-  enabled: false
-  env:
-    MINIO_BUCKET: ocrvs
+##############################################################
+# One time jobs:
 
+# data_migration: Job to migrate datastores while deployment
 data_migration:
   env:
     SUPER_USER_PASSWORD: "password"
 
-data_seed:
+
+# data_cleanup: Wipe all persistent data from datastores including users
+# By running this job on production environment all data will be lost
+data_cleanup:
+  enabled: false
+
+
+# data_seeder: Initial data seeding into datastore, this job works only with clean environment
+# make sure your environment was cleaned up before running this job
+data_seeder:
   enabled: false
   env:
+    # Default password for admin user for initial data seed
     SUPER_USER_PASSWORD: "password"
+    # When users are seeded, are they immediately active using a test password and
+    # six zeros as a 2-Factor auth code. Always set to false in production and staging.
     ACTIVATE_USERS: "true"

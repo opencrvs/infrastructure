@@ -66,12 +66,6 @@ spec:
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
             - name: COUNTRY_CONFIG_URL_INTERNAL
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
-            - name: DOCUMENTS_URL
-              value: http://documents.{{ .Release.Namespace }}.svc.cluster.local:9050
-            - name: METRICS_URL
-              value: http://metrics.{{ .Release.Namespace }}.svc.cluster.local:1050
-            - name: SEARCH_URL
-              value: http://search.{{ .Release.Namespace }}.svc.cluster.local:9090/    
             - name: USER_MANAGEMENT_URL
               value: http://user-mgnt.{{ .Release.Namespace }}.svc.cluster.local:3030/
           {{- if eq .Values.mongodb.auth_mode "disabled" }}     
@@ -96,7 +90,7 @@ spec:
           ports:
             - containerPort: {{ .Values.config.port }}
               protocol: TCP
-          # TODO: Implement liveness and readiness probes
+          # TODO: Add liveness and readiness probes
           volumeMounts:
             - mountPath: /secrets/public-key.pem
               name: public-key

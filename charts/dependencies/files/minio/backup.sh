@@ -30,6 +30,10 @@ BACKUP_MODE=${BACKUP_MODE:-"fs"}
 # Install required tools
 apk add --no-cache bash curl openssl openssh jq rsync minio-client
 
+if [ -z "$ENCRYPT_PASS"]; then
+  echo "[$(date +%F\ %H:%M:%S)] [ERROR] Must provide ENCRYPT_PASS environment variable"
+  exit 1
+fi
 # Mirror data before backup
 # Works well on any minio installation but is slower and requires additional disk space
 backup_mirror(){

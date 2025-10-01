@@ -31,6 +31,7 @@ on:
         options:
           - demo
           - dev
+          - dev-stg
       reset:
         description: "Reset environment after deploy"
         required: false
@@ -63,31 +64,27 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Generate summary
+        env:
+          PUBLIC_DOMAIN: ${{ vars.DOMAIN }}
         run: |
-          # set the mark (colored emoji)
           RESET="${{ inputs.reset }}"
           if [ "$RESET" = "true" ]; then
-            RESET_MARK="<span style='color:green'>✅ Yes</span>"
+            RESET_MARK="<span style='color:green'>⚠️ Yes</span>"
           else
-            RESET_MARK="<span style='color:red'>❌ No</span>"
+            RESET_MARK="<span style='color:red'>✅ No</span>"
           fi
-
-          # build the summary into a variable (unquoted heredoc so $RESET_MARK expands)
           SUMMARY=$(cat <<EOF
           ### Deployment Summary
 
           | Key | Value |
           |-----|-------|
-          | 🌐 Environment URL | https://${{ vars.DOMAIN }} |
-          | 🛠 Core image tag | \`${{ inputs.core-image-tag }}\` |
-          | 📦 Country config image | \`${{ inputs.countryconfig-image-tag }}\` |
-          | 🌿 Branch name | \`${{ github.ref_name }}\` |
-          | 🔄 Reset environment | $RESET_MARK |
+          | Environment URL | https://$PUBLIC_DOMAIN |
+          | Core image tag | \`${{ inputs.core-image-tag }}\` |
+          | Country config image | \`${{ inputs.countryconfig-image-tag }}\` |
+          | Branch name | \`${{ github.ref_name }}\` |
+          | Reset environment | $RESET_MARK |
           EOF
           )
-
-          # strip the leading 4-space indentation that we used for readability in the workflow,
-          # then append the cleaned output to the GitHub Actions summary (single append)
           echo "$SUMMARY" | sed 's/^          //' >> $GITHUB_STEP_SUMMARY
       - name: Deploy OpenCRVS MOSIP API
         if: inputs.deploy_mosip

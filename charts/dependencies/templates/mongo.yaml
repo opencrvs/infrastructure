@@ -103,11 +103,16 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: mongodb-backup
+  labels:
+    app: mongodb
 spec:
   schedule: {{ .Values.mongodb.backup_schedule | default .Values.backup.schedule }}
   jobTemplate:
     spec:
       template:
+        metadata:
+          labels:
+            app: mongodb
         spec:
           restartPolicy: OnFailure
           containers:

@@ -13,6 +13,9 @@ metricbeat.modules:
     - container
     - volume
     - system
+    - event
+  include_labels:
+  - app
   add_metadata: true
 - module: system
   metricsets:
@@ -45,7 +48,7 @@ output.elasticsearch:
 
 #============================== Dashboards =====================================
 setup.dashboards:
-  enabled: false
+  enabled: true
 
 #============================== Kibana =========================================
 setup.kibana:

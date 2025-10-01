@@ -15,6 +15,9 @@ filebeat.autodiscover:
   providers:
     - type: kubernetes
       hints.enabled: true
+      close_eof: true
+      include_labels:
+      - app
 
 filebeat.modules:
   - module: system
@@ -95,8 +98,21 @@ processors:
             if (k8s.namespace) {
               event.Put("orchestrator.namespace", k8s.namespace);
             }
+            if(k8s.container.name === "backup"){
+              var msg = event.Get("message") || "";
+              var level = "info"; // default
+
+              if (/error|fail|fatal/i.test(msg)) {
+                level = "error";
+              } else if (/warn|warning/i.test(msg)) {
+                level = "warn";
+              } else if (/debug/i.test(msg)) {
+                level = "debug";
+              }
+              event.Put("log.level", level);
+            }
           }
-        }
+        } 
 
 #========================== Elasticsearch output ===============================
 output.elasticsearch:
