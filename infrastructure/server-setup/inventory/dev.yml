@@ -3,7 +3,7 @@ all:
     kube_api_sans:
       - test-k8s.opencrvs.dev
     ansible_user: provision
-    single_node: true
+    single_node: false
     users:
       - name: vmudryi
         ssh_keys:

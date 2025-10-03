@@ -35,7 +35,7 @@ Any particular service within this helm chart can be disabled by setting `<servi
 | ingress.ssl_enabled      | bool    | false   | Enable SSL for IngressRoutes. |
 | ingress.tls_resolver | string | ` ` | If traefik was deployed with custom resolver, please define resolver name here. Resolver will be attached to Traefik CRD IngressRoute, otherwise default Traefik SSL Certificate will be used. |
 | ingress.tls_secret_name | string | ` ` | Custom SSL Certificate for IngressRoute, check traefik documentation for details |
-| storage_type | string | pvc | Kubernetes storage type, available options are `pvc` or `host_path`. More information are at [Storage Configuration](#storage-configuration) |
+| storage_type | string | `pvc` | Kubernetes storage type, available options are `pvc` or `host_path`. More information are at [Storage Configuration](#storage-configuration) |
 | node_selector | dict | `{}` | Label selector for datastore nodes, usually used to keep data persistent |
 | monitoring.enabled | bool | `false` | Enable or disable monitoring, see [Monitoring](#monitoring) |
 | priority_class.enabled | bool | `false` | Enable or disable priority class for datastores. Enabling this option will avoid unnecessary pod eviction. |
@@ -53,6 +53,9 @@ This section allows you to configure the deployment of MongoDB within your infra
 | version                  | string  | 4.4 | Specify the MongoDB Docker image version to use. See: https://hub.docker.com/_/mongo                                         |
 | use_default_credentials  | bool    | true | If true, deploys MongoDB without authentication. If false, custom databases and users are created as specified below.                                                                                                         |
 | data_storage_size | string | 1Gi | Persistent volume claim size for MongoDB data volume |
+| storage_type    | string | `pvc` |  Kubernetes storage type, available options are `pvc` or `host_path`. More information are at [Storage Configuration](#storage-configuration) |
+| host_data_path  | string | `/data/mongo` | Path to persistent data on VM (host) |
+| node_selector   | dict | `{}` | Label selector for datastore nodes, usually used to keep data persistent |
 | backup_schedule | string | `n/a` | Backup cronjob schedule, if not defined then values from `backup.schedule` is used |
 | backup_server_dir | string | `n/a` | Directory to store encrypted backup on backup server, if not defined `backup.backup_server_dir` is used |
 
@@ -66,6 +69,11 @@ This section allows you to configure the postgres deployment within your infrast
 | enabled                  | bool    | true | Enable or disable the Postgres deployment.                                                                                                                                                                                     |
 | use_default_credentials  | bool    | true | If true, deploys Postgres with default user/password: postgres/postgres |
 | data_storage_size | string | 1Gi | Persistent volume claim size for Postgres data volume |
+| storage_type    | string | `pvc` |  Kubernetes storage type, available options are `pvc` or `host_path`. More information are at [Storage Configuration](#storage-configuration) |
+| host_data_path  | string | `/data/postgres` | Path to persistent data on VM (host) |
+| node_selector   | dict | `{}` | Label selector for datastore nodes, usually used to keep data persistent |
+| backup_schedule | string | `n/a` | Backup cronjob schedule, if not defined then values from `backup.schedule` is used |
+| backup_server_dir | string | `n/a` | Directory to store encrypted backup on backup server, if not defined `backup.backup_server_dir` is used |
 
 ## Elasticsearch
 
@@ -77,7 +85,9 @@ This section allows you to configure the deployment and authentication settings 
 | enabled                 | boolean  | true                   | Enable or disable the Elasticsearch deployment.                                              |
 | use_default_credentials | boolean  | true                   | Deploy Elasticsearch without enabled authentication.                                 |
 | data_storage_size | string | 5Gi | Persistent volume claim size for Elasticsearch data volume |
-| backup_storage_size | string | 1Gi | Persistent volume claim size for Elasticsearch backup volume |
+| storage_type    | string | `pvc` |  Kubernetes storage type, available options are `pvc` or `host_path`. More information are at [Storage Configuration](#storage-configuration) |
+| host_data_path  | string | `/data/elasticsearch` | Path to persistent data on VM (host) |
+| node_selector   | dict | `{}` | Label selector for datastore nodes, usually used to keep data persistent |
 | backup_schedule | string | `n/a` | Backup cronjob schedule, if not defined then values from `backup.schedule` is used |
 | backup_server_dir | string | `n/a` | Directory to store encrypted backup on backup server, if not defined `backup.backup_server_dir` is used |
 
@@ -87,7 +97,10 @@ This section allows you to configure the deployment and authentication settings 
 |-|-|-|
 | enabled | true | Enable or disable minio service |
 | use_default_credentials | true | Default credentials for MinIO are username `minioadmin` and password `minioadmin`. |
-| data_storage_size | string | 1Gi | Persistent volume claim size for MinIO data volume |
+| data_storage_size | string | 1Gi | Persistent volume claim size |
+| storage_type    | string | `pvc` |  Kubernetes storage type, available options are `pvc` or `host_path`. More information are at [Storage Configuration](#storage-configuration) |
+| host_data_path  | string | `/data/minio` | Path to persistent data on VM (host) |
+| node_selector   | dict | `{}` | Label selector for datastore nodes, usually used to keep data persistent |
 | backup_schedule | string | `n/a` | Backup cronjob schedule, if not defined then values from `backup.schedule` is used |
 | backup_server_dir | string | `n/a` | Directory to store encrypted backup on backup server, if not defined `backup.backup_server_dir` is used |
 
@@ -200,7 +213,6 @@ More details about ACL support can be found at https://redis.io/docs/latest/oper
 |-------------------------|----------|----------------------------------------------------------------------------------------------|------------------------|
 | enabled                 | boolean  | true                   | Enable or disable the Elasticsearch deployment.                                              |
 | data_storage_size | string | 5Gi | Persistent volume claim size for InfluxDB data volume |
-| backup_storage_size | string | 1Gi | Persistent volume claim size for InfluxDB backup volume |
 
 ## Storage Configuration
 
@@ -211,7 +223,7 @@ You control persistence using the `storage_type` option, which can be set **glob
 - **`storage_type`**, available options:
   - **`pvc`** – Use the default Kubernetes StorageClass to create a PersistentVolumeClaim.
   - **`host_path`** – Use a directory on the Kubernetes node for persistence. The directory must be created with the appropriate permissions. This option is the default for legacy VMs running Docker Swarm that have been migrated to Kubernetes.
-- **`data_storage_size` / `backup_storage_size`** – Define the size of the PVC claim per datastore/service. Please check the Values file for supported keys.
+- **`data_storage_size`** – Define the size of the PVC claim per datastore/service. Please check the Values file for supported keys.
 - **`host_data_path` / `host_backup_path`** – Optionally specify data and backup paths per datastore/service. For example, Elasticsearch supports the `host_data_path` and `host_backup_path` properties to specify where data and backups should be stored. If the directory does not exist, it will be created during deployment.
 - **`node_selector`** – Use a node selector to control where the pod is scheduled. This option can be defined globally or per service.
 
@@ -224,7 +236,6 @@ You control persistence using the `storage_type` option, which can be set **glob
 elasticsearch:
   # storage_type: pvc  # Not required; pvc is default
   data_storage_size: 5Gi
-  backup_storage_size: 1Gi
   storage_class_name: ""  # Optional: specify a StorageClass or leave as "" for default
 ```
 

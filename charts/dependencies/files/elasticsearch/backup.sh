@@ -9,6 +9,9 @@
 #
 # Copyright (C) The OpenCRVS Authors located at https://github.com/opencrvs/opencrvs-core/blob/master/AUTHORS.
 
+# Install required tools
+apk add --no-cache bash curl openssl openssh jq rsync
+
 # Initial variables configuration
 # Today's date is used for filenames if LABEL is not provided
 BACKUP_DATE=$(date +%Y-%m-%d)
@@ -22,12 +25,13 @@ REMOTE_DIR="${BACKUP_REMOTE_DIR:-"/home/$BACKUP_USER"}/$BACKUP_DATE"
 MAX_RETRIES=10
 # Reference to container within the same k8s pod
 ELASTIC_HOST=${ELASTIC_HOST:-"elasticsearch:9200"}
-# Backup encryption password
-ENCRYPT_PASS=${ENCRYPT_PASS:?Must provide ENCRYPT_PASS}
-
+# Snapshot name, default to snapshot_YYYY-MM-DD
 SNAPSHOT_NAME=${SNAPSHOT_NAME:-"snapshot_${BACKUP_DATE}"}
-# Install required tools
-apk add --no-cache bash curl openssl openssh jq rsync
+
+if [ -z "$ENCRYPT_PASS"]; then
+  echo "[$(date +%F\ %H:%M:%S)] [ERROR] Must provide ENCRYPT_PASS environment variable"
+  exit 1
+fi
 
 # Hostname for elasticsearch container
 # - password protected

@@ -1,8 +1,5 @@
 chart_dev_mode: false
 
-imagePullSecrets:
-  - name: dockerhub-credentials
-
 ingress:
   tls_resolver: letsencrypt
 
@@ -10,34 +7,33 @@ hpa:
   enabled: false
 
 env:
-  APN_SERVICE_URL: "http://apm-server.opencrvs-deps-dev.svc.cluster.local:8200"
-  QA_ENV: true
+  APN_SERVICE_URL: "http://apm-server.opencrvs-deps-dev-stg.svc.cluster.local:8200"
 
 hostname: test-k8s.opencrvs.dev
 influxdb:
-  host: influxdb-0.influxdb.opencrvs-deps-dev.svc.cluster.local
+  host: influxdb-0.influxdb.opencrvs-deps-dev-stg.svc.cluster.local
 elasticsearch:
   auth_mode: auto
   port: 9200
-  host: elasticsearch.opencrvs-deps-dev.svc.cluster.local
+  host: elasticsearch.opencrvs-deps-dev-stg.svc.cluster.local
 
 
 minio:
   auth_mode: use_secret
-  host: minio-0.minio.opencrvs-deps-dev.svc.cluster.local
+  host: minio-0.minio.opencrvs-deps-dev-stg.svc.cluster.local
   external_hostname: minio.test-k8s.opencrvs.dev
 
 mongodb:
   auth_mode: auto
-  host: mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local
+  host: mongodb-0.mongodb.opencrvs-deps-dev-stg.svc.cluster.local
 
 redis:
-  auth_mode: use_secret
-  host: redis-0.redis.opencrvs-deps-dev.svc.cluster.local
+  auth_mode: disabled
+  host: redis-0.redis.opencrvs-deps-dev-stg.svc.cluster.local
 
 postgres:
   auth_mode: auto
-  host: postgres-0.postgres.opencrvs-deps-dev.svc.cluster.local
+  host: postgres-0.postgres.opencrvs-deps-dev-stg.svc.cluster.local
 
 resources:
   memoryRequest: "256Mi"
@@ -45,24 +41,16 @@ resources:
   memoryLimit: "2Gi"
   cpuLimit: "1"
 
-image:
-  tag: 0f10027
+imagePullSecrets:
+  - name: dockerhub-credentials
 
 dashboards:
-  enabled: false
+  use_default_credentials: false
 
 countryconfig:
   image:
     name: opencrvs/ocrvs-farajaland
-  secrets:
-    smtp-config:
-      - ALERT_EMAIL
-      - SENDER_EMAIL_ADDRESS
-      - SMTP_HOST
-      - SMTP_PASSWORD
-      - SMTP_PORT
-      - SMTP_SECURE
-      - SMTP_USERNAME
+
   env:
     OPENID_PROVIDER_CLAIMS: name,family_name,given_name,middle_name,birthdate,address
     OPENID_PROVIDER_CLIENT_ID: mock-client_id

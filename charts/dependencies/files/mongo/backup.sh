@@ -22,6 +22,7 @@ REMOTE_DIR="${BACKUP_REMOTE_DIR:-"/home/$BACKUP_USER"}/$BACKUP_DATE"
 ARCHIVE_PATH="/tmp/mongo_backup_${BACKUP_DATE}.tar.gz"
 # Remote directory on backup server
 REMOTE_DIR="${BACKUP_REMOTE_DIR:-"/home/$BACKUP_USER"}/$BACKUP_DATE"
+echo "[$(date +%F\ %H:%M:%S)] Starting MongoDB backup script"
 
 mkdir -p $BACKUP_DIR
 
@@ -29,6 +30,11 @@ mkdir -p $BACKUP_DIR
 rm /etc/apt/sources.list.d/mongodb-org.list
 apt-get update
 apt-get install -y openssh-client rsync
+
+if [ -z "$ENCRYPT_PASS"]; then
+  echo "[$(date +%F\ %H:%M:%S)] [ERROR] Must provide ENCRYPT_PASS environment variable"
+  exit 1
+fi
 
 create_encrypted_backup(){
   echo "[$(date +%F\ %H:%M:%S)] Archive and Encrypt backup at $ARCHIVE_PATH"
@@ -90,6 +96,9 @@ restore_databases() {
     fi
   done
 }
+
+
+
 
 backup
 create_encrypted_backup

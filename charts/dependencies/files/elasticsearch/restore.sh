@@ -29,6 +29,12 @@ ENCRYPT_PASS=${ENCRYPT_PASS:?Must provide ENCRYPT_PASS}
 REMOTE_DIR="${BACKUP_REMOTE_DIR:-"/home/$BACKUP_USER"}/$RESTORE_DATE"
 
 SNAPSHOT_NAME=${SNAPSHOT_NAME:-"snapshot_${RESTORE_DATE}"}
+
+if [ -z "$ENCRYPT_PASS"]; then
+  echo "[$(date +%F\ %H:%M:%S)] [ERROR] Must provide ENCRYPT_PASS environment variable"
+  exit 1
+fi
+
 # Hostname for elasticsearch container
 # - password protected
 # - no-password access
