@@ -54,6 +54,15 @@ jobs:
           k8s_cluster_env: ${{ inputs.environment }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_TOKEN }}
+          smtp_host: ${{ secrets.SMTP_HOST }}
+          smtp_port: ${{ secrets.SMTP_PORT }}
+          smtp_user: ${{ secrets.SMTP_USERNAME }}
+          smtp_secure: ${{ secrets.SMTP_SECURE }}
+          # FIXME: Make this field configurable via secrets
+          smtp_from: "team@opencrvs.org"
+          smtp_password: ${{ secrets.SMTP_PASSWORD }}
+          alert_email: ${{ secrets.ALERT_EMAIL }}
+
       - name: checkout repository
         uses: actions/checkout@v5
       - name: Run Ansible Playbook
