@@ -13,7 +13,7 @@ spec:
   resources:
     requests:
       storage: {{ default "5Gi" .Values.elasticsearch.data_storage_size }}
-
+{{- end }}
 ---
 apiVersion: v1
 kind: Service
