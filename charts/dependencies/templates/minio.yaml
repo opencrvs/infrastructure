@@ -284,7 +284,7 @@ spec:
             name: minio-backup-cronjobs
       {{- end }}
       {{- if .Values.restore.enabled }}
-        - name: restore-ssh-key
+        - name: backup-ssh-key
           secret:
             secretName: {{ .Values.restore.backup_server_secret }}
             defaultMode: 0400
