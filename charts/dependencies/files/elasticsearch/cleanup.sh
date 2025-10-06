@@ -36,6 +36,7 @@ for index in $indices; do
       "$approved"*) 
           echo "Delete index $index..."
           curl -sS -XDELETE "http://$(elasticsearch_host)/$index"
+          echo ""
           break
           ;;
       esac

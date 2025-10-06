@@ -107,6 +107,9 @@ restore_elasticsearch_snapshot(){
 transfer_from_backup_host
 decrypt_backup
 extract_backup
+echo "[$(date +%F\ %H:%M:%S)] Cleanup existing indices"
+/scripts/cleanup.sh
+
 create_elasticsearch_snapshot_repository
 echo "[$(date +%F\ %H:%M:%S)] Available snapshots: $(list_snapshots)"
 

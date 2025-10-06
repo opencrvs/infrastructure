@@ -57,7 +57,11 @@ extract_backup(){
 
 restore(){
   echo "[$(date +%F\ %H:%M:%S)] Running restore for DB $DB"
-  influxd restore -portable -host $INFLUXDB_HOST:$INFLUXDB_PORT -db $DB $WORK_PATH
+  influxd restore -portable -host $INFLUXDB_HOST:$INFLUXDB_PORT -db $DB $WORK_PATH || {
+    echo "[$(date +%F\ %H:%M:%S)] [ERROR] Restore command failed" >&2
+    exit 1
+  }
+  echo "[$(date +%F\ %H:%M:%S)] Restore completed successfully"
 }
 /scripts/cleanup.sh
 transfer_from_backup_host

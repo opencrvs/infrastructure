@@ -218,7 +218,7 @@ spec:
         spec:
           restartPolicy: OnFailure
           containers:
-            - name: backup
+            - name: restore
               image: influxdb:1.8.10
               env:
                 - name: INFLUXDB_HOST
