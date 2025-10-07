@@ -19,6 +19,11 @@ chart_dev_mode: true
 
 # Label selector for datastore nodes, usually used to keep data persistent
 node_selector: {}
+resources:
+  memoryRequest: "100Mi"
+  cpuRequest: "100m"
+  memoryLimit: "8Gi"
+  cpuLimit: "8"
 
 mongodb:
   # Enable MongoDB deployment.
@@ -54,6 +59,11 @@ elasticsearch:
   # TEMPORAL SECRET TO STORE ELASTICSEARCH USERS
   users_secret: elasticsearch-opencrvs-users
   urls_secret: elasticsearch-opencrvs-urls
+  resources:
+    memoryRequest: "2Gi"
+    cpuRequest: "2"
+    memoryLimit: "8Gi"
+    cpuLimit: "8"
 
 # monitoring aggregates following components:
 # - kibana
@@ -66,7 +76,9 @@ monitoring:
   enabled: false
 
 kibana: {}
-metricbeat: {}
+metricbeat:
+  dashboards:
+    - kubernetes-e0195ce0-bcaf-11ec-b64f-7dd6e8e82013
 filebeat: {}
 logstash: {}
 

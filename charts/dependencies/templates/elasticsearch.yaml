@@ -133,11 +133,7 @@ spec:
           {{- end }}
           image: {{ .Values.elasticsearch.image | default "docker.elastic.co/elasticsearch/elasticsearch:8.16.4" }}
           name: elasticsearch
-          resources:
-            requests:
-              memory: "2Gi"
-            limits:
-              memory: "8Gi"
+          {{ include "resources-helper" (dict "service_name" "elasticsearch" "Values" .Values) | indent 10 }}
           ports:
             - containerPort: 9200
               protocol: TCP
