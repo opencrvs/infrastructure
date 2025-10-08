@@ -79,7 +79,7 @@ processors:
         function process(event) {
           // Kubernetes correlation
           var k8s = event.Get("kubernetes");
-          if (k8s) {
+          if (typeof k8s === 'object' && k8s !== null) {
             if (k8s.pod && k8s.pod.name) {
               event.Put("host.name", k8s.pod.name);
             }
@@ -90,12 +90,15 @@ processors:
             if (k8s.labels && k8s.labels["service_name"]) {
               event.Put("service.name", k8s.labels["service_name"]);
             }
+            if (k8s.labels && k8s.labels["environment"]) {
+              event.Put("service.environment", k8s.labels["environment"]);
+            }
             // Set orchestrator info
             event.Put("orchestrator.type", "kubernetes");
             if (k8s.namespace) {
               event.Put("orchestrator.namespace", k8s.namespace);
             }
-            if(k8s.container.name === "backup"){
+            if(k8s.container && ["backup", "restore"].includes(k8s.container.name)){
               var msg = event.Get("message") || "";
               var level = "info"; // default
 
