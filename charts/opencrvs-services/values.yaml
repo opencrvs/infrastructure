@@ -227,6 +227,7 @@ countryconfig:
     tag: v1.9.0-beta-1
   port: 3040
 
+##############################################################
 # Per service configuration:
 auth:
   port: 4040
@@ -234,16 +235,11 @@ auth:
 client:
   port: 3000
   env:
+    # FIXME: Do we need define this variable?
     DECLARED_DECLARATION_SEARCH_QUERY_COUNT: 100
 
-# `config` Microservice configuration example:
 config:
   port: 2021
-
-
-  # Mapping for external secrets goes here:
-  # README.md for more details
-  secrets: {}
 
 dashboards:
   enabled: false
