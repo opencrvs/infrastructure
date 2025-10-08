@@ -30,7 +30,7 @@ REMOTE_DIR="${BACKUP_REMOTE_DIR:-"/home/$BACKUP_USER"}/$RESTORE_DATE"
 # Default is filesystem restore, can be "mirror"
 RESTORE_MODE=${RESTORE_MODE:-"fs"}
 
-if [ -z "$ENCRYPT_PASS"]; then
+if [ -z "$ENCRYPT_PASS" ]; then
   echo "[$(date +%F\ %H:%M:%S)] [ERROR] Must provide ENCRYPT_PASS environment variable"
   exit 1
 fi

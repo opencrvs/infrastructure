@@ -23,14 +23,14 @@ BACKUP_DIR="/data/backups/elasticsearch"
 # Path for decrypted archive
 ARCHIVE_NAME="elasticsearch_backup_${RESTORE_DATE}.tar.gz"
 ARCHIVE_PATH="/tmp/$ARCHIVE_NAME"
-# Password for decryption
-ENCRYPT_PASS=${ENCRYPT_PASS:?Must provide ENCRYPT_PASS}
+
 # Remote directory on backup server
 REMOTE_DIR="${BACKUP_REMOTE_DIR:-"/home/$BACKUP_USER"}/$RESTORE_DATE"
 
 SNAPSHOT_NAME=${SNAPSHOT_NAME:-"snapshot_${RESTORE_DATE}"}
 
-if [ -z "$ENCRYPT_PASS"]; then
+# Check password for decryption
+if [ -z "$ENCRYPT_PASS" ]; then
   echo "[$(date +%F\ %H:%M:%S)] [ERROR] Must provide ENCRYPT_PASS environment variable"
   exit 1
 fi

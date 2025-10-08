@@ -23,14 +23,13 @@ ARCHIVE_PATH="/tmp/minio_backup_${BACKUP_DATE}.tar.gz"
 REMOTE_DIR="${BACKUP_REMOTE_DIR:-"/home/$BACKUP_USER"}/$BACKUP_DATE"
 # Number of retries for backup creation
 MAX_RETRIES=10
-# Backup encryption password
-ENCRYPT_PASS=${ENCRYPT_PASS:?Must provide ENCRYPT_PASS}
 
 BACKUP_MODE=${BACKUP_MODE:-"fs"}
 # Install required tools
 apk add --no-cache bash curl openssl openssh jq rsync minio-client
 
-if [ -z "$ENCRYPT_PASS"]; then
+# Check backup encryption password
+if [ -z "$ENCRYPT_PASS" ]; then
   echo "[$(date +%F\ %H:%M:%S)] [ERROR] Must provide ENCRYPT_PASS environment variable"
   exit 1
 fi

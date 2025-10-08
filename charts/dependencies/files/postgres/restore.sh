@@ -25,7 +25,7 @@ ARCHIVE_PATH="/tmp/$ARCHIVE_NAME"
 apt-get update
 apt-get install -y openssh-client rsync
 
-if [ -z "$ENCRYPT_PASS"]; then
+if [ -z "$ENCRYPT_PASS" ]; then
   echo "[$(date +%F\ %H:%M:%S)] [ERROR] Must provide ENCRYPT_PASS environment variable"
   exit 1
 fi

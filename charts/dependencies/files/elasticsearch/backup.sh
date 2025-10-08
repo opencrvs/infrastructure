@@ -28,7 +28,7 @@ ELASTIC_HOST=${ELASTIC_HOST:-"elasticsearch:9200"}
 # Snapshot name, default to snapshot_YYYY-MM-DD
 SNAPSHOT_NAME=${SNAPSHOT_NAME:-"snapshot_${BACKUP_DATE}"}
 
-if [ -z "$ENCRYPT_PASS"]; then
+if [ -z "$ENCRYPT_PASS" ]; then
   echo "[$(date +%F\ %H:%M:%S)] [ERROR] Must provide ENCRYPT_PASS environment variable"
   exit 1
 fi
