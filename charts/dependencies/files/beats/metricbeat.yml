@@ -23,7 +23,11 @@ metricbeat.modules:
     - memory
     - network
     - process
+    - load
     - diskio
+    - process_summary
+    - core
+    - socket
   period: 10s
 - module: system
   metricsets:
@@ -39,6 +43,10 @@ processors:
       # Enable more indexers for better pod correlation
       default_indexers.enabled: true
       default_matchers.enabled: true
+  - add_fields:
+      target: ''
+      fields:
+        host.name: ${NODE_NAME}
 
 #========================== Elasticsearch output ===============================
 output.elasticsearch:

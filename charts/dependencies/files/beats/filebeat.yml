@@ -15,9 +15,6 @@ filebeat.autodiscover:
   providers:
     - type: kubernetes
       hints.enabled: true
-      close_eof: true
-      include_labels:
-      - app
 
 filebeat.modules:
   - module: system
