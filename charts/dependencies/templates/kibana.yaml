@@ -114,6 +114,8 @@ spec:
         - name: kibana
           image: {{ .Values.kibana.image | default "docker.elastic.co/kibana/kibana:8.16.4" }}
           env:
+            - name: PUBLIC_BASE_URL
+              value: {{ include "render-external-url" (dict "service_name" "kibana" "Values" .Values) }}
             # TODO: When users are not enabled
             - name: ELASTICSEARCH_USERNAME
               valueFrom:
