@@ -330,9 +330,9 @@ data_cleanup:
   enabled: false
 
 
-# data_seeder: Initial data seeding into datastore, this job works only with clean environment
+# data_seed: Initial data seeding into datastore, this job works only with clean environment
 # make sure your environment was cleaned up before running this job
-data_seeder:
+data_seed:
   enabled: false
   env:
     # Default password for admin user for initial data seed

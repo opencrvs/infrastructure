@@ -368,9 +368,9 @@ helm get values opencrvs --namespace "opencrvs-dev" \
             <th>Properties listed below can be defined particularly to specific service</th>
         </tr>
         <tr>
-            <td>data_seeder.enabled</td>
+            <td>data_seed.enabled</td>
             <td>true</td>
-            <td>Seed data as post-install step, data seeder is executed only once while `helm install`. In some cases when data is already seeded, e/g upgrade, this value must be set to false. **Note**: default user is used for data seeding, it will fail anyway on database with non-default data.</td>
+            <td>Seed data as post-install step is executed only once while `helm install`. In some cases when data is already seeded, for example upgrade. **Note**: default user and password is used for data seeding, the job will fail on database with non-default data.</td>
         </tr>
         <tr>
             <td>dashboards.use_default_credentials</td>
