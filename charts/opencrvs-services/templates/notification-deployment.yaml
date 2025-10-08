@@ -21,7 +21,7 @@ spec:
         - name: notification
           image: "ghcr.io/opencrvs/ocrvs-notification:{{ .Values.image.tag }}"
           env:
-            - name: NODE_NAME
+            - name: APN_NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName

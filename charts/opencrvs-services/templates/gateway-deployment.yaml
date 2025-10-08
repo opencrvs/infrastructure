@@ -51,7 +51,7 @@ spec:
         - name: gateway
           image: "ghcr.io/opencrvs/ocrvs-gateway:{{ .Values.image.tag }}"
           env:
-            - name: NODE_NAME
+            - name: APN_NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName

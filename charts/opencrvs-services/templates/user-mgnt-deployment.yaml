@@ -21,7 +21,7 @@ spec:
         - name: user-mgnt
           image: "ghcr.io/opencrvs/ocrvs-user-mgnt:{{ .Values.image.tag }}"
           env:
-            - name: NODE_NAME
+            - name: APN_NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName

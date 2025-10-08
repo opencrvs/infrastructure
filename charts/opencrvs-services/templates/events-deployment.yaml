@@ -54,7 +54,7 @@ spec:
         - name: events
           image: "ghcr.io/opencrvs/ocrvs-events:{{ .Values.image.tag }}"
           env:
-            - name: NODE_NAME
+            - name: APN_NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName

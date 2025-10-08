@@ -50,7 +50,7 @@ spec:
         - image: "ghcr.io/opencrvs/ocrvs-auth:{{ .Values.image.tag }}"
           name: auth
           env:
-            - name: NODE_NAME
+            - name: APN_NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName

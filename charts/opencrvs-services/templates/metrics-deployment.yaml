@@ -19,7 +19,7 @@ spec:
         - image: "ghcr.io/opencrvs/ocrvs-metrics:{{ .Values.image.tag }}"
           name: metrics
           env:
-            - name: NODE_NAME
+            - name: APN_NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName

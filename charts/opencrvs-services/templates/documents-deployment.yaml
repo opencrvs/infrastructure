@@ -21,7 +21,7 @@ spec:
         - image: "ghcr.io/opencrvs/ocrvs-documents:{{ .Values.image.tag }}"
           name: documents
           env:
-            - name: NODE_NAME
+            - name: APN_NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
