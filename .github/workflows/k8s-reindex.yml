@@ -9,9 +9,7 @@ on:
         default: "dev"
         type: choice
         options:
-          - demo
-          - dev
-          - dev-stg
+          - ""
   workflow_call:
     inputs:
       environment:

@@ -27,9 +27,7 @@ on:
         default: "dev"
         type: choice
         options:
-          - demo
-          - dev
-          - dev-stg
+          - ""
       reset:
         description: "Reset environment after deploy"
         required: false

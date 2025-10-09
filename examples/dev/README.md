@@ -6,40 +6,8 @@ OpenCRVS can be deployed either:
 
 * **Manually** (using Helm and CLI commands), see [README-on-existing-cluster](README-on-existing-cluster.md) or
 * **Automatically** (using the provided GitHub Action Workflows).
-
 ---
 
-# Prerequisites
-
-Before starting the deployment, ensure the following requirements are met:
-
-**1. Virtual Machine resources**
-
-   * Minimum: **8 CPU cores, 16 GB RAM, 50 GB SSD**.
-
-**2. Operating System**
-
-   * VM is running **Ubuntu 24.04 LTS**.
-
-**3. Networking and Domain Configuration**
-
-* The VM must have a **public IP address** and (or) ports **80** and **443** must be accessible.
-* A **valid domain name** must be configured and point to the VM.
-* Required DNS records:
-
-  * An **A record** pointing the primary domain to the VM IP (e.g., `opencrvs.example.com`).
-  * A **wildcard A record** (e.g., `*.opencrvs.example.com`) or individual subdomains pointing to the same VM IP.
-* These settings are required for **Traefik** to issue valid SSL certificates using Let’s Encrypt (`http-01` challenge).
-
-> See the [OpenCRVS documentation on DNS setup](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.5-setup-dns-a-records#domain-a-records) for details.
-
-> If you don't have public IP Address please follow guide "How to run traefik with self-signed SSL Certificate", see [TODO](#link-goes-here)
-
-**4. Create provisioning User**
-
-   * The VM must be provisioned with an SSH user account according to [Provision Your Server Nodes with SSH Access](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.1-provision-your-server-nodes-with-ssh-access).
-
----
 
 # Deployment Package Contents
 
@@ -73,6 +41,35 @@ The deployment package includes the following components:
   * MOSIP integration version: `latest`
 
 
+---
+
+# Prerequisites
+
+Before starting the deployment, ensure the following requirements are met:
+
+**1. Virtual Machine resources**
+
+   * Minimum: **8 CPU cores, 16 GB RAM, 50 GB SSD**.
+
+**2. Operating System**
+
+   * VM is running **Ubuntu 24.04 LTS**.
+
+**3. Networking and Domain Configuration**
+
+* The VM must have a **public IP address** and (or) ports **80** and **443** must be accessible.
+* A **valid domain name** must be configured and point to the VM.
+* Required DNS records:
+
+  * An **A record** pointing the primary domain to the VM IP (e.g., `opencrvs.example.com`).
+  * A **wildcard A record** (e.g., `*.opencrvs.example.com`) or individual subdomains pointing to the same VM IP.
+* These settings are required for **Traefik** to issue valid SSL certificates using Let’s Encrypt (`http-01` challenge).
+
+> See the [OpenCRVS documentation on DNS setup](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.5-setup-dns-a-records#domain-a-records) for details.
+
+> If you don't have public IP Address please follow guide "How to run traefik with self-signed SSL Certificate", see [TODO](#link-goes-here)
+
+---
 
 # Deploy OpenCRVS with GitHub Actions Workflows
 
@@ -86,29 +83,10 @@ You will need to provide the following values while installation multiple times:
 * GitHub repository name: `<your-repository>`
 * GitHub PAT (personal access token) with access to repository code and workflows: `<GH_TOKEN or dedicated token>`
 * Environment name: `<env name>`
----
-
-## 1. Bootstrap GitHub Self-Hosted Runner
-
-The self-hosted runner must be installed on the single VM (or master node).
-
-1. Login as `provision` user
-
-2. Run the following command on the VM:
-    ```bash
-    curl -s https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/github-runner/node-runner.sh -o runner.sh && bash runner.sh
-    ```
-
-**Verify runner is available**
-
-1. If successful, you will see a confirmation message:
-    ```
-    ✅ Runner '....-runner' is installed and started!
-    ```
-2. In your GitHub repository, navigate to **Settings → Actions → Runners** and verify that the runner appears as a self-hosted runner.
 
 ---
-## 2.  Create a GitHub environment
+
+## 1.  Create a GitHub environment
 
 * Checkout forked infrastructure repository into any folder on your laptop
   ```
@@ -122,65 +100,35 @@ The self-hosted runner must be installed on the single VM (or master node).
   ```
   yarn environment:init
   ```
+* Go to GitHub and verify the newly created environment
+* Commit configuration files generated at `infrastructure/server-setup/inventory/` and `environments/` into git
 
-### 2.1 Update infrastructure configuration
+## 2. Bootstrap GitHub Self-Hosted Runner
 
-* Navigate to the `infrastructure/server-setup/inventory` folder.
-* Open a configuration file for your environment, see example.
+The self-hosted runner must be installed on the single VM (master node). The VM must be provisioned with an SSH user account according to [Provision Your Server Nodes with SSH Access](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.1-provision-your-server-nodes-with-ssh-access).
 
-  > NOTE: The file name must match the GitHub environment name.
-  >
-  > Example: if your environment is `dev`, the file name should be `dev.yml`.
-* Make sure all variables in your file are correct.
-  * Add your user name to `users`
-  * Add domain or IP you would like to use for connecting to kubernetes cluster to `kube_api_sans`
-  * For multi-node environment update `workers` section with correct IP addresses
-  * If backup server is enabled, update `backup` section with correct IP address
-4. Commit your changes.
-5. Ensure the **Update workflow environments** Github Action has run successfully. You should see updates to all other GitHub workflows.
+> NOTE: On previous step environment configuration script left correct command as output.
 
+1. Login as user with sudo access or as root
 
-Example configuration file (`dev.yml`):
+2. Run the following command on the VM:
+    ```bash
+    curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/ocrvs-9792/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh | \
+    bash opencrvs-bootstrap.sh --owner <org name> \
+                --repo <repo name> \
+                --env <env name> \
+                --token <github token> \
+                --enable-runner
+    ```
 
-```yaml
-all:
-  vars:
-    # Add IP address for communication with your cluster from your laptop
-    # - If you are behind VPN, use private IP address
-    # - If your server is exposed (not recommeded), use public IP address
-    # - If you would like to run kubectl commands from the remote server, leave this field empty
-    kube_api_sans: []
-    # Keep default
-    ansible_user: provision
-    # For development/qa/testing/staging keep true
-    # For production keep false
-    single_node: true
-    users:
-      # Add as many users as you wish
-      - name: myuser
-        ssh_keys:
-          - ssh-ed25519 AAAAC3N...cN/5HAjKGbi2DqV7g/Q
-        state: present
-        # FIXME: https://github.com/opencrvs/opencrvs-core/issues/6267
-        # Keep admin for now, feature is not documented
-        role: admin
-  children:
-    master:
-      hosts:
-        # Update with your real host name
-        test-k8s-master:
-          ansible_host: localhost
-          ansible_connection: local
-```
+**Checklist for script execution**
 
-### 2.2 Update OpenCRVS environment configuration files
-
-At environment creation phase environment files are stored into `environments/<env name>` folder. Navigate to this folder and update files one by one. Folder contains configuration for the following helm charts:
-- traefik: Usually helm chart doesn't require updates.
-- dependencies: Usually helm chart doesn't require updates.
-- opencrvs-services: Update countryconfig container image, hostname, environment variables, ingress & Traefik TLS/SSL configuration etc.
-
-Commit your changes.
+1. Verify `provision` user was created:
+    ```
+    ls -l /home/provision
+    su - provision
+    ```
+2. In your GitHub repository, navigate to **Settings → Actions → Runners** and verify that the runner appears as a self-hosted runner.
 
 ---
 
