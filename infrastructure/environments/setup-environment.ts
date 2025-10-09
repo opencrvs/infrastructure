@@ -1500,6 +1500,36 @@ ALL_QUESTIONS.push(
       `Successfully updated Github secrets and variables for environment ${environment}`
     )
   )
+
+  const worker_message = number_of_servers > 1 ? 
+`
+-----------------------
+➡️ ${kleur.bold().yellow('COPY the SSH public key from the master VM to your clipboard')}
+-----------------------
+➡️ ${kleur.bold().yellow('Run following command on Kubernetes worker VM to create provision user and setup SSH key:')}
+
+curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/ocrvs-9792/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\
+bash opencrvs-bootstrap.sh --ssh-public-key` : ''
+
+  log(`
+${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
+Follow the steps below to complete the setup of your environment:
+${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
+➡️ ${kleur.bold().yellow('Run following command on Kubernetes master VM to bootstrap self-hosted runner:')}
+
+curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/ocrvs-9792/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\
+bash opencrvs-bootstrap.sh --owner ${githubOrganisation} \\
+            --repo ${githubRepository} \\
+            --env ${environment} \\
+            --token ${githubToken} \\
+            --enable-runner
+${worker_message}
+
+-----------------------
+➡️ ${kleur.bold().yellow('Update infrastructure file at:')}
+   - infrastructure/infrastructure/server-setup/inventory/${environment}.yml
+${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
+    `)
   log('\nAll variables stored in', kleur.cyan(`.env.${environment}`))
   log(kleur.bold().yellow('DO NOT COMMIT THIS FILE TO GIT!'))
 })()

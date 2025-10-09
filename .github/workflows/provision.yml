@@ -10,6 +10,7 @@ on:
         type: choice
         options:
           - dev
+          - demo-prod
           - demo
       tags:
         description: 'Tags to apply to the provisioned resources'
@@ -27,8 +28,7 @@ on:
           - decrypt-on-boot
           - checks
           - containerd-setup
-          - kubernetes-installation
-          - join-workers
+          - k8s
           - system-preparation
 jobs:
   provision:
@@ -62,7 +62,6 @@ jobs:
           smtp_from: "team@opencrvs.org"
           smtp_password: ${{ secrets.SMTP_PASSWORD }}
           alert_email: ${{ secrets.ALERT_EMAIL }}
-
       - name: checkout repository
         uses: actions/checkout@v5
       - name: Run Ansible Playbook
