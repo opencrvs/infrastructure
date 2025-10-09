@@ -98,7 +98,7 @@ processors:
             if (k8s.namespace) {
               event.Put("orchestrator.namespace", k8s.namespace);
             }
-            if(k8s.container && ["backup", "restore"].includes(k8s.container.name)){
+            if(k8s.container && ["backup", "restore"].indexOf(k8s.container.name) > 0){
               var msg = event.Get("message") || "";
               var level = "info"; // default
 
