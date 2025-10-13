@@ -42,11 +42,11 @@ jobs:
             ' > ${namespace}.json
       - name: Reindex data
         run: |
-          kubectl delete job -n opencrvs-${ENV} elasticsearch-reindex || true
+          kubectl delete job -n ${namespace} elasticsearch-reindex || true
           helm template -f ${namespace}.json \
-              --namespace opencrvs-${ENV} \
+              --namespace ${namespace} \
               -s templates/elasticsearch-reindex.yaml \
-              oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} -f -
+              oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} -f -
           sleep 30;
-          kubectl logs job/elasticsearch-reindex -f -n opencrvs-${ENV} || true
-          kubectl wait --for=condition=complete job/elasticsearch-reindex -n opencrvs-${ENV} --timeout=600s;
+          kubectl logs job/elasticsearch-reindex -f -n ${namespace} || true
+          kubectl wait --for=condition=complete job/elasticsearch-reindex -n ${namespace} --timeout=600s;
