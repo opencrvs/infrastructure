@@ -49,7 +49,7 @@ dashboards:
 
 countryconfig:
   image:
-    # Replace countryconfig with farajaland to test data
+    # Replace with your countryconfig container image
     name: opencrvs/ocrvs-farajaland
     # name: opencrvs/ocrvs-countryconfig
     tag: 3314a9a
@@ -57,12 +57,7 @@ countryconfig:
     # tag: v1.8.1
 
   env:
-    OPENID_PROVIDER_CLAIMS: name,family_name,given_name,middle_name,birthdate,address
-    OPENID_PROVIDER_CLIENT_ID: mock-client_id
     V2_EVENTS: "true"
-    FIXME: In general these values should be passed externally using `--set key=value`
-    ESIGNET_REDIRECT_URL: https://esignet-mock.test-k8s.opencrvs.dev/authorize
-    MOSIP_API_USERINFO_URL: https://mosip-api.test-k8s.opencrvs.dev/esignet/get-oidp-user-info
 
 data_seed:
   env:

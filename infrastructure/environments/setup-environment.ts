@@ -238,7 +238,7 @@ const githubQuestions = [
   {
     name: 'githubRepository',
     type: 'text' as const,
-    message: 'What is your Github repository?',
+    message: 'What is your Github infrastructure repository?',
     validate: notEmpty,
     initial: process.env.GITHUB_REPOSITORY,
     scope: 'REPOSITORY' as const
@@ -331,7 +331,7 @@ const infrastructureQuestions = [
     type: 'text' as const,
     message: `What is the amount of diskspace that should be dedicated to OpenCRVS data and will become the size of an encrypted cryptfs data directory.
     \n${kleur.red('DO NOT USE ALL DISKSPACE FOR OPENCRVS!')}
-    \nLeave at least 50g available for OS use.`,
+    \nLeave at least 150g available for OS & Docker use.`,
     valueType: 'VARIABLE' as const,
     validate: notEmpty,
     valueLabel: 'DISK_SPACE',
