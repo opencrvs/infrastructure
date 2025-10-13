@@ -17,7 +17,7 @@ on:
       environment:
         type: string
 jobs:
-  seed:
+  reindex:
     environment: ${{ inputs.environment }}
     env:
       namespace: opencrvs-${{ inputs.environment }}
