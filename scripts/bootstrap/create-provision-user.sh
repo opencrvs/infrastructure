@@ -110,7 +110,7 @@ else
         sudo -u $USER_NAME mkdir -p /home/$USER_NAME/.ssh
         sudo -u $USER_NAME ssh-keygen -t ed25519 -f /home/$USER_NAME/.ssh/id_ed25519 -N "" -C "${USER_NAME}@$(hostname)"
     fi
-    if [ -f /home/$USER_NAME/.ssh/id_ed25519.pub ]; then
+    if sudo [ -f /home/$USER_NAME/.ssh/id_ed25519.pub ]; then
     log "
         ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ Store the following public key for later usage ⚠️ ⚠️ ⚠️ ⚠️ ⚠️
         ⚙️  $USER_NAME SSH key pair public key (add on worker nodes if needed):

@@ -95,10 +95,10 @@ chmod +x /tmp/node-runner.sh
                                                         --token "${GITHUB_TOKEN}"
 
 echo ""
-[ -z "$SSH_PUBLIC_KEY" ] && \
+sudo [ -f "/home/$PROVISION_USER/.ssh/id_ed25519.pub" ] && \
 echo "
 ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ Store the following public key for later usage ⚠️ ⚠️ ⚠️ ⚠️ ⚠️
 ⚙️  $PROVISION_USER SSH key pair public key (add on worker nodes if needed):
-"
+" && \
 sudo cat /home/$PROVISION_USER/.ssh/id_ed25519.pub
-echo "Node bootstrap complete for $NODE_TYPE."
+echo "Node bootstrap complete for $(hostname)."

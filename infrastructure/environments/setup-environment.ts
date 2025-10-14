@@ -334,7 +334,7 @@ const infrastructureQuestions = [
     // validate: notEmpty,
     valueLabel: 'KUBE_API_HOST',
     initial: process.env.KUBE_API_HOST || '',
-    scope: 'ENVIRONMENT' as const,
+    scope: 'ENVIRONMENT' as const
   },
   {
     name: 'workerNodes',
@@ -1530,7 +1530,7 @@ ALL_QUESTIONS.push(
     )
   )
 
-  const worker_message = workerNodes.length > 1 ? 
+  const worker_message = workerNodes.length > 0 ? 
 `
 -----------------------
 ➡️ ${kleur.bold().yellow('COPY the SSH public key from the master VM to your clipboard')}
@@ -1538,7 +1538,7 @@ ALL_QUESTIONS.push(
 ➡️ ${kleur.bold().yellow('Run following command on Kubernetes worker VM to create provision user and setup SSH key:')}
 
 curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/ocrvs-9792/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\
-bash opencrvs-bootstrap.sh --ssh-public-key` : ''
+bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}` : ''
 
   log(`
 ${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
@@ -1554,9 +1554,6 @@ bash opencrvs-bootstrap.sh --owner ${githubOrganisation} \\
             --enable-runner
 ${worker_message}
 
------------------------
-➡️ ${kleur.bold().yellow('Update infrastructure file at:')}
-   - infrastructure/infrastructure/server-setup/inventory/${environment}.yml
 ${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
     `)
   log('\nAll variables stored in', kleur.cyan(`.env.${environment}`))
