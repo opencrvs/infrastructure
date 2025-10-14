@@ -83,9 +83,9 @@ You will need to provide the following values while installation multiple times:
 * GitHub repository name: `<your-repository>`
 * GitHub PAT (personal access token) with access to repository code and workflows: `<GH_TOKEN or dedicated token>`
 * Environment name: `<env name>`
----
 
 ---
+
 ## 1.  Create a GitHub environment
 
 * Checkout forked infrastructure repository into any folder on your laptop
