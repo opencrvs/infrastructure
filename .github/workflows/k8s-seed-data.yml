@@ -9,7 +9,7 @@ on:
         default: "dev"
         type: choice
         options:
-          - ""
+          - demo-prod
   workflow_call:
     inputs:
       environment:
@@ -40,16 +40,13 @@ jobs:
             ' > ${namespace}.json
       - name: Seeding data
         run: |
-          kubectl delete job -n opencrvs-${ENV} data-seed || true
-          kubectl delete pod -n opencrvs-${ENV} -lapp=events;
-          sleep 30;
-          kubectl wait --for=condition=ready pod -n opencrvs-${ENV} -lapp=events;
+          kubectl delete job --wait -n ${namespace} data-seed || true
           helm template -f ${namespace}.json \
               --set data_seed.enabled=true \
-              --namespace opencrvs-${ENV} \
+              --namespace ${namespace} \
               -s templates/data-seed-job.yaml \
-              oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} -f -
-          sleep 30;
-          kubectl logs job/data-seed -f -n opencrvs-${ENV} || true
-          kubectl wait --for=condition=complete job/data-seed -n opencrvs-${ENV} --timeout=600s;
-          kubectl delete pod -n opencrvs-${ENV} -lapp=events;
+              oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait --timeout=600s -f -
+          kubectl get pods -n ${namespace} -lapp=data-seed
+          kubectl wait --for=condition=Complete job/data-seed -n ${namespace} --timeout=600s; RES=$?
+          kubectl logs job/data-seed -f -n ${namespace}
+          exit $RES
