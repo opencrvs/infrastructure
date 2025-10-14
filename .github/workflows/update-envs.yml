@@ -52,6 +52,7 @@ jobs:
             ".github/workflows/deploy-opencrvs.yml"
             ".github/workflows/k8s-reset-data.yml"
             ".github/workflows/k8s-seed-data.yml"
+            ".github/workflows/k8s-reindex.yml"
           )
           path=".on.workflow_dispatch.inputs.environment.options"
 
