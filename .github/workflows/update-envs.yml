@@ -27,7 +27,7 @@ jobs:
       - name: Extract available environment names
         id: extract_environment
         run: |
-          ENVIRONMENTS=(`find  environments/ -type d -maxdepth 1 -exec basename {} \;`)
+          ENVIRONMENTS=(`find  environments/ -type d -mindepth 1 -maxdepth 1 -exec basename {} \;`)
           echo "env_list=${ENVIRONMENTS[@]}" >> "$GITHUB_OUTPUT"
           echo "List of existing environment configurations:"
           echo "${ENVIRONMENTS[@]}"
