@@ -86,7 +86,15 @@
     - name: Configure Extra SANs for Kube API server
       include_tasks: tasks/k8s/kube-api-add-extra-sans.yml
     - name: Distribute kubeconfig into users directory
-      include_tasks: tasks/k8s/user-kubeconfig.yml
+      include_tasks:
+        file: tasks/k8s/user-kubeconfig.yml
+        apply:
+          tags:
+            - users
+            - k8s
+      tags:
+        - users
+        - k8s
 - name: Setup Kubernetes Cluster UFW
   hosts: master, workers
   become: yes
