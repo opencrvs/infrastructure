@@ -1,0 +1,65 @@
+chart_dev_mode: false
+
+ingress:
+  tls_resolver: letsencrypt
+
+hpa:
+  enabled: false
+
+env:
+  APN_SERVICE_URL: "http://apm-server.opencrvs-deps-dev.svc.cluster.local:8200"
+
+hostname: test-k8s.opencrvs.dev
+influxdb:
+  host: influxdb-0.influxdb.opencrvs-deps-dev.svc.cluster.local
+elasticsearch:
+  auth_mode: auto
+  port: 9200
+  host: elasticsearch.opencrvs-deps-dev.svc.cluster.local
+
+
+minio:
+  auth_mode: use_secret
+  host: minio-0.minio.opencrvs-deps-dev.svc.cluster.local
+  external_hostname: minio.test-k8s.opencrvs.dev
+
+mongodb:
+  auth_mode: auto
+  host: mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local
+
+redis:
+  auth_mode: disabled
+  host: redis-0.redis.opencrvs-deps-dev.svc.cluster.local
+
+postgres:
+  auth_mode: auto
+  host: postgres-0.postgres.opencrvs-deps-dev.svc.cluster.local
+
+resources:
+  memoryRequest: "256Mi"
+  cpuRequest: "200m"
+  memoryLimit: "2Gi"
+  cpuLimit: "1"
+
+image:
+  tag: 0f10027
+
+dashboards:
+  enabled: false
+
+countryconfig:
+  image:
+    # Replace with your countryconfig container image
+    name: opencrvs/ocrvs-farajaland
+    # name: opencrvs/ocrvs-countryconfig
+    tag: 3314a9a
+    # tag: ec53c12
+    # tag: v1.8.1
+
+  env:
+    V2_EVENTS: "true"
+
+data_seed:
+  env:
+    SUPER_USER_PASSWORD: "password"
+    ACTIVATE_USERS: "true"

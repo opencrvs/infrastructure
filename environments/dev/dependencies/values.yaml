@@ -1,0 +1,23 @@
+chart_dev_mode: false
+hostname: test-k8s.opencrvs.dev
+
+ingress:
+  tls_resolver: letsencrypt
+
+redis:
+  auth_mode: disabled
+
+minio:
+  use_default_credentials: false
+
+elasticsearch:
+  use_default_credentials: false
+
+mongodb:
+  use_default_credentials: false
+
+postgres:
+  use_default_credentials: false
+
+monitoring:
+  enabled: true
