@@ -9,7 +9,8 @@ on:
         default: "dev"
         type: choice
         options:
-          - README.md
+          - environments
+          - dev
 jobs:
   github-to-k8s-sync-env:
     uses: ./.github/workflows/github-to-k8s-sync-env.yml

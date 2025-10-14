@@ -29,7 +29,8 @@ on:
         default: "dev"
         type: choice
         options:
-          - README.md
+          - environments
+          - dev
       reset:
         description: "Reset environment after deploy"
         required: false

@@ -14,7 +14,8 @@ on:
         default: "dev"
         type: choice
         options:
-          - README.md
+          - environments
+          - dev
   workflow_call:
     inputs:
       environment:
