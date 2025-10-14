@@ -9,7 +9,6 @@ on:
         default: "dev"
         type: choice
         options:
-          - environments
           - dev
 jobs:
   github-to-k8s-sync-env:

@@ -9,7 +9,6 @@ on:
         default: "dev"
         type: choice
         options:
-          - environments
           - dev
   workflow_call:
     inputs:

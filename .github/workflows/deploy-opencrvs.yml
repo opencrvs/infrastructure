@@ -29,7 +29,6 @@ on:
         default: "dev"
         type: choice
         options:
-          - environments
           - dev
       reset:
         description: "Reset environment after deploy"
