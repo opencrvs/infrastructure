@@ -9,6 +9,10 @@
 #
 # Copyright (C) The OpenCRVS Authors located at https://github.com/opencrvs/opencrvs-core/blob/master/AUTHORS.
 
+# Script to bootstrap a server as OpenCRVS infrastructure node
+# - Creates 'provision' user if not exists
+# - Installs and configures GitHub Actions runner to connect to the specified repos
+# - Can be used for both master and worker nodes
 set -e
 
 # Configurable params
