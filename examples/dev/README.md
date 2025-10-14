@@ -101,15 +101,15 @@ You will need to provide the following values while installation multiple times:
   yarn environment:init
   ```
 * Go to GitHub and verify the newly created environment
+* Commit configuration files generated at `infrastructure/server-setup/inventory/` and `environments/` into git
 
-
-## 2.1. Bootstrap GitHub Self-Hosted Runner
+## 2. Bootstrap GitHub Self-Hosted Runner
 
 The self-hosted runner must be installed on the single VM (master node). The VM must be provisioned with an SSH user account according to [Provision Your Server Nodes with SSH Access](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.1-provision-your-server-nodes-with-ssh-access).
 
 > NOTE: On previous step environment configuration script left correct command as output.
 
-1. Login as any user with sudo or root access
+1. Login as user with sudo access or as root
 
 2. Run the following command on the VM:
     ```bash
@@ -121,72 +121,14 @@ The self-hosted runner must be installed on the single VM (master node). The VM 
                 --enable-runner
     ```
 
-**Verify runner is available**
+**Checklist for script execution**
 
-1. If successful, you will see a confirmation message:
+1. Verify `provision` user was created:
     ```
-    ✅ Runner '....-runner' is installed and started!
+    ls -l /home/provision
+    su - provision
     ```
 2. In your GitHub repository, navigate to **Settings → Actions → Runners** and verify that the runner appears as a self-hosted runner.
-
-### 2.2 Update infrastructure configuration
-
-* Navigate to the `infrastructure/server-setup/inventory` folder.
-* Open a configuration file for your environment, see example.
-
-  > NOTE: The file name must match the GitHub environment name.
-  >
-  > Example: if your environment is `dev`, the file name should be `dev.yml`.
-* Make sure all variables in your file are correct.
-  * Add your user name to `users`
-  * Add domain or IP you would like to use for connecting to kubernetes cluster to `kube_api_sans`
-  * For multi-node environment update `workers` section with correct IP addresses
-  * If backup server is enabled, update `backup` section with correct IP address
-4. Commit your changes.
-5. Ensure the **Update workflow environments** Github Action has run successfully. You should see updates to all other GitHub workflows.
-
-
-Example configuration file (`dev.yml`):
-
-```yaml
-all:
-  vars:
-    # Add IP address for communication with your cluster from your laptop
-    # - If you are behind VPN, use private IP address
-    # - If your server is exposed (not recommeded), use public IP address
-    # - If you would like to run kubectl commands from the remote server, leave this field empty
-    kube_api_sans: []
-    # Keep default
-    ansible_user: provision
-    # For development/qa/testing/staging keep true
-    # For production keep false
-    single_node: true
-    users:
-      # Add as many users as you wish
-      - name: myuser
-        ssh_keys:
-          - ssh-ed25519 AAAAC3N...cN/5HAjKGbi2DqV7g/Q
-        state: present
-        # FIXME: https://github.com/opencrvs/opencrvs-core/issues/6267
-        # Keep admin for now, feature is not documented
-        role: admin
-  children:
-    master:
-      hosts:
-        # Update with your real host name
-        test-k8s-master:
-          ansible_host: localhost
-          ansible_connection: local
-```
-
-### 2.3 Update OpenCRVS helm chart values
-
-At environment creation phase helm chart values files are stored into `environments/<env name>` folder. Usually default configuration properties are sufficient for first deployment:
-- traefik
-- dependencies
-- opencrvs-services
-
-Commit your changes.
 
 ---
 
