@@ -29,10 +29,7 @@ on:
         default: "dev"
         type: choice
         options:
-          - demo
-          - demo-prod
-          - dev
-          - dev-stg
+          - README.md
       reset:
         description: "Reset environment after deploy"
         required: false

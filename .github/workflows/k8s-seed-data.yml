@@ -9,10 +9,7 @@ on:
         default: "dev"
         type: choice
         options:
-          - demo
-          - demo-prod
-          - dev
-          - dev-stg
+          - README.md
   workflow_call:
     inputs:
       environment:

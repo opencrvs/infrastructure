@@ -9,9 +9,7 @@ on:
         default: 'demo'
         type: choice
         options:
-          - dev
-          - demo-prod
-          - demo
+          - ""
       tags:
         description: 'Tags to apply to the provisioned resources'
         required: true
