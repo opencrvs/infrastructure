@@ -14,7 +14,7 @@ on:
         default: "dev"
         type: choice
         options:
-          - ""
+          - euanland
   workflow_call:
     inputs:
       environment:

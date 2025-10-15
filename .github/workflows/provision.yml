@@ -9,7 +9,7 @@ on:
         default: 'demo'
         type: choice
         options:
-          - ""
+          - euanland
       tags:
         description: 'Tags to apply to the provisioned resources'
         required: true

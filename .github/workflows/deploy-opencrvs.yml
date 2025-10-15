@@ -29,7 +29,7 @@ on:
         default: "dev"
         type: choice
         options:
-          - ""
+          - euanland
       reset:
         description: "Reset environment after deploy"
         required: false
