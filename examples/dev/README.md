@@ -129,11 +129,11 @@ The script will ask you for SMTP details and "NOTIFICATION_TRANSPORT" (a setting
   ```
   yarn
   ```
-* Create environment using our script:
+* Create a Github [environment](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments) using our script:
   ```
   yarn environment:init
   ```
-* Go to GitHub and verify the newly created environment
+* Go to GitHub and verify the newly created [environment](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
 * Commit configuration files generated at `infrastructure/server-setup/inventory/` and `environments/` into git
 
 ## 2. Bootstrap GitHub Self-Hosted Runner
