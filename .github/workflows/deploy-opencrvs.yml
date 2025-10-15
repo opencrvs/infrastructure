@@ -18,11 +18,11 @@ on:
       core-image-tag:
         description: "Tag of the core image"
         required: true
-        default: "v1.9.0-beta-1"
+        default: "v1.9.0-beta-6"
       countryconfig-image-tag:
         description: "Tag of the countryconfig image"
         required: true
-        default: "v1.9.0-beta-1"
+        default: "v1.9.0-beta-6"
       environment:
         description: "Target environment"
         required: true
