@@ -14,7 +14,7 @@ secret_settings(disable_scrub=True)
 # Traefik Deployment
 print("🚀 Deploying traefik...")
 namespace_create('traefik')
-traefik_tilt_label = '4.Traefik'
+traefik_tilt_label = '5.Traefik'
 # Install Traefik GW
 helm_repo('traefik-repo', 'https://traefik.github.io/charts', labels=[traefik_tilt_label])
 helm_resource(
@@ -29,7 +29,6 @@ traefik_deps = [
   'config',
   'client',
   'countryconfig',
-  'dashboards',
   'events',
   'gateway',
   'login',
@@ -55,7 +54,7 @@ k8s_resource(
 
 ######################################################
 # Add labels to resources to OpenCRVS services
-tilt_label = '3.Dependencies'
+tilt_label = '4.Dependencies'
 dependencies = [
   'elasticsearch',
   'mongodb',
@@ -63,7 +62,7 @@ dependencies = [
   'influxdb', 
   'redis',
   'postgres',
-  'postgres-on-deploy',
+  # 'postgres-on-update-core',
   # FIXME: both resources are present only if security is enabled
   # 'elasticsearch-on-deploy',
   # 'mongo-on-deploy',
@@ -81,14 +80,12 @@ opensrvs_services = [
   'config',
   'client',
   'countryconfig',
-  'dashboards', 
   'documents', 
   'events',
   'gateway',
   'hearth',
   'login',
-  'metrics', 
-  'data-migration', 
+  'metrics',  
   'notification', 
   'scheduler', 
   'search', 
@@ -98,3 +95,14 @@ opensrvs_services = [
 ]
 for workload in opensrvs_services:
   k8s_resource(workload, labels=[tilt_label])
+
+opensrvs_jobs = [
+  'postgres-on-update-core',
+  'postgres-data-migration',
+  'postgres-on-update-analytics',
+  'data-migration',
+  'elasticsearch-reindex',
+]
+job_label = '3.Jobs'
+for workload in opensrvs_jobs:
+  k8s_resource(workload, labels=[job_label])

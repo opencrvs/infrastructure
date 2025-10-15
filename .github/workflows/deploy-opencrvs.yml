@@ -11,8 +11,6 @@ on:
         type: string
       reset:
         type: boolean
-      deploy_mosip:
-        type: boolean
   workflow_dispatch:
     inputs:
       core-image-tag:
@@ -34,11 +32,6 @@ on:
           - dev-stg
       reset:
         description: "Reset environment after deploy"
-        required: false
-        default: false
-        type: boolean
-      deploy_mosip:
-        description: "Deploy MOSIP integration"
         required: false
         default: false
         type: boolean
@@ -86,15 +79,8 @@ jobs:
           EOF
           )
           echo "$SUMMARY" | sed 's/^          //' >> $GITHUB_STEP_SUMMARY
-      - name: Deploy OpenCRVS MOSIP API
-        if: inputs.deploy_mosip
-        run: |
-          helm upgrade --install mosip-api oci://ghcr.io/opencrvs/opencrvs-mosip \
-          --namespace "opencrvs-${ENV}" \
-          -f environments/${ENV}/mosip-api/values.yaml \
-          --set hostname=${{ vars.DOMAIN }} \
-          --create-namespace \
-          --atomic
+      - name: Create namespace
+        run: kubectl create namespace "opencrvs-${ENV}" || true
       - name: Copy secrets from dependencies into application namespace
         # Only redis secret for now needs to be copied
         run: |
@@ -116,17 +102,18 @@ jobs:
             -f environments/${ENV}/opencrvs-services/values.yaml \
             --create-namespace \
             --atomic \
+            --debug \
             --wait \
             --wait-for-jobs \
             --set image.tag="$CORE_IMAGE_TAG" \
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set countryconfig.image.name="$COUNTRYCONFIG_IMAGE_NAME" \
-            --set hostname=${{ vars.DOMAIN }}
+            --set hostname=${{ vars.DOMAIN }} | sed '/USER-SUPPLIED VALUES:/,$d'
       - name: Cleanup Helm Locks
         if: failure() || cancelled()
         run: |
           kubectl -n "opencrvs-${ENV}" get secrets -l owner=helm -o json | \
-          jq -r '.items[] | select(.metadata.labels.status=="pending-install" or .metadata.labels.status=="pending-upgrade") | .metadata.name' | \
+          jq -r '.items[] | select(.metadata.labels.status=="pending-install" or .metadata.labels.status=="pending-upgrade" or .metadata.labels.status=="pending-rollback") | .metadata.name' | \
           xargs -r kubectl -n "opencrvs-${ENV}" delete secret || \
           echo "No helm locks found, all is good"
   reset-data:

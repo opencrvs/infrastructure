@@ -9,31 +9,61 @@ def format_reset_environment_command(opencrvs_namespace, opencrvs_configuration_
     :return: Command to reset the environment
     """
     return """
-      kubectl delete job -n {0} data-cleanup;
-      helm template -f {1} --set data_cleanup.enabled=true -s templates/data-cleanup-job.yaml --namespace {0} {2} | kubectl apply -n {0} -f -;
-      sleep 30;
-      kubectl logs job/data-cleanup -f --all-containers=true -n {0};
-      kubectl wait --for=condition=complete job/data-cleanup -n {0} --timeout=600s;
-      kubectl delete pod -n {0} -lapp=events;
-      kubectl wait --for=condition=ready pod -n {0} -lapp=events;
-      kubectl delete job -n {0} postgres-on-deploy;
-      helm template -f {1} -s templates/postgres-on-update.yaml --namespace {0} {2} | kubectl apply -n {0} -f -;
-      sleep 30;
-      kubectl logs job/postgres-on-deploy -f --all-containers=true -n {0};
-      kubectl wait --for=condition=complete job/postgres-on-deploy -n {0} --timeout=600s;
-      kubectl delete job -n {0} data-migration;
-      helm template -f {1} -s templates/data-migration-job.yaml --namespace {0} {2} | kubectl apply -n {0} -f -;
-      sleep 30;
-      kubectl logs job/data-migration -f -n {0};
-      kubectl wait --for=condition=complete job/data-migration -n {0} --timeout=600s;
-      kubectl delete job -n {0} data-seed;
-      kubectl delete pod -n {0} -lapp=events;
-      kubectl wait --for=condition=complete pod -n {0} -lapp=events;
-      helm template -f {1} --set data_seed.enabled=true -s templates/data-seed-job.yaml --namespace {0} {2} | kubectl apply -n {0} -f -;
-      sleep 30;
-      kubectl logs job/data-seed -f -n {0};
-      kubectl wait --for=condition=complete job/data-seed -n {0} --timeout=600s;
-      kubectl delete pod -n {0} -lapp=events;
+          echo 'Cleanup environment'
+          kubectl delete job -n {0} --ignore-not-found=true data-cleanup
+          helm template -f {1} \
+              --set data_cleanup.enabled=true \
+              --namespace {0} \
+              -s templates/data-cleanup-job.yaml \
+              {2} | kubectl apply -n {0} --wait=true -f -
+          kubectl wait --for=condition=complete job/data-cleanup -n {0} --timeout=600s || true
+          kubectl logs job/data-cleanup -f --all-containers=true -n {0} || true
+          echo 'Re-run postgres on-update-core'
+          kubectl delete job -n {0} --ignore-not-found=true postgres-on-update-core;
+          helm template -f {1} \
+              --namespace {0} \
+              -s templates/postgres-on-update-core.yaml \
+              {2} | kubectl apply -n {0} --wait=true -f -;
+          kubectl wait --for=condition=complete job/postgres-on-update-core -n {0} --timeout=600s || true
+          kubectl logs job/postgres-on-update-core -f --all-containers=true -n {0} || true
+          echo 'Re-run postgres-data-migration'
+          kubectl delete job -n {0} --ignore-not-found=true postgres-data-migration;
+          helm template -f {1} \
+              --namespace {0} \
+              -s templates/postgres-migration-job.yaml \
+              {2} | kubectl apply -n {0} --wait=true -f -;
+          kubectl wait --for=condition=complete job/postgres-data-migration -n {0} --timeout=600s || true
+          kubectl logs job/postgres-data-migration -f --all-containers=true -n {0} || true
+          echo 'Re-run postgres on-update-analytics'
+          kubectl delete job -n {0} --ignore-not-found=true postgres-on-update-analytics;
+          helm template -f {1} \
+              -s templates/postgres-on-update-analytics.yaml \
+              --namespace {0} \
+              {2} | kubectl apply -n {0} --wait=true -f -;
+          kubectl wait --for=condition=complete job/postgres-on-update-analytics -n {0} --timeout=600s || true
+          kubectl logs job/postgres-on-update-analytics -f --all-containers=true -n {0} || true
+          echo 'Migration'
+          kubectl delete job -n {0} --ignore-not-found=true data-migration-on-reset
+          helm template -f {1} \
+              --set data_migration.job_name=data-migration-on-reset \
+              -s templates/data-migration-job.yaml \
+              --namespace {0} \
+              {2} | kubectl apply -n {0} --wait=true -f -
+          kubectl wait --for=condition=complete job/data-migration-on-reset -n {0} --timeout=600s || true
+          kubectl logs job/data-migration-on-reset -f -n {0} || true
+          echo 'Seeding data'
+          kubectl delete job -n {0} --ignore-not-found=true data-seed
+          kubectl delete pod -n {0} -lapp=events;
+          kubectl wait --for=condition=ready pod -n {0} -lapp=events --timeout=600s;
+          helm template  -f {1} \
+              --set data_seed.enabled=true \
+              --namespace {0} \
+              -s templates/data-seed-job.yaml \
+              {2} | kubectl apply -n {0} --wait -f -
+          sleep 10;
+          kubectl wait --for=condition=complete job/data-seed -n {0} --timeout=600s || true
+          kubectl logs job/data-seed -f -n {0} || true
+          kubectl delete pod -n {0} -lapp=events;
       """.format(opencrvs_namespace, opencrvs_configuration_file, opencrvs_tools_chart_path)
 
 def format_seed_environment_command(opencrvs_namespace, opencrvs_configuration_file, opencrvs_tools_chart_path):
@@ -48,10 +78,8 @@ def format_seed_environment_command(opencrvs_namespace, opencrvs_configuration_f
     return """
       kubectl delete job -n {0} data-seed;
       helm template -f {1} --set data_seed.enabled=true -s templates/data-seed-job.yaml --namespace {0} {2} | kubectl apply -n {0} -f -;
-      sleep 10;
+      kubectl wait --for=condition=running job/data-seed -n {0} --timeout=600s;
       kubectl logs job/data-seed -f -n {0};
-      kubectl wait --for=condition=complete job/data-seed -n {0} --timeout=600s;
-      kubectl delete pod -n {0} -lapp=events;
       """.format(opencrvs_namespace, opencrvs_configuration_file, opencrvs_tools_chart_path)
 
 def copy_secrets(dependencies_namespace, opencrvs_namespace):
@@ -109,5 +137,28 @@ def seed_data(
             opencrvs_configuration_file,
             opencrvs_tools_chart_path,
         ),
+        trigger_mode=TRIGGER_MODE_MANUAL,
+    )
+
+def reindex_environment(
+        opencrvs_namespace,
+        opencrvs_configuration_file
+):
+    opencrvs_tools_chart_path = '../infrastructure/charts/opencrvs-services'
+    
+    local_resource(
+        'Reindex search',
+        labels=['2.Data-tasks'],
+        auto_init=False,
+        cmd="""
+            kubectl delete job -n {0} elasticsearch-reindex || true
+            helm template -f {1} \
+                --namespace {0} \
+                -s templates/elasticsearch-reindex.yaml \
+                {2} | kubectl apply -n {0} -f -
+            sleep 30;
+            kubectl logs job/elasticsearch-reindex -f -n {0} || true
+            kubectl wait --for=condition=complete job/elasticsearch-reindex -n {0} --timeout=600s;
+          """.format(opencrvs_namespace, opencrvs_configuration_file, opencrvs_tools_chart_path),
         trigger_mode=TRIGGER_MODE_MANUAL,
     )

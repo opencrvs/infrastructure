@@ -18,17 +18,24 @@ This document provides guidance on running OpenCRVS both locally (on your PC or 
 - [terraform-templates](terraform-templates), configuration templates to build cloud environments for OpenCRVS on different providers
 - [examples](examples), pre-defined values for helm charts and additional documentation and deployment scenarios for OpenCRVS
 
-# Quickstart localhost
+# Demo / Quickstart system requirements
 
 Check quickstart instructions how to deploy OpenCRVS to existing docker-desktop or minikube Kubernetes cluster running on your laptop at [charts/opencrvs-services](charts/opencrvs-services/README.md#-quickstart)
 
-# Examples
 
-Single server deployment flow is example is describe at [examples/dev](./examples/dev/README.md)
+# Development environment setup
 
-# System requirements
+Kubernetes is the easiest option to run OpenCRVS locally on your PC or Laptop and test all features and functionality.
+Before running make sure all hardware and software requirements are met.
 
-## Desktop / Quickstart system requirements
+Once you make sure your development environment is ready for running OpenCRVS we are recommending you start from "For OpenCRVS DevOps" configuration and get familiar with all tools used to deploy OpenCRVS locally (tilt, kubectl, helm). In that particular configuration all docker images are pulled from our registry and OpenCRVS application is starting with Falajaland demo data. No additional actions are needed from your side.
+
+
+The OpenCRVS team uses [Tilt](https://tilt.dev/) to manage the local development environment. Depending on your role and development needs, the following configurations (Tiltfiles) are available:
+
+- [DevOps developers](#for-opencrvs-devops), This basic configuration is designed for Helm chart development. Tilt uses official OpenCRVS release images along with the Farajaland demo data. Docker images are pulled from the OpenCRVS container registry.
+- [Country config developers](#for-opencrvs-country-config-developers), In this setup, OpenCRVS Core images are pulled from the OpenCRVS container registry. The Country Config image is built locally using Tilt's live update feature, so your code changes are reflected almost immediately. Typically, you’ll be working with your own fork of the Country Config repository.
+- [Core developers](#for-opencrvs-core-developers), This configuration builds OpenCRVS Core images locally with live updates enabled, allowing near-instant reflection of code changes. By default, the Country Config image is pulled from the OpenCRVS container registry. If you maintain your own fork of the Country Config repository and container registry, you should update the Tiltfile to use your own registry.
 
 ### Hardware requirements
 - 16G RAM
@@ -51,7 +58,7 @@ Single server deployment flow is example is describe at [examples/dev](./example
 
 ---
 
-### Docker engine with Kubernetes cluster
+### Docker engine and Kubernetes cluster
 
 #### Docker Desktop (with Kubernetes enabled)
 
@@ -78,15 +85,90 @@ fs.inotify.max_user_watches = 65536
 If you already have minikube cluster running, please recreate it (delete/start) to apply changes properly/
 
 Start minikube with unlimited amount of memory:
-```
-minikube start --memory=max
+```bash
+minikube start --cpus=8 --memory=max --ports=80:30080
 ```
 
-Start load balancer (tunnel) on localhost to proxy requests from your browser inside minikube cluster:
-```
-minikube tunnel -c --bind-address='127.0.0.1'
-```
+- `--cpus`: Number of CPUs allocated to Kubernetes. Use "max" to use the maximum number of CPUs
+- `--memory`: Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g).
+- `--ports`: List of ports that should be exposed (docker and podman driver only)
+
 
 ---
 
 **NOTE:** Any other Kubernetes solution for desktop should work as well. Please check to LoadBalancer and kubernetes services setup if you are not able to access service.
+
+
+## For OpenCRVS DevOps
+
+1. Clone this repository:
+   ```
+   git clone https://github.com/opencrvs/infrastructure
+   ```
+2. Run:
+   ```
+   tilt up
+   ```
+3. Navigate to [http://localhost:10350/](http://localhost:10350/)
+4. Run [Data seed](#initial-data-seeding-with-tilt) resource
+5. Once all container images are up and running your environment will be available at http://opencrvs.localhost
+
+
+## For OpenCRVS Country Config Developers
+
+1. Clone OpenCRVS Country Config repository:
+    
+    For county config use:
+    ```bash
+    git clone https://github.com/opencrvs/opencrvs-countryconfig
+    ```
+    For your own fork use:
+    ```bash
+    git clone git@github.com:<your-github-account>/<your-repository>.git
+    ```
+2. Run Tilt:
+    ```bash
+    tilt up
+    ```
+3. Navigate to [http://localhost:10350/](http://localhost:10350/)
+4. Run [Data seed](#initial-data-seeding-with-tilt) resource
+5. Once all container images are up and running your environment will be available at http://opencrvs.localhost
+
+
+## For OpenCRVS Core Developers
+
+1. Clone the OpenCRVS Core repository:
+    ```bash
+    git clone git@github.com:opencrvs/opencrvs-core.git
+    ```
+2. Run Tilt:
+    ```bash
+    tilt up
+    ```
+3. Navigate to [http://localhost:10350/](http://localhost:10350/)
+4. Run [Data seed](#initial-data-seeding-with-tilt) resource
+5. Once all container images are up and running your environment will be available at http://opencrvs.localhost
+
+---
+
+## Initial data seeding with tilt
+
+This task should run only once on fresh environment after environment installation.
+
+1. Navigate to [http://localhost:10350/](http://localhost:10350/)
+2. Scroll to section `2.Data-tasks` and find resource `Reset database`
+3. Run resource using reload button
+   ![](doc/images/seed-data.png)
+4. Once data seeding completed you will be able to login using default credentials, see [4.1.4 Log in to OpenCRVS locally](https://documentation.opencrvs.org/setup/3.-installation/3.1-set-up-a-development-environment/3.1.4-log-in-to-opencrvs-locally)
+
+## Reset database and Seed data with tilt
+
+1. Navigate to [http://localhost:10350/](http://localhost:10350/)
+2. Scroll to section `2.Data-tasks` and find resource `Reset database`
+3. Run resource using reload button
+   ![](doc/images/reset-data.png)
+4. Once data reset completed you will be able to login using default credentials, see [4.1.4 Log in to OpenCRVS locally](https://documentation.opencrvs.org/setup/3.-installation/3.1-set-up-a-development-environment/3.1.4-log-in-to-opencrvs-locally).
+
+# Server setup
+
+## [Single server deployment steps](./examples/dev/README.md)

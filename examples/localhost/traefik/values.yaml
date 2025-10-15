@@ -2,16 +2,16 @@
 namespaceOverride: "traefik"
 logs:
   general:
-    level: "DEBUG"
-    format: "common"
+    # "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "PANIC"
+    level: "INFO"
+    # format: "common" # For local environment
+    format: "json" # For server environment
   access:
     # -- To enable access logs
     enabled: true
 ingressRoute:
   dashboard:
     enabled: false
-    entryPoints: ["web"]
-    matchRule: Host(`traefik.opencrvs.localhost`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
 # Be explicit that we only use CRDs, not ingress/gw support
 providers: 
   kubernetesCRD:
@@ -23,18 +23,13 @@ providers:
 service:
   enabled: true
   single: false
-  type: LoadBalancer
+  type: NodePort
 
 ports:
-  traefik:
-    hostPort: 8080
   web:
-    asDefault: true
-    hostPort: 8000
-  websecure:
-    asDefault: false
-    expose:
-      default: false
-    tls:
-      enabled: false
+    port: 8000
+    hostPort: 80
+    protocol: TCP
+    nodePort: 30080
+
 tlsStore: {}

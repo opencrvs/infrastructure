@@ -15,3 +15,6 @@ pdb:
 # If you are using x86 device, feel free to enable:
 dashboards:
   enabled: false
+
+# Expose services on Node port
+service_type: LoadBalancer
