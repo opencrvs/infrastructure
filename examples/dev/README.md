@@ -137,6 +137,10 @@ The script will ask you for SMTP details and "NOTIFICATION_TRANSPORT" (a setting
 * Go to GitHub and verify the newly created [environment](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
 * Commit configuration files generated at `infrastructure/server-setup/inventory/` and `environments/` into git
 * Save all secrets that were copied into a `.env.<your-environment>` file into secure password manager software e.g. Bitwarden or 1Password for safe keeping. Then it is safe to delete this file.
+* In your GitHub repository navigate to "Actions".
+* Ensure the Update workflow environments Github Action has run successfully.
+* Run `git pull`, as changes in the infrastructure directory automatically create commits that you will not have locally. 
+* You should see updates to all other GitHub workflows.
 
 ## 2. Bootstrap GitHub Self-Hosted Runner
 
@@ -174,6 +178,19 @@ The self-hosted runner must be installed on the single VM (master node). The VM 
 
 * Navigate to the `infrastructure/server-setup/inventory directory in your code.  You will see an Ansible inventory yml file for your environment.
 * Add all required Devops administrators to the `your-environment.yml` file with their public SSH keys, giving them SSH access to the server.
+
+In the inventory yml, you will see an array like this `users: []`
+Replace this with a correct configuration for users, which will look like this:
+
+```
+users: 
+  - name: euan
+    ssh_keys:
+      - ssh-rsa AAAA...
+    state: present
+    role: admin
+```
+* Commit this file to git
 * Trigger the **Provision Infrastructure** workflow from your repository in Github Actions, selecting the appropriate branch and environment.
 
 Verification steps:
