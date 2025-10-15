@@ -60,6 +60,7 @@ Before starting the deployment, ensure the following requirements are met:
 **2. Operating System**
 
    * VM is running **Ubuntu 24.04 LTS**.
+   * The OS must be verified and setup with a **"provison"** SSH user account, according to [Verify servers & create a "provision" user](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.1-provision-your-server-nodes-with-ssh-access).
 
 **3. Networking and Domain Configuration**
 
@@ -135,10 +136,11 @@ The script will ask you for SMTP details and "NOTIFICATION_TRANSPORT" (a setting
   ```
 * Go to GitHub and verify the newly created [environment](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
 * Commit configuration files generated at `infrastructure/server-setup/inventory/` and `environments/` into git
+* Save all secrets that were copied into a `.env.<your-environment>` file into secure password manager software e.g. Bitwarden or 1Password for safe keeping. Then it is safe to delete this file.
 
 ## 2. Bootstrap GitHub Self-Hosted Runner
 
-The self-hosted runner must be installed on the single VM (master node). The VM must be provisioned with an SSH user account according to [Provision Your Server Nodes with SSH Access](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.1-provision-your-server-nodes-with-ssh-access).
+The self-hosted runner must be installed on the single VM (master node). The VM Operating System must be verified and setup with a **"provison"** SSH user account, according to [Verify servers & create a "provision" user](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.1-provision-your-server-nodes-with-ssh-access).
 
 > NOTE: On previous step environment configuration script left correct command as output.
 
@@ -148,11 +150,13 @@ The self-hosted runner must be installed on the single VM (master node). The VM 
     ```bash
     curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/ocrvs-9792/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh | \
     bash opencrvs-bootstrap.sh --owner <org name> \
-                --repo <repo name> \
+                --repo <your infrastructure repo name> \
                 --env <env name> \
                 --token <github token> \
                 --enable-runner
     ```
+
+    * The script will execute a self hosted Github runner on your VM.  The script will complete by outputting **"Node bootstrap complete for `your environment`** followed by the SSH public key that you can add to any worker nodes in your production cluster that the installation will require access to if applicable.
 
 **Checklist for script execution**
 
@@ -162,16 +166,19 @@ The self-hosted runner must be installed on the single VM (master node). The VM 
     su - provision
     ```
 2. In your GitHub repository, navigate to **Settings → Actions → Runners** and verify that the runner appears as a self-hosted runner.
+3. Close your SSH connection and return to your checked out infrastructure code.
 
 ---
 
-## 3. Run Infrastructure Provision
+## 3. Run Infrastructure Provision with users you wish to have SSH access
 
-* Trigger the **provision workflow** from your repository.
+* Navigate to the `infrastructure/server-setup/inventory directory in your code.  You will see an Ansible inventory yml file for your environment.
+* Add all required Devops administrators to the `your-environment.yml` file with their public SSH keys, giving them SSH access to the server.
+* Trigger the **Provision Infrastructure** workflow from your repository in Github Actions, selecting the appropriate branch and environment.
 
 Verification steps:
 * Verify that the Kubernetes self-hosted runner is visible under **Settings → Actions → Runners**.
-* You should be able to logic with any user defined under `users` section of inventory file.
+* You should be able to login with any user defined under `users` section of inventory file.
 * You should have access to kubernetes cluster after login, run command `kubectl config current-context`
 * Copy `.kube/config` to your laptop and configure `kubectl` locally instead of remote connection
 ---
