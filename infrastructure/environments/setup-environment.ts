@@ -340,7 +340,7 @@ const infrastructureQuestions = [
     name: 'workerNodes',
     type: 'text' as const,
     message: 
-      `Please enter Kubernetes workers hosts/IP addresses (comma-separated), (default: no workers):`,
+      `Please enter Kubernetes workers hosts/IP addresses (comma-separated), (default: no workers, leave empty):`,
     valueType: 'VARIABLE' as const,
     // validate: notEmpty,
     valueLabel: 'WORKER_NODES',
@@ -351,7 +351,7 @@ const infrastructureQuestions = [
     name: 'backupHost',
     type: 'text' as const,
     message: 
-      `Please enter backup server host/IP address, (default: no backup):`,
+      `Please enter backup server host/IP address, (default: no backup, leave empty):`,
     valueType: 'VARIABLE' as const,
     // validate: ,
     valueLabel: 'BACKUP_HOST',
@@ -525,7 +525,7 @@ const emailQuestions = [
     name: 'alertEmail',
     type: 'text' as const,
     message:
-      'What is the email address to receive alert emails or a Slack channel email link?',
+      'What is the email address to receive Devops alert emails?',
     valueType: 'SECRET' as const,
     validate: notEmpty,
     valueLabel: 'ALERT_EMAIL',
