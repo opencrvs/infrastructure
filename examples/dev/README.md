@@ -2,6 +2,12 @@
 
 This guide describes how to deploy **OpenCRVS** with **Farajaland** sample data on a single-node Kubernetes cluster running on a virtual machine.
 
+**Farajaland**
+
+Farajaland [opencrvs-farajaland](https://github.com/opencrvs/opencrvs-farajaland) is an example fork of our released, and "vanilla" [opencrvs-countryconfig](https://github.com/opencrvs/opencrvs-countryconfig) repository that we use internally to configure internal QA environments, publish our own Dockerhub countryconfig images, write e2e tests and deploy during [opencrvs-core](https://github.com/opencrvs/opencrvs-core) development.
+
+When you fork this infrastructure repo to use alongside your forked opencrvs-countryconfig repository you should update all references to our test Dockerhub repository in our Dockerhub organisation **opencrvs/ocrvs-farajaland** accordingly.
+
 OpenCRVS can be deployed either:
 
 * **Manually** (using Helm and CLI commands), see [README-on-existing-cluster](README-on-existing-cluster.md) or
@@ -36,8 +42,8 @@ The deployment package includes the following components:
   * Elastalert2
 
 * **OpenCRVS Services** deployed with **Farajaland data** and **MOSIP integration** enabled:
-  * Core packages version: `v1.9.0-beta-1`
-  * Farajaland version: `v1.9.0-beta-1`
+  * Core packages version: `v1.9.0-beta-6`
+  * Farajaland version: `v1.9.0-beta-6`
   * MOSIP integration version: `latest`
 
 
@@ -49,11 +55,12 @@ Before starting the deployment, ensure the following requirements are met:
 
 **1. Virtual Machine resources**
 
-   * Minimum: **8 CPU cores, 16 GB RAM, 50 GB SSD**.
+   * Minimum: **8 CPU cores, 16 GB RAM, 250 GB SSD**. (150GB must be reserved for Operating System and Docker use.  Ensure you have followed our [server size calculations](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment) according to your population size and yearly registration requirements.)
 
 **2. Operating System**
 
    * VM is running **Ubuntu 24.04 LTS**.
+   * The OS must be verified and setup with a **"provison"** SSH user account, according to [Verify servers & create a "provision" user](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.1-provision-your-server-nodes-with-ssh-access).
 
 **3. Networking and Domain Configuration**
 
@@ -69,6 +76,22 @@ Before starting the deployment, ensure the following requirements are met:
 
 > If you don't have public IP Address please follow guide "How to run traefik with self-signed SSL Certificate", see [TODO](#link-goes-here)
 
+**4. Github oprganisation**
+
+* You must have a Github Organisation, and a private Github repository hosting your forked countryconfig
+
+**5. Dockerhub oprganisation**
+
+* You must have a Dockerhub Organisation, and a private Dockerhub repository with read/write permissions to host a published image from your forked countryconfig
+
+**6. SMTP**
+
+* You must have an SMTP service, an email inbox for system support and SMTP API details.  We recommend that the support email inbox is configured to forward to a messaging channel (e.g.: Slack / Microsoft Teams) that all your Devops engineers and Project Managers have access to.
+
+**7. (optional) SMS gateway**
+
+* OpenCRVS sends either emails or SMS messages to staff and members of the public, but both methods are not possible simultaneaously without a complex configuration in development.  We recommend that during your intial setup to use "Email" and then you can manually customise these settings later. 
+
 ---
 
 # Deploy OpenCRVS with GitHub Actions Workflows
@@ -77,12 +100,23 @@ This section describes how to deploy OpenCRVS using the provided GitHub Action w
 
 Fork [opencrvs/infrastructure](https://github.com/opencrvs/infrastructure) into your own GitHub account or organization.
 
-You will need to provide the following values while installation multiple times:
+You will need to provide the following values while running installation scripts multiple times:
 
-* GitHub organization or account name: `<your-org-or-account>`
-* GitHub repository name: `<your-repository>`
-* GitHub PAT (personal access token) with access to repository code and workflows: `<GH_TOKEN or dedicated token>`
+* GitHub organization or account name: `<your-org-or-account>` (in our example, we use our Github organisation: opencrvs)
+* GitHub repository name: `<your-repository>` (in our example, we use our Farajaland Github repository: opencrvs-farajaland)
+* GitHub PAT ([personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)) with access to repository code and workflows. Select the "workflow" scope if configuring a "Classic" Github PAT to enable this.: `<GH_TOKEN or dedicated token>`
 * Environment name: `<env name>`
+
+You will need to provide the following values, **once per Github repository**.  Note: Subsequent environment creations will prompt you if you wish to update these values.  Usually you would respond **"no"** if these repository secrets already exist:
+
+* [Dockerhub](https://hub.docker.com/) **organisation** account: `<your-dockerhub-organisation>` (in our example, we use our Dockerhub account: opencrvs)
+* Dockerhub repo (should be private, and your Dockerhub user must have read/write permissions on the repo): `<your-dockerhub-repository-to-contain-your-published-countryconfig-docker-image>` (in our example, we use our Dockerhub repository: ocrvs-farajaland)
+* Dockerhub username: `<your-dockerhub-username>`
+* Dockerhub PAT ([Dockerhub blog: PAT](https://www.docker.com/blog/docker-hub-new-personal-access-tokens/)): `<your-dockerhub-token>`
+
+The script will ask you to create various usernames and secrets for access to some databases like Metabase or Kibana.  If you click enter and accept our strong password suggestions, that is recommended.
+
+The script will ask you for SMTP details and "NOTIFICATION_TRANSPORT" (a setting that controls which method of communications both OpenCRVS Staff and the public receive).  As previously mentioned, we advise using "Email" first, then manually configuring this later when you fully understand how OpenCRVS notifications work.
 
 ---
 
@@ -96,16 +130,21 @@ You will need to provide the following values while installation multiple times:
   ```
   yarn
   ```
-* Create environment:
+* Create a Github [environment](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments) using our script:
   ```
   yarn environment:init
   ```
-* Go to GitHub and verify the newly created environment
+* Go to GitHub and verify the newly created [environment](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)
 * Commit configuration files generated at `infrastructure/server-setup/inventory/` and `environments/` into git
+* Save all secrets that were copied into a `.env.<your-environment>` file into secure password manager software e.g. Bitwarden or 1Password for safe keeping. Then it is safe to delete this file.
+* In your GitHub repository navigate to "Actions".
+* Ensure the Update workflow environments Github Action has run successfully.
+* Run `git pull`, as changes in the infrastructure directory automatically create commits that you will not have locally. 
+* You should see updates to all other GitHub workflows.
 
 ## 2. Bootstrap GitHub Self-Hosted Runner
 
-The self-hosted runner must be installed on the single VM (master node). The VM must be provisioned with an SSH user account according to [Provision Your Server Nodes with SSH Access](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.1-provision-your-server-nodes-with-ssh-access).
+The self-hosted runner must be installed on the single VM (master node). The VM Operating System must be verified and setup with a **"provison"** SSH user account, according to [Verify servers & create a "provision" user](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.1-provision-your-server-nodes-with-ssh-access).
 
 > NOTE: On previous step environment configuration script left correct command as output.
 
@@ -115,11 +154,13 @@ The self-hosted runner must be installed on the single VM (master node). The VM 
     ```bash
     curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/ocrvs-9792/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh | \
     bash opencrvs-bootstrap.sh --owner <org name> \
-                --repo <repo name> \
+                --repo <your infrastructure repo name> \
                 --env <env name> \
                 --token <github token> \
                 --enable-runner
     ```
+
+    * The script will execute a self hosted Github runner on your VM.  The script will complete by outputting **"Node bootstrap complete for `your environment`** followed by the SSH public key that you can add to any worker nodes in your production cluster that the installation will require access to if applicable.
 
 **Checklist for script execution**
 
@@ -129,16 +170,32 @@ The self-hosted runner must be installed on the single VM (master node). The VM 
     su - provision
     ```
 2. In your GitHub repository, navigate to **Settings → Actions → Runners** and verify that the runner appears as a self-hosted runner.
+3. Close your SSH connection and return to your checked out infrastructure code.
 
 ---
 
-## 3. Run Infrastructure Provision
+## 3. Run Infrastructure Provision with users you wish to have SSH access
 
-* Trigger the **provision workflow** from your repository.
+* Navigate to the `infrastructure/server-setup/inventory directory in your code.  You will see an Ansible inventory yml file for your environment.
+* Add all required Devops administrators to the `your-environment.yml` file with their public SSH keys, giving them SSH access to the server.
+
+In the inventory yml, you will see an array like this `users: []`
+Replace this with a correct configuration for users, which will look like this:
+
+```
+users: 
+  - name: euan
+    ssh_keys:
+      - ssh-rsa AAAA...
+    state: present
+    role: admin
+```
+* Commit this file to git
+* Trigger the **Provision Infrastructure** workflow from your repository in Github Actions, selecting the appropriate branch and environment.
 
 Verification steps:
 * Verify that the Kubernetes self-hosted runner is visible under **Settings → Actions → Runners**.
-* You should be able to logic with any user defined under `users` section of inventory file.
+* You should be able to login with any user defined under `users` section of inventory file.
 * You should have access to kubernetes cluster after login, run command `kubectl config current-context`
 * Copy `.kube/config` to your laptop and configure `kubectl` locally instead of remote connection
 ---
@@ -149,20 +206,38 @@ Verification steps:
 * Verify that **MinIO** and **Kibana** are available:
   - Kibana URL: `https://kibana.<your domain>`
   - MinIO URL: `https://minio.<your domain>`
-  > NOTE: Credentials are stored at GitHub secrets or can be fetched namespace `opencrvs-deps-<env>`.
+  > NOTE: Credentials are stored at GitHub secrets or can be fetched in your environment namespace `opencrvs-deps-<env>`.
+
+---
+
+## 5. Build and push your countryconfig Docker image
+
+* In your forked countryconfig repository ...
 
 ---
 
 ## 6. Run OpenCRVS Deployment
 
-In this configuration OpenCRVS is deployed with MOSIP integration enabled and Farajaland base image.
-Data seed script also executed at the end of deployment workflow.
+In this example configuration, OpenCRVS is deployed with MOSIP integration enabled and Farajaland base image.
+The data seed script is also executed at the end of deployment workflow to populate OpenCRVS with test data.
+
+* To replace the Farajaland Docker image with your Docker image created in step 5, open charts/opencrvs-services/values.yaml and search for this block:
+```
+countryconfig:
+  image:
+    name: opencrvs/ocrvs-countryconfig
+    # FIXME: Put stable release version
+    tag: v1.9.0-beta-6
+  port: 3040
+```
+
+Replace the image name and tag appropriately to the image created in step 5.
 
 * Run the **Deploy OpenCRVS** workflow with following properties:
-  - Tag of the core image: v1.9.0-beta-1
-  - Tag of the countryconfig image: v1.9.0-beta-1
+  - Tag of the core image: v1.9.0-beta-6
+  - Tag of your countryconfig image: E.G. `v1.9.0-beta-6`
   - Target environment: `<your env>` (dev)
-  - Reset environment after deploy: ✅ (checked)
+  - Reset environment after deploy: ✅ (checked - This will clear AND re-seed your databases)
   - Deploy MOSIP integration: ✅ (checked)
 4. Verify that the **OpenCRVS login page** is accessible via your configured domain.
 
@@ -172,4 +247,4 @@ Data seed script also executed at the end of deployment workflow.
 
 Verification steps:
 - Go to login page: `https://<your domain>`
-- Login using demo users: https://documentation.opencrvs.org/setup/3.-installation/3.1-set-up-a-development-environment/3.1.4-log-in-to-opencrvs-locally
+- Login using demo users, listed in your `default-employees.csv`, or our Farajaland users listed here: https://documentation.opencrvs.org/setup/3.-installation/3.1-set-up-a-development-environment/3.1.4-log-in-to-opencrvs-locally
