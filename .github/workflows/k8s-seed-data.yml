@@ -30,12 +30,15 @@ jobs:
         run: |
           helm get values opencrvs -n ${namespace} -ojson | \
             jq '
+              # Quote image tags
               if has("image") and (.image | has("tag")) and (.image.tag | type == "number") then
                 .image.tag = (.image.tag | tostring)
               else . end |
+              # Quote version numbers
               if has("version") and (.version | type == "number") then
                 .version = (.version | tostring)
               else . end |
+              # Quote port numbers if needed (optional)
               if has("service") and (.service | has("port")) and (.service.port | type == "number") then
                 .service.port = (.service.port | tostring)
               else . end
