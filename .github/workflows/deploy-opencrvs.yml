@@ -11,8 +11,6 @@ on:
         type: string
       reset:
         type: boolean
-      deploy_mosip:
-        type: boolean
   workflow_dispatch:
     inputs:
       core-image-tag:
@@ -34,11 +32,6 @@ on:
           - dev-stg
       reset:
         description: "Reset environment after deploy"
-        required: false
-        default: false
-        type: boolean
-      deploy_mosip:
-        description: "Deploy MOSIP integration"
         required: false
         default: false
         type: boolean
@@ -86,15 +79,8 @@ jobs:
           EOF
           )
           echo "$SUMMARY" | sed 's/^          //' >> $GITHUB_STEP_SUMMARY
-      - name: Deploy OpenCRVS MOSIP API
-        if: inputs.deploy_mosip
-        run: |
-          helm upgrade --install mosip-api oci://ghcr.io/opencrvs/opencrvs-mosip \
-          --namespace "opencrvs-${ENV}" \
-          -f environments/${ENV}/mosip-api/values.yaml \
-          --set hostname=${{ vars.DOMAIN }} \
-          --create-namespace \
-          --atomic
+      - name: Create namespace
+        run: kubectl create namespace "opencrvs-${ENV}" || true
       - name: Copy secrets from dependencies into application namespace
         # Only redis secret for now needs to be copied
         run: |
