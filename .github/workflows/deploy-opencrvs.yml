@@ -35,8 +35,6 @@ on:
         required: false
         default: false
         type: boolean
-
-        type: boolean
 jobs:
   github-to-k8s-sync-env:
     uses: ./.github/workflows/github-to-k8s-sync-env.yml
@@ -81,7 +79,8 @@ jobs:
           EOF
           )
           echo "$SUMMARY" | sed 's/^          //' >> $GITHUB_STEP_SUMMARY
-
+      - name: Create namespace
+        run: kubectl create namespace "opencrvs-${ENV}" || true
       - name: Copy secrets from dependencies into application namespace
         # Only redis secret for now needs to be copied
         run: |
@@ -109,7 +108,7 @@ jobs:
             --set image.tag="$CORE_IMAGE_TAG" \
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set countryconfig.image.name="$COUNTRYCONFIG_IMAGE_NAME" \
-            --set hostname=${{ vars.DOMAIN }} |  | sed '/USER-SUPPLIED VALUES:/,$d'
+            --set hostname=${{ vars.DOMAIN }} | sed '/USER-SUPPLIED VALUES:/,$d'
       - name: Cleanup Helm Locks
         if: failure() || cancelled()
         run: |
