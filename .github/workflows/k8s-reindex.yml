@@ -40,13 +40,24 @@ jobs:
                 .service.port = (.service.port | tostring)
               else . end
             ' > ${namespace}.json
-      - name: Reindex data
+      - name: Create job elasticsearch-reindex from helm template and apply it
         run: |
-          kubectl delete job -n ${namespace} elasticsearch-reindex || true
-          helm template -f ${namespace}.json \
-              --namespace ${namespace} \
-              -s templates/elasticsearch-reindex.yaml \
-              oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} -f -
-          sleep 30;
-          kubectl logs job/elasticsearch-reindex -f -n ${namespace} || true
-          kubectl wait --for=condition=complete job/elasticsearch-reindex -n ${namespace} --timeout=600s;
+            kubectl delete job -n ${namespace} --ignore-not-found=true elasticsearch-reindex
+            helm template -f ${namespace}.json \
+                --namespace ${namespace} \
+                -s templates/elasticsearch-reindex-job.yaml \
+                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply --wait -n ${namespace} -f -
+      - name: Checking elasticsearch-reindex job status
+        run: |
+          while true; do
+            kubectl wait --for=condition=ready pod -ljob-name=elasticsearch-reindex --timeout=300s -n ${namespace} && \
+            kubectl logs job/elasticsearch-reindex --all-containers -f -n ${namespace} && \
+            touch /tmp/logs_stramed-${namespace}-elasticsearch-reindex.txt  || break;
+            sleep 10; done &
+          echo "---------------------- Waiting for job completion ----------------------"
+          kubectl wait --for=condition=complete job/elasticsearch-reindex -n ${namespace} --timeout=600s; status=$? || true
+          [ $status -ne 0 ] && kubectl get pods -n ${namespace} --show-labels && kubectl describe pod -ljob-name=${job_name} -n ${namespace};
+          [ ! -f /tmp/logs_stramed-${namespace}-elasticsearch-reindex.txt ] && kubectl logs job/elasticsearch-reindex --all-containers -n ${namespace} || \
+            rm -vf /tmp/logs_stramed-${namespace}-elasticsearch-reindex.txt
+          kill %1 2>/dev/null && echo "Stopped log streaming" || true
+          exit $status
