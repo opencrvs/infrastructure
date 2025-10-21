@@ -106,7 +106,7 @@ jobs:
             --set image.tag="$CORE_IMAGE_TAG" \
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set countryconfig.image.name="$COUNTRYCONFIG_IMAGE_NAME" \
-            --set hostname=${{ vars.DOMAIN }} | sed '/USER-SUPPLIED VALUES:/,$d'
+            --set hostname=${{ vars.DOMAIN }} 2>&1 | sed '/USER-SUPPLIED VALUES:/,$d'
       - name: Cleanup Helm Locks
         if: failure() || cancelled()
         run: |
