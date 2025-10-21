@@ -18,7 +18,6 @@ on:
         type: string
 jobs:
   seed:
-    environment: ${{ inputs.environment }}
     env:
       namespace: opencrvs-${{ inputs.environment }}
     runs-on:
@@ -30,28 +29,39 @@ jobs:
         run: |
           helm get values opencrvs -n ${namespace} -ojson | \
             jq '
+              # Quote image tags
               if has("image") and (.image | has("tag")) and (.image.tag | type == "number") then
                 .image.tag = (.image.tag | tostring)
               else . end |
+              # Quote version numbers
               if has("version") and (.version | type == "number") then
                 .version = (.version | tostring)
               else . end |
+              # Quote port numbers if needed (optional)
               if has("service") and (.service | has("port")) and (.service.port | type == "number") then
                 .service.port = (.service.port | tostring)
               else . end
             ' > ${namespace}.json
       - name: Seeding data
         run: |
-          kubectl delete job -n opencrvs-${ENV} data-seed || true
-          kubectl delete pod -n opencrvs-${ENV} -lapp=events;
-          sleep 30;
-          kubectl wait --for=condition=ready pod -n opencrvs-${ENV} -lapp=events;
-          helm template -f ${namespace}.json \
-              --set data_seed.enabled=true \
-              --namespace opencrvs-${ENV} \
-              -s templates/data-seed-job.yaml \
-              oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n opencrvs-${ENV} -f -
-          sleep 30;
-          kubectl logs job/data-seed -f -n opencrvs-${ENV} || true
-          kubectl wait --for=condition=complete job/data-seed -n opencrvs-${ENV} --timeout=600s;
-          kubectl delete pod -n opencrvs-${ENV} -lapp=events;
+            kubectl delete job -n ${namespace} --ignore-not-found=true data-seed
+            helm template -f ${namespace}.json \
+                --set data_seed.enabled=true \
+                --namespace ${namespace} \
+                -s templates/data-seed-job.yaml \
+                oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply --wait -n ${namespace} -f -
+
+        - name: Checking data-seed job status
+          run: |
+            while true; do
+              kubectl wait --for=condition=ready pod -ljob-name=data-seed --timeout=300s -n ${namespace} && \
+              kubectl logs job/data-seed --all-containers -f -n ${namespace} && \
+              touch /tmp/logs_stramed-${namespace}-data-seed.txt  || break;
+              sleep 10; done &
+            echo "---------------------- Waiting for job completion ----------------------"
+            kubectl wait --for=condition=complete job/data-seed -n ${namespace} --timeout=600s; status=$? || true
+            [ $status -ne 0 ] && kubectl get pods -n ${namespace} --show-labels && kubectl describe pod -ljob-name=${job_name} -n ${namespace};
+            [ ! -f /tmp/logs_stramed-${namespace}-data-seed.txt ] && kubectl logs job/data-seed --all-containers -n ${namespace} || \
+              rm -vf /tmp/logs_stramed-${namespace}-data-seed.txt
+            kill %1 2>/dev/null && echo "Stopped log streaming" || true
+            exit $status
