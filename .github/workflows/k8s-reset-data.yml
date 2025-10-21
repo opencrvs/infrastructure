@@ -8,9 +8,7 @@ on:
         required: true
         type: choice
         options:
-          - demo
-          - dev
-          - dev-stg
+          - ""
   workflow_call:
     inputs:
       environment:
