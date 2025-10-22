@@ -86,10 +86,10 @@ check_internet
 
 echo "Downloading dependencies..."
 
-curl -sS https://raw.githubusercontent.com/opencrvs/infrastructure/ocrvs-9792/scripts/bootstrap/create-provision-user.sh -o /tmp/create-provision-user.sh
+curl -sS https://raw.githubusercontent.com/opencrvs/infrastructure/develop/scripts/bootstrap/create-provision-user.sh -o /tmp/create-provision-user.sh
 chmod +x /tmp/create-provision-user.sh
 
-curl -sS https://raw.githubusercontent.com/opencrvs/infrastructure/ocrvs-9792/github-runner/node-runner.sh -o /tmp/node-runner.sh
+curl -sS https://raw.githubusercontent.com/opencrvs/infrastructure/develop/github-runner/node-runner.sh -o /tmp/node-runner.sh
 chmod +x /tmp/node-runner.sh
 
 /tmp/create-provision-user.sh --ssh-public-key "$SSH_PUBLIC_KEY"
@@ -105,4 +105,7 @@ echo "
 ⚙️  $PROVISION_USER SSH key pair public key (add on worker nodes if needed):
 " && \
 sudo cat /home/$PROVISION_USER/.ssh/id_ed25519.pub
-echo "Node bootstrap complete for $(hostname)."
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo " ✅ Node bootstrap complete for $(hostname)."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
