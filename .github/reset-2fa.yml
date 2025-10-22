@@ -1,0 +1,50 @@
+name: Reset 2FA
+run-name: Reset 2FA from user ${{ inputs.user }} in ${{ inputs.environment }}
+on:
+  workflow_dispatch:
+    inputs:
+      user:
+        description: User to remove 2FA from
+        type: string
+        required: true
+      environment:
+        type: choice
+        description: Infrastructure to provision
+        default: 
+        required: true
+        options:
+          - ""
+
+jobs:
+  reset:
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-24.04
+    outputs:
+      outcome: ${{ steps.deploy.outcome }}
+    timeout-minutes: 60
+    steps:
+      - name: Clone country config resource package
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+          path: './${{ github.event.repository.name }}'
+      # FIXME: Reset should work on all servers
+      - name: Remove 2FA
+        run: "sudo rm /home/${{ inputs.user }}/.google_authenticator"
+      - name: checkout repository
+        uses: actions/checkout@v5
+      - name: Run Ansible Playbook
+        uses: dawidd6/action-ansible-playbook@v4
+        env:
+          ANSIBLE_PERSISTENT_COMMAND_TIMEOUT: 10
+          ANSIBLE_SSH_TIMEOUT: 10
+          ANSIBLE_SSH_RETRIES: 5
+        with:
+          requirements: galaxy-requirements.yml
+          playbook: reset-2fa.yml
+          directory: ./infrastructure/server-setup
+          # Add --verbose to get more output
+          options: |-
+            --inventory inventory/${{ inputs.environment }}.yml
+            ${{ inputs.tags != 'all' && format('--tags={0}', inputs.tags) || '' }}
+            --extra-vars user=${{ inputs.user }}

@@ -1,0 +1,7 @@
+countryconfig:
+  env:
+    OPENID_PROVIDER_CLAIMS: name,family_name,given_name,middle_name,birthdate,address
+    OPENID_PROVIDER_CLIENT_ID: mock-client_id
+    # FIXME: In general these values should be passed externally using `--set key=value`
+    ESIGNET_REDIRECT_URL: http://esignet-mock.opencrvs.localhost/authorize
+    MOSIP_API_USERINFO_URL: http://mosip-api.opencrvs.localhost/esignet/get-oidp-user-info

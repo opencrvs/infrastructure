@@ -1,0 +1,17 @@
+ingress:
+  ssl_enabled: false
+
+# Horizontal Pod Autoscaler (HPA) configuration:
+# Disabled by default for local environment.
+hpa:
+  enabled: false
+
+# Pod Disruption Budget (PDB) configuration:
+# Disabled by default for local environment.
+pdb:
+  enabled: false
+
+# Dashboards is disabled by default to allow easy deployment on Apple Silicon
+# If you are using x86 device, feel free to enable:
+dashboards:
+  enabled: false
