@@ -110,8 +110,8 @@ minikube start --cpus=8 --memory=max --ports=80:30080
    tilt up
    ```
 3. Navigate to [http://localhost:10350/](http://localhost:10350/)
-4. Run [Data seed](#initial-data-seeding-with-tilt) resource
-5. Once all container images are up and running your environment will be available at http://opencrvs.localhost
+4. Once all container images are up and running, run [Data seed](#initial-data-seeding-with-tilt) resource
+5. Navigate to http://opencrvs.localhost
 
 
 ## For OpenCRVS Country Config Developers
@@ -131,8 +131,8 @@ minikube start --cpus=8 --memory=max --ports=80:30080
     tilt up
     ```
 3. Navigate to [http://localhost:10350/](http://localhost:10350/)
-4. Run [Data seed](#initial-data-seeding-with-tilt) resource
-5. Once all container images are up and running your environment will be available at http://opencrvs.localhost
+4. Once all container images are up and running, run [Data seed](#initial-data-seeding-with-tilt) resource
+5. Navigate to http://opencrvs.localhost
 
 
 ## For OpenCRVS Core Developers
@@ -146,8 +146,8 @@ minikube start --cpus=8 --memory=max --ports=80:30080
     tilt up
     ```
 3. Navigate to [http://localhost:10350/](http://localhost:10350/)
-4. Run [Data seed](#initial-data-seeding-with-tilt) resource
-5. Once all container images are up and running your environment will be available at http://opencrvs.localhost
+4. Once all container images are up and running, run [Data seed](#initial-data-seeding-with-tilt) resource
+5. Navigate to http://opencrvs.localhost
 
 ---
 
