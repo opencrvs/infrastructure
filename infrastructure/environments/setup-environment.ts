@@ -257,7 +257,27 @@ const githubOtherQuestions = [
     valueType: 'VARIABLE' as const,
     valueLabel: 'GH_APPROVERS',
     scope: 'REPOSITORY' as const
-  }
+  },
+  {
+    name: 'approvalRequired',
+    type: 'select' as const,
+    message: 'Would you like to enable approvals process for GitHub action workflows?',
+    choices: [
+      {
+        title: 'True',
+        value: 'true'
+      },
+      {
+        title: 'False',
+        value: 'false'
+      }
+    ],
+    valueType: 'SECRET' as const,
+    validate: notEmpty,
+    valueLabel: 'APPROVAL_REQUIRED',
+    initial: process.env.APPROVAL_REQUIRED,
+    scope: 'ENVIRONMENT' as const
+  },
 ]
 const githubTokenQuestion = [
   {

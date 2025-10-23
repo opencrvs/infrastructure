@@ -14,7 +14,29 @@ on:
       environment:
         type: string
 jobs:
+  approve:
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Waiting for manual approval
+        if: ${{ (vars.APPROVAL_REQUIRED || 'false') == 'true' }}
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: ${{ vars.GH_APPROVERS }}
+          minimum-approvals: 3
+          issue-title: >
+            Deploy (${{ inputs.environment }}): core: ${{ inputs.core-image-tag }} 
+            country config: ${{ inputs.countryconfig-image-tag }}
+
+          issue-body: >
+            Please approve or deny the deployment of core: ${{ inputs.core-image-tag }} 
+            country config: ${{ inputs.countryconfig-image-tag }} to ${{ inputs.environment }}
+
+          exclude-workflow-initiator-as-approver: false
   prepare:
+    needs: approve
     outputs:
       values-file: ${{ steps.get-values.outputs.values-file }}
     env:
@@ -29,22 +51,18 @@ jobs:
         run: |
           helm get values opencrvs -n ${namespace} -ojson | \
             jq '
-              # Quote image tags
               if has("image") and (.image | has("tag")) and (.image.tag | type == "number") then
                 .image.tag = (.image.tag | tostring)
               else . end |
-              
-              # Quote version numbers
               if has("version") and (.version | type == "number") then
                 .version = (.version | tostring)
               else . end |
-              
-              # Quote port numbers if needed (optional)
               if has("service") and (.service | has("port")) and (.service.port | type == "number") then
                 .service.port = (.service.port | tostring)
               else . end
             ' > /tmp/${namespace}.json
             echo "values-file=/tmp/${namespace}.json" >> $GITHUB_OUTPUT
+
       - name: Upload helm release values file /tmp/opencrvs-${{ inputs.environment }}.json
         uses: actions/upload-artifact@v4
         with:

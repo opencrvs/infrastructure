@@ -9,8 +9,6 @@ on:
         type: string
       environment:
         type: string
-      reset:
-        type: boolean
   workflow_dispatch:
     inputs:
       core-image-tag:
@@ -28,13 +26,32 @@ on:
         type: choice
         options:
           - ""
-      reset:
-        description: "Reset environment after deploy"
-        required: false
-        default: false
-        type: boolean
+
 jobs:
+  approve:
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Waiting for manual approval
+        if: ${{ (vars.APPROVAL_REQUIRED || 'false') == 'true' }}
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: ${{ vars.GH_APPROVERS }}
+          minimum-approvals: 1
+          issue-title: >
+            Deploy (${{ inputs.environment }}): core: ${{ inputs.core-image-tag }} 
+            country config: ${{ inputs.countryconfig-image-tag }}
+
+          issue-body: >
+            Please approve or deny the deployment of core: ${{ inputs.core-image-tag }} 
+            country config: ${{ inputs.countryconfig-image-tag }} to ${{ inputs.environment }}
+
+          exclude-workflow-initiator-as-approver: false
+
   github-to-k8s-sync-env:
+    needs: approve
     uses: ./.github/workflows/github-to-k8s-sync-env.yml
     with:
       environment: ${{ inputs.environment }}
@@ -114,10 +131,3 @@ jobs:
           jq -r '.items[] | select(.metadata.labels.status=="pending-install" or .metadata.labels.status=="pending-upgrade" or .metadata.labels.status=="pending-rollback") | .metadata.name' | \
           xargs -r kubectl -n "opencrvs-${ENV}" delete secret || \
           echo "No helm locks found, all is good"
-  reset-data:
-    if: ${{ inputs.reset }}
-    needs: deploy
-    uses: ./.github/workflows/k8s-reset-data.yml
-    with:
-      environment: ${{ inputs.environment }}
-    secrets: inherit
