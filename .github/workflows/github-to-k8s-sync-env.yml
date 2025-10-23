@@ -6,10 +6,10 @@ on:
       environment:
         description: "Target environment"
         required: true
-        default: "demo"
+        default: "dev"
         type: choice
         options:
-          - demo
+          - ""
       mapping_file:
         description: "Secrets mapping template"
         default: "opencrvs"
@@ -21,7 +21,7 @@ on:
     inputs:
       environment:
         type: string
-        default: demo
+        default: dev
       mapping_file:
         type: string
         default: opencrvs 

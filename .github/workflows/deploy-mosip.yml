@@ -13,9 +13,7 @@ on:
         default: "dev"
         type: choice
         options:
-          - demo
-          - dev
-          - dev-stg
+          - ""
 jobs:
   github-to-k8s-sync-env:
     uses: ./.github/workflows/github-to-k8s-sync-env.yml
