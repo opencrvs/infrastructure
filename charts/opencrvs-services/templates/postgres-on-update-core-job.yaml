@@ -1,4 +1,4 @@
-{{- if or (eq .Values.postgres.auth_mode "auto") (eq .Values.postgres.auth_mode "disabled") }}
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -80,4 +80,3 @@ spec:
             name: postgres-on-update-script
             defaultMode: 0755
       restartPolicy: "OnFailure"
-{{- end }}

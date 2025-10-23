@@ -1,0 +1,82 @@
+# Shared OpenCRVS Tilt configuration
+# Load extensions
+infrastructure_path = '.'
+load('ext://namespace', 'namespace_create', 'namespace_inject')
+load("./lib.tilt", 
+        "copy_secrets", "reset_environment", "seed_data", "reindex_environment")
+include('./common.tilt')
+
+def setup_opencrvs(
+    core_images_tag,
+    countryconfig_image_tag,
+    countryconfig_image_name="opencrvs/ocrvs-countryconfig",
+    dependencies_namespace='opencrvs-deps-dev',
+    opencrvs_namespace='opencrvs-dev',
+    security_enabled=False,
+    monitoring_enabled=False,
+    infrastructure_path='.',
+    build_countryconfig=False
+):
+    """
+    Common OpenCRVS setup function
+    
+    Args:
+        build_countryconfig: If True, builds countryconfig image locally
+        infrastructure_path: Path to infrastructure directory (relative)
+    """
+        
+    # Create namespaces
+    namespace_create(dependencies_namespace)
+    namespace_create(opencrvs_namespace)
+    
+    # Select configuration files
+    if security_enabled:
+        print("🔑 Deploying OpenCRVS and Dependencies in secure mode")
+        deps_configuration_file = '{}/examples/localhost/dependencies/values-secure.yaml'.format(infrastructure_path)
+        opencrvs_configuration_file = '{}/examples/localhost/opencrvs-services/values-secure.yaml'.format(infrastructure_path)
+    else:
+        print("""🔑 Deploying OpenCRVS and Dependencies in non-secure mode
+        - Minio admin user/password: minioadmin/minioadmin
+        - Postgres admin user/password: postgres/postgres
+        - Authentication for Redis, MongoDB and Elasticsearch is disabled""")
+        deps_configuration_file = '{}/examples/localhost/dependencies/values.yaml'.format(infrastructure_path)
+        opencrvs_configuration_file = '{}/examples/localhost/opencrvs-services/values.yaml'.format(infrastructure_path)
+    
+    # Build countryconfig if needed
+    if build_countryconfig:
+        print("🔨 Building countryconfig image locally...")
+        docker_build(countryconfig_image_name, ".",
+                    dockerfile="Dockerfile",
+                    network="host")
+    
+    # Deploy dependencies
+    print("🚀 Deploying dependencies: mongo, minio, elasticsearch...")
+    dependencies_chart_path = '{}/charts/dependencies'.format(infrastructure_path)
+    k8s_yaml(helm(dependencies_chart_path,
+        namespace=dependencies_namespace,
+        values=[deps_configuration_file],
+        set=["monitoring.enabled={}".format(monitoring_enabled).lower()]
+    ))
+    
+    # Deploy OpenCRVS services
+    print("🚀 Deploying services: auth, events, gateway...")
+    opencrvs_chart_path = '{}/charts/opencrvs-services'.format(infrastructure_path)
+    k8s_yaml(
+        helm(opencrvs_chart_path,
+             namespace=opencrvs_namespace,
+             values=[opencrvs_configuration_file],
+             set=[
+                "image.tag={}".format(core_images_tag),
+                "countryconfig.image.name={}".format(countryconfig_image_name),
+                "countryconfig.image.tag={}".format(countryconfig_image_tag),
+             ]
+        )
+    )
+    
+    # Add data tasks
+    reset_environment(opencrvs_namespace, opencrvs_configuration_file)
+    seed_data(opencrvs_namespace, opencrvs_configuration_file)
+    reindex_environment(opencrvs_namespace, opencrvs_configuration_file)
+    
+    if security_enabled:
+        copy_secrets(dependencies_namespace, opencrvs_namespace)
