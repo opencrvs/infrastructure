@@ -48,6 +48,7 @@ jobs:
                 --namespace ${namespace} \
                 -s templates/data-seed-job.yaml \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply --wait -n ${namespace} -f -
+
         - name: Checking data-seed job status
           run: |
             while true; do
