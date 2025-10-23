@@ -9,12 +9,6 @@ interface WorkflowConfig {
   path: string;
 }
 
-type EnvironmentType = 'production' | 'non-production';
-
-interface EnvironmentInfo {
-  name: string;
-  type: EnvironmentType;
-}
 
 async function extractInfrastructureNames(): Promise<string[]> {
   const files = glob.sync('infrastructure/server-setup/inventory/*.yml');
@@ -47,49 +41,6 @@ async function extractEnvironmentNames(): Promise<string[]> {
   console.log(environments.join(', '));
   
   return environments;
-}
-
-function getEnvironmentType(envName: string): EnvironmentType {
-  const valuesFilePath = join('environments', envName, 'opencrvs-services', 'values.yaml');
-  
-  if (!existsSync(valuesFilePath)) {
-    console.log(`⚠️  Warning: values.yaml not found for ${envName}, defaulting to non-production`);
-    return 'non-production';
-  }
-  
-  try {
-    const fileContents = readFileSync(valuesFilePath, 'utf8');
-    const valuesData = yaml.load(fileContents) as any;
-    
-    const environmentType = valuesData?.environment_type;
-    
-    if (environmentType === 'production') {
-      return 'production';
-    } else {
-      return 'non-production';
-    }
-  } catch (error) {
-    console.log(`⚠️  Warning: Could not read environment_type for ${envName}, defaulting to non-production`);
-    return 'non-production';
-  }
-}
-
-function getWorkflowsForEnvironmentType(type: EnvironmentType): string[] {
-  switch (type) {
-    case 'production':
-      return [
-        '.github/workflows/deploy-dependencies-with-approval.yml',
-        '.github/workflows/deploy-opencrvs-with-approval.yml',
-        '.github/workflows/k8s-seed-data.yml'
-      ];
-    case 'non-production':
-      return [
-        '.github/workflows/deploy-dependencies.yml',
-        '.github/workflows/deploy-opencrvs.yml',
-        '.github/workflows/k8s-reset-data.yml',
-        '.github/workflows/k8s-seed-data.yml'
-      ];
-  }
 }
 
 function updateOptionsInYaml(content: string, envList: string[]): string {
@@ -154,42 +105,30 @@ export async function updateWorkflowEnvironments(): Promise<void> {
     // Extract environment names (only directories)
     const environments = await extractEnvironmentNames();
     
-    // Categorize environments by type
-    console.log('\n🔍 Detecting environment types...');
-    const environmentsByType: Record<EnvironmentType, string[]> = {
-      'production': [],
-      'non-production': []
-    };
-    
-    for (const env of environments) {
-      const type = getEnvironmentType(env);
-      environmentsByType[type].push(env);
-      console.log(`  ${env}: ${type}`);
-    }
-    
-    console.log('\n📝 Updating workflows...');
-    
     // Update workflows with infrastructure configurations
     await updateWorkflows(infraEnvironments, {
-      workflows: ['.github/workflows/provision.yml'],
+      workflows: [
+        '.github/workflows/provision.yml',
+        '.github/workflows/reset-2fa.yml',
+      ],
+      path: 'on.workflow_dispatch.inputs.environment.options'
+    });
+
+    console.log(`\n📋 Updating workflows...`);
+    const workflows = [
+      '.github/workflows/deploy-dependencies.yml',
+      '.github/workflows/deploy-opencrvs.yml',
+      '.github/workflows/k8s-reset-data.yml',
+      '.github/workflows/k8s-seed-data.yml',
+      '.github/workflows/k8s-reindex.yml',
+      '.github/workflows/github-to-k8s-sync-env.yml'
+    ];
+      
+    await updateWorkflows(environments, {
+      workflows,
       path: 'on.workflow_dispatch.inputs.environment.options'
     });
     
-    // Update workflows for each environment type
-    for (const [type, envs] of Object.entries(environmentsByType) as [EnvironmentType, string[]][]) {
-      if (envs.length === 0) {
-        console.log(`\n⏭️  Skipping ${type} (no environments found)`);
-        continue;
-      }
-      
-      console.log(`\n📋 Updating ${type} workflows...`);
-      const workflows = getWorkflowsForEnvironmentType(type);
-      
-      await updateWorkflows(envs, {
-        workflows,
-        path: 'on.workflow_dispatch.inputs.environment.options'
-      });
-    }
     
     console.log('\n✅ All workflows updated successfully!');
     console.log('\n💡 Review the changes and commit them when ready.');
