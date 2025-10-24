@@ -1,4 +1,3 @@
-chart_dev_mode: true
 # All OpenCRVS services will be available under domain:
 hostname: opencrvs.localhost
 
@@ -34,11 +33,6 @@ hpa:
 pdb:
   enabled: false
 
-# Define the environment variables for the OpenCRVS services at global level.
-env:
-  LOG_LEVEL: debug 
-  MINIO_BUCKET: "ocrvs"
-
 mongodb:
   auth_mode: auto
 
@@ -50,20 +44,3 @@ redis:
 
 image:
   tag: develop
-
-dashboards:
-  use_default_credentials: false
-
-countryconfig:
-  image:
-    # Replace countryconfig with farajaland to test data
-    # name: opencrvs/ocrvs-farajaland
-    name: opencrvs/ocrvs-countryconfig
-    # tag: develop
-    # tag: ec53c12
-    tag: local
-
-data_seed:
-  env:
-    SUPER_USER_PASSWORD: "password"
-    ACTIVATE_USERS: "true"
