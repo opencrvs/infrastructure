@@ -77,13 +77,19 @@ This section describes how to deploy OpenCRVS using the provided GitHub Action w
 
 Fork [opencrvs/infrastructure](https://github.com/opencrvs/infrastructure) into your own GitHub account or organization.
 
-You will need to provide the following values while installation multiple times:
+You will need to provide the following values and answers to the following questions:
 
 * GitHub organization or account name: `<your-org-or-account>`
 * GitHub repository name: `<your-repository>`
 * GitHub PAT (personal access token) with access to repository code and workflows: `<GH_TOKEN or dedicated token>`
+* Choose environment type, depending on answer additional questions will be asked.
 * Environment name: `<env name>`
+* Provide ip addresses for worker nodes and backup server
+* For production environment provide list of GutHub users allowed to approve production workflows.
+* Configure Email/SMS notifications for alerting
 
+> [!NOTE]
+> OpenCRVS environment is provisioned with and deployed as Helm charts. Configuration files are created at first run of `yarn environment:init`, all further changes should be manually at `environments/<environment name>/` and `infrastructure/server-setup/inventory/`
 ---
 
 ## 1.  Create a GitHub environment
@@ -100,6 +106,25 @@ You will need to provide the following values while installation multiple times:
   ```
   yarn environment:init
   ```
+* Answer all questions, pay attention to the following items
+* On the final step you will get code snipped with command to be executed on servers (master, worker, backup), example:
+  ```
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Follow the steps below to complete the setup of your environment:
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ➡️ Run following command on Kubernetes master VM to bootstrap self-hosted runner:
+
+  curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \
+  bash opencrvs-bootstrap.sh --owner foo \
+            --repo bar \
+            --env demo \
+            --token ghp_token \
+            --enable-runner
+
+
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ```
+* Save generated snippet for later usage
 * Go to GitHub and verify the newly created environment
 * Commit configuration files generated at `infrastructure/server-setup/inventory/` and `environments/` into git
 
@@ -107,7 +132,7 @@ You will need to provide the following values while installation multiple times:
 
 The self-hosted runner must be installed on the single VM (master node). The VM must be provisioned with an SSH user account according to [Provision Your Server Nodes with SSH Access](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.1-provision-your-server-nodes-with-ssh-access).
 
-> NOTE: On previous step environment configuration script left correct command as output.
+> NOTE: Use code snippet generated on previous step.
 
 1. Login as user with sudo access or as root
 
