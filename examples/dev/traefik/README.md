@@ -11,10 +11,3 @@ Available installation options:
 ```
 helm upgrade --install traefik traefik-repo/traefik --namespace traefik --create-namespace -f values.yaml
 ```
-
-# How to create Custom SSL Certificate
-
-
-1. 
-1. Go to traefik namespace
-2. 

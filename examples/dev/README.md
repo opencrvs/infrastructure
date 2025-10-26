@@ -45,6 +45,8 @@ The deployment package includes the following components:
 
 # Prerequisites
 
+## Hardware and software requirements
+
 Before starting the deployment, ensure the following requirements are met:
 
 **1. Virtual Machine resources**
@@ -66,8 +68,18 @@ Before starting the deployment, ensure the following requirements are met:
 * These settings are required for **Traefik** to issue valid SSL certificates using Let’s Encrypt (`http-01` challenge).
 
 > See the [OpenCRVS documentation on DNS setup](https://documentation.opencrvs.org/setup/3.-installation/3.3-set-up-a-server-hosted-environment/3.3.5-setup-dns-a-records#domain-a-records) for details.
-
 > If you don't have public IP Address please follow guide "How to run traefik with self-signed SSL Certificate", see [TODO](#link-goes-here)
+
+## Country Config template custom docker image
+
+OpenCRVS requires custom Country Config docker image for configuration.
+
+  - Fork country config repository https://github.com/opencrvs/opencrvs-countryconfig
+  - Create Docker Hub account or use your own private docker registry
+  - Push build and push image to the docker registry
+  - Create Docker Hub API access key or use your own way for authentication into private registry.
+
+For more details check developers documentation [TODO](link)
 
 ---
 
