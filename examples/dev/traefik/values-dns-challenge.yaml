@@ -41,6 +41,9 @@ ports:
     hostPort: 443
     protocol: TCP
 
+# DNS resolver configuration goes here
+# Official documentation:
+# https://doc.traefik.io/traefik/reference/install-configuration/tls/certificate-resolvers/acme/#dnschallenge
 certificatesResolvers:
   cloudflare:
     acme:
@@ -49,6 +52,13 @@ certificatesResolvers:
       dnsChallenge:
         provider: cloudflare
         delayBeforeCheck: 0
+# Pass Cloudflare API token via environment variable
+env:
+  - name: CF_API_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: cloudflare-api-token-secret
+        key: api-token
 
 deployment:
   hostNetwork: true
@@ -64,10 +74,3 @@ additionalVolumeMounts:
 nodeSelector:
   traefik-role: ingress
 
-# Pass Cloudflare API token via environment variable
-env:
-  - name: CF_API_TOKEN
-    valueFrom:
-      secretKeyRef:
-        name: cloudflare-api-token-secret
-        key: api-token
