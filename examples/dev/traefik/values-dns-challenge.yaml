@@ -41,21 +41,26 @@ ports:
     hostPort: 443
     protocol: TCP
 
+# DNS resolver configuration goes here
+# Official documentation:
+# https://doc.traefik.io/traefik/reference/install-configuration/tls/certificate-resolvers/acme/#dnschallenge
 certificatesResolvers:
-  letsencrypt:
+  cloudflare:
     acme:
-      tlsChallenge: false
-      httpChallenge:
-        entryPoint: web
-      email: vadym@opencrvs.org
-      # Storage for certificates:
+      email: vadym@opencrvs.dev
       storage: /certificates/acme.json
-      # NOTE: Sometimes Let's Encrypt hit production SSL certificate issuing limits
-      #       If you are having issues, switch to staging
-      # Staging server
-      # caServer: https://acme-staging-v02.api.letsencrypt.org/directory
-      # Production server
-      caServer: https://acme-v02.api.letsencrypt.org/directory
+      dnsChallenge:
+        provider: cloudflare
+        delayBeforeCheck: 0
+# Pass Cloudflare API token via environment variable
+env:
+  - name: CLOUDFLARE_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: cloudflare-api-token-secret
+        key: api-token
+  - name: CLOUDFLARE_EMAIL
+    value: vadym@opencrvs.dev
 
 deployment:
   hostNetwork: true

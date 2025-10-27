@@ -198,3 +198,17 @@ Data seed script also executed at the end of deployment workflow.
 Verification steps:
 - Go to login page: `https://<your domain>`
 - Login using demo users: https://documentation.opencrvs.org/setup/3.-installation/3.1-set-up-a-development-environment/3.1.4-log-in-to-opencrvs-locally
+
+
+# Advanced topics
+
+## Running traefik behind VPN
+
+### DNS Challenge
+
+Please check configuration file with example for Cloudflare at [here](./traefik/values-dns-challenge.yaml)
+
+
+### Custom SSL Certificate
+
+Please check configuration file with example for Custom SSL Certificate at [here](./traefik/values-custom-ssl.yaml)

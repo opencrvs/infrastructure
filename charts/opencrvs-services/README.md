@@ -270,7 +270,7 @@ helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
         <tr>
             <td>ingress.tls_secret_name</td>
             <td>` `</td>
-            <td>Custom SSL Certificate for IngressRoute, check traefik documentation for details</td>
+            <td>Secret with custom SSL Certificate for IngressRoute, check traefik documentation for details. Otherwise default Traefik SSL Certificate will be used.</td>
         </tr>
         <tr>
             <td>service_type</td>

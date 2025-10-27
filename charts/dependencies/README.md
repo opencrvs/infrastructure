@@ -32,9 +32,9 @@ Any particular service within this helm chart can be disabled by setting `<servi
 | Parameter                | Type    | Default | Description                                   |
 |-|-|-|-|
 | hostname| string | farajaland.dev | All chart services will be available under specified domain. Exposed services are MinIO and Kibana, if Monitoring is enabled |
-| ingress.ssl_enabled      | bool    | false   | Enable SSL for IngressRoutes. |
+| ingress.ssl_enabled      | bool    | false   | Enable or disable https endpoint, by default all http traffic is routed to https |
 | ingress.tls_resolver | string | ` ` | If traefik was deployed with custom resolver, please define resolver name here. Resolver will be attached to Traefik CRD IngressRoute, otherwise default Traefik SSL Certificate will be used. |
-| ingress.tls_secret_name | string | ` ` | Custom SSL Certificate for IngressRoute, check traefik documentation for details |
+| ingress.tls_secret_name | string | ` ` | Secret with custom SSL Certificate for IngressRoute, check traefik documentation for details. Otherwise default Traefik SSL Certificate will be used.  |
 | storage_type | string | `pvc` | Kubernetes storage type, available options are `pvc` or `host_path`. More information are at [Storage Configuration](#storage-configuration) |
 | node_selector | dict | `{}` | Label selector for datastore nodes, usually used to keep data persistent |
 | monitoring.enabled | bool | `false` | Enable or disable monitoring, see [Monitoring](#monitoring) |
