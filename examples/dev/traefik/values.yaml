@@ -10,17 +10,20 @@ logs:
     # -- To enable access logs
     enabled: true
     format: "json"
+
 ingressRoute:
   dashboard:
     enabled: false
+
 # Be explicit that we only use CRDs, not ingress/gw support
 providers: 
   kubernetesCRD:
     enabled: true
   kubernetesIngress:
-    enabled: true
+    enabled: false
   kubernetesGateway:
     enabled: false
+
 service:
   enabled: true
   single: false
@@ -38,9 +41,6 @@ ports:
     hostPort: 443
     protocol: TCP
 
-nodeSelector:
-  traefik-role: ingress
-
 certificatesResolvers:
   letsencrypt:
     acme:
@@ -48,31 +48,25 @@ certificatesResolvers:
       httpChallenge:
         entryPoint: web
       email: vadym@opencrvs.org
-      # Storage for production certificates:
-      # storage: /data/acme.json
-      # Storage for staging certificates:
-      storage: /data/acme-staging.json
+      # Storage for certificates:
+      storage: /certificates/acme.json
+      # NOTE: Sometimes Let's Encrypt hit production SSL certificate issuing limits
+      #       If you are having issues, switch to staging
       # Staging server
       caServer: https://acme-staging-v02.api.letsencrypt.org/directory
       # Production server
       # caServer: https://acme-v02.api.letsencrypt.org/directory
 
-# Additional arguments
-additionalArguments:
-  - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
-  - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
-  - "--certificatesresolvers.letsencrypt.acme.email=vadym@opencrvs.org"
-  # Storage for staging certificates:
-  - "--certificatesresolvers.letsencrypt.acme.storage=/data1/acme-staging.json"
-  # Storage for staging certificates:
-  # - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
-
 deployment:
+  hostNetwork: true
   additionalVolumes:
     - name: acme
       hostPath:
         path: /data/traefik
 
 additionalVolumeMounts:
-  - name: acme
-    mountPath: /data1
+    - name: acme
+      mountPath: /certificates
+
+nodeSelector:
+  traefik-role: ingress
