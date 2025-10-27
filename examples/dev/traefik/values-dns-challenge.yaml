@@ -54,11 +54,13 @@ certificatesResolvers:
         delayBeforeCheck: 0
 # Pass Cloudflare API token via environment variable
 env:
-  - name: CF_API_TOKEN
+  - name: CLOUDFLARE_API_KEY
     valueFrom:
       secretKeyRef:
         name: cloudflare-api-token-secret
         key: api-token
+  - name: CLOUDFLARE_EMAIL
+    value: vadym@opencrvs.dev
 
 deployment:
   hostNetwork: true
@@ -73,4 +75,3 @@ additionalVolumeMounts:
 
 nodeSelector:
   traefik-role: ingress
-
