@@ -1,0 +1,77 @@
+# Overwriting https://github.com/traefik/traefik-helm-chart/blob/master/traefik/values.yaml
+namespaceOverride: "traefik"
+logs:
+  general:
+    # "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "PANIC"
+    level: "INFO"
+    # format: "common" # For local environment
+    format: "json" # For server environment
+  access:
+    # -- To enable access logs
+    enabled: true
+    format: "json"
+
+ingressRoute:
+  dashboard:
+    enabled: false
+
+# Be explicit that we only use CRDs, not ingress/gw support
+providers: 
+  kubernetesCRD:
+    enabled: true
+  kubernetesIngress:
+    enabled: false
+  kubernetesGateway:
+    enabled: false
+
+service:
+  enabled: true
+  single: false
+  type: NodePort
+
+ports:
+  web:
+    port: 8000
+    hostPort: 80
+    protocol: TCP
+    nodePort: 30080
+  websecure:
+    port: 8443
+    nodePort: 30443
+    hostPort: 443
+    protocol: TCP
+
+# DNS resolver configuration goes here
+# Official documentation:
+# https://doc.traefik.io/traefik/reference/install-configuration/tls/certificate-resolvers/acme/#dnschallenge
+certificatesResolvers:
+  cloudflare:
+    acme:
+      email: vadym@opencrvs.dev
+      storage: /certificates/acme.json
+      dnsChallenge:
+        provider: cloudflare
+        delayBeforeCheck: 0
+# Pass Cloudflare API token via environment variable
+env:
+  - name: CLOUDFLARE_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: cloudflare-api-token-secret
+        key: api-token
+  - name: CLOUDFLARE_EMAIL
+    value: vadym@opencrvs.dev
+
+deployment:
+  hostNetwork: true
+  additionalVolumes:
+    - name: acme
+      hostPath:
+        path: /data/traefik
+
+additionalVolumeMounts:
+    - name: acme
+      mountPath: /certificates
+
+nodeSelector:
+  traefik-role: ingress
