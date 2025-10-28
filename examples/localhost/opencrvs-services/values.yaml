@@ -17,4 +17,4 @@ dashboards:
   enabled: false
 
 # Expose services on Node port
-service_type: LoadBalancer
+service_type: NodePort
