@@ -6,7 +6,9 @@ This document describes OpenCRVS Helm chart configuration and provides explanati
 
 Quickstart scenario allows to run OpenCRVS locally on kubernetes cluster like docker-desktop or minikube.
 
-> NOTE: Before running commands make sure `helm` and `kubectl` are installed and kubernetes context is set to local cluster.
+> NOTE:
+> Before running commands make sure `helm` and `kubectl` are installed and kubernetes context is set to local cluster.
+> For Quickstart scenario you don't need to checkout any OpenCRVS repositories, just make sure kubernetes cluster is up and running and you are good to go.
 
 **1. Install Traefik Ingress Controller**
 
@@ -26,7 +28,7 @@ helm upgrade --install opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencie
     --namespace "opencrvs-deps-dev" \
     --create-namespace \
     --atomic \
-    -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/examples/localhost/dependencies/values-dev.yaml
+    -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/examples/localhost/dependencies/values.yaml
 ```
 
 **3. Install OpenCRVS Chart**
@@ -39,26 +41,14 @@ helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
     --namespace "opencrvs-dev" \
     --create-namespace \
     --atomic \
-    -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/examples/localhost/opencrvs-services/values-dev.yaml
+    --set data_seed.enabled=true \
+    -f https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/examples/localhost/opencrvs-services/values.yaml
 ```
 
 [Configuration options](#configuration-options) table gives brief overview of options available within helm chart. Copy and modify `examples/localhost/opencrvs-services/values.yaml` to suit your needs.
 
-**4. Seed data**
 
-Populate initial demo data
-
-```
-helm get values opencrvs --namespace "opencrvs-dev" \
-    | helm template -f - \
-        --set data_seed.enabled=true \
-        --namespace "opencrvs-dev" \
-        -s templates/data-seed-job.yaml \
-        oci://ghcr.io/opencrvs/opencrvs-services \
-    | kubectl apply --namespace "opencrvs-dev" -f -
-```
-
-**5. After installation visit http://opencrvs.localhost**
+**4. After installation visit http://opencrvs.localhost**
 
 > ➡️ Next steps:
 > - Follow up step by step single node installation guide with GitHub Actions workflow, see [here](../../examples/dev/README.md)
@@ -370,7 +360,7 @@ helm get values opencrvs --namespace "opencrvs-dev" \
         <tr>
             <td>data_seed.enabled</td>
             <td>true</td>
-            <td>Seed data as post-install step is executed only once while `helm install`. In some cases when data is already seeded, for example upgrade. **Note**: default user and password is used for data seeding, the job will fail on database with non-default data.</td>
+            <td>Seed data as post-install step which is executed only once while `helm install`. **Note**: default username and password is used for data seeding. **If you need to seed data again, use one-time jobs instead.</td>
         </tr>
         <tr>
             <td>dashboards.use_default_credentials</td>

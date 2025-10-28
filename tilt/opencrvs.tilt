@@ -15,13 +15,11 @@ def setup_opencrvs(
     security_enabled=False,
     monitoring_enabled=False,
     infrastructure_path='.',
-    build_countryconfig=False
 ):
     """
     Common OpenCRVS setup function
     
     Args:
-        build_countryconfig: If True, builds countryconfig image locally
         infrastructure_path: Path to infrastructure directory (relative)
     """
         
@@ -41,13 +39,6 @@ def setup_opencrvs(
         - Authentication for Redis, MongoDB and Elasticsearch is disabled""")
         deps_configuration_file = '{}/examples/localhost/dependencies/values.yaml'.format(infrastructure_path)
         opencrvs_configuration_file = '{}/examples/localhost/opencrvs-services/values.yaml'.format(infrastructure_path)
-    
-    # Build countryconfig if needed
-    if build_countryconfig:
-        print("🔨 Building countryconfig image locally...")
-        docker_build(countryconfig_image_name, ".",
-                    dockerfile="Dockerfile",
-                    network="host")
     
     # Deploy dependencies
     print("🚀 Deploying dependencies: mongo, minio, elasticsearch...")
@@ -69,6 +60,7 @@ def setup_opencrvs(
                 "image.tag={}".format(core_images_tag),
                 "countryconfig.image.name={}".format(countryconfig_image_name),
                 "countryconfig.image.tag={}".format(countryconfig_image_tag),
+                "data_seed.enabled={}".format(False)  # Disable data seeding on helm install for tilt
              ]
         )
     )
