@@ -1,0 +1,145 @@
+import { readdir } from 'fs/promises';
+import { readFileSync, writeFileSync, statSync, existsSync } from 'fs';
+import { basename, join } from 'path';
+import * as glob from 'glob';
+import * as yaml from 'js-yaml';
+
+interface WorkflowConfig {
+  workflows: string[];
+  path: string;
+}
+
+
+async function extractInfrastructureNames(): Promise<string[]> {
+  const files = glob.sync('infrastructure/server-setup/inventory/*.yml');
+  
+  const infraEnvironments = files.map(file => basename(file, '.yml'));
+  if (infraEnvironments.length === 0) {
+    console.log('⚠️  Warning: No environment directories found in infrastructure/server-setup/inventory/');
+    return [];
+  }
+  console.log('List of existing infrastructure configurations:');
+  console.log(infraEnvironments.join(', '));
+  
+  return infraEnvironments;
+}
+
+async function extractEnvironmentNames(): Promise<string[]> {
+  const entries = await readdir('environments');
+  
+  // Filter only directories
+  const environments = entries.filter(entry => {
+    const fullPath = join('environments', entry);
+    return statSync(fullPath).isDirectory();
+  });
+  if (environments.length === 0) {
+    console.log('⚠️  Warning: No environment directories found in environments/');
+    return [];
+  }
+
+  console.log('\nList of existing environment configurations:');
+  console.log(environments.join(', '));
+  
+  return environments;
+}
+
+function updateOptionsInYaml(content: string, envList: string[]): string {
+  // Find the options array pattern
+  // Matches: options: followed by array items (- item)
+  const optionsRegex = /([ ]*options:[ ]*\n)((?:[ ]*-[^\n]*\n)+)/;
+  
+  const match = content.match(optionsRegex);
+  
+  if (!match) {
+    throw new Error('Could not find options array in workflow file');
+  }
+  
+  // Get the indentation from the first array item
+  const firstItemMatch = match[2].match(/^([ ]*)-/);
+  const itemIndent = firstItemMatch ? firstItemMatch[1] : '          ';
+  
+  // Create new options array
+  const newOptions = match[1] + envList.map(env => `${itemIndent}- ${env}`).join('\n') + '\n';
+  
+  // Replace the old options array with the new one
+  return content.replace(optionsRegex, newOptions);
+}
+
+async function updateWorkflows(
+  envList: string[],
+  config: WorkflowConfig
+): Promise<void> {
+  const { workflows } = config;
+  
+  for (const workflowPath of workflows) {
+    console.log(`\nUpdating ${workflowPath} with: [${envList.join(', ')}]`);
+    
+    try {
+      const fileContents = readFileSync(workflowPath, 'utf8');
+      
+      // Verify the file is valid YAML and has the expected structure
+      const workflowData = yaml.load(fileContents) as any;
+      if (!workflowData?.on?.workflow_dispatch?.inputs?.environment?.options) {
+        throw new Error('Workflow does not have the expected structure: on.workflow_dispatch.inputs.environment.options');
+      }
+      
+      // Update only the options array while preserving everything else
+      const updatedContent = updateOptionsInYaml(fileContents, envList);
+      
+      writeFileSync(workflowPath, updatedContent, 'utf8');
+      console.log(`✓ Successfully updated ${workflowPath}`);
+    } catch (error) {
+      console.error(`✗ Failed to update ${workflowPath}:`, error);
+      throw error;
+    }
+  }
+}
+
+export async function updateWorkflowEnvironments(): Promise<void> {
+  try {
+    console.log('🔄 Updating workflow environments...\n');
+    
+    // Extract infrastructure names
+    const infraEnvironments = await extractInfrastructureNames();
+    
+    // Extract environment names (only directories)
+    const environments = await extractEnvironmentNames();
+    
+    // Update workflows with infrastructure configurations
+    await updateWorkflows(infraEnvironments, {
+      workflows: [
+        '.github/workflows/provision.yml',
+        '.github/workflows/reset-2fa.yml',
+      ],
+      path: 'on.workflow_dispatch.inputs.environment.options'
+    });
+
+    console.log(`\n📋 Updating workflows...`);
+    const workflows = [
+      '.github/workflows/deploy-dependencies.yml',
+      '.github/workflows/deploy-opencrvs.yml',
+      '.github/workflows/k8s-reset-data.yml',
+      '.github/workflows/k8s-seed-data.yml',
+      '.github/workflows/k8s-reindex.yml',
+      '.github/workflows/github-to-k8s-sync-env.yml'
+    ];
+      
+    await updateWorkflows(environments, {
+      workflows,
+      path: 'on.workflow_dispatch.inputs.environment.options'
+    });
+    
+    
+    console.log('\n✅ All workflows updated successfully!');
+    console.log('\n💡 Review the changes and commit them when ready.');
+    
+  } catch (error) {
+    console.error('\n❌ Error updating workflows:', error);
+    process.exit(1);
+  }
+}
+
+// Only run if this file is executed directly
+if (require.main === module) {
+  updateWorkflowEnvironments();
+}
