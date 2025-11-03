@@ -395,19 +395,22 @@ const infrastructureQuestions = [
   },
 ]
 
-const databaseAndMonitoringQuestions = [
+const diskQuestions = [
   {
     name: 'diskSpace',
     type: 'text' as const,
     message: `What is the amount of diskspace that should be dedicated to OpenCRVS data and will become the size of an encrypted cryptfs data directory.
     \n${kleur.red('DO NOT USE ALL DISKSPACE FOR OPENCRVS!')}
-    \nLeave at least 150g available for OS & Docker use.`,
+    \nLeave at least 50g available for OS use.`,
     valueType: 'VARIABLE' as const,
     validate: notEmpty,
     valueLabel: 'DISK_SPACE',
     initial: process.env.DISK_SPACE || '200g',
-    scope: 'ENVIRONMENT' as const
+    scope: 'ENVIRONMENT' as const,
   },
+]
+
+const databaseAndMonitoringQuestions = [
   {
     name: 'kibanaUsername',
     type: 'text' as const,
@@ -744,6 +747,7 @@ ALL_QUESTIONS.push(
   ...githubTokenQuestion,
   ...githubOtherQuestions,
   ...dockerhubQuestions,
+  ...diskQuestions,
   ...infrastructureQuestions,
   ...countryQuestions,
   ...databaseAndMonitoringQuestions,
@@ -904,6 +908,33 @@ ALL_QUESTIONS.push(
   await updateWorkflowEnvironments();
 
   log('\n', kleur.bold().underline('Databases & monitoring'))
+
+  var enableEncryption = true
+  const encryption_key_defined = findExistingValue(
+            'ENCRYPTION_KEY',
+            'SECRET',
+            'ENVIRONMENT',
+            existingValues
+    )
+
+    if (!encryption_key_defined) {
+        const answers_enable_encryption = await prompts(
+          [
+            {
+              name: 'enableEncryption',
+              type: 'confirm' as const,
+              message: 'Do you want to enable disk encryption?',
+              scope: 'ENVIRONMENT' as const,
+              initial: Boolean(process.env.ENABLE_ENCRYPTION)
+            }
+          ].map(questionToPrompt)
+        )
+        enableEncryption = answers_enable_encryption.enableEncryption
+    }
+    if (enableEncryption) {
+      console.log('\n', kleur.bold().green('✔'), kleur.bold().yellow(' Disk encryption is enabled'))
+      await promptAndStoreAnswer(environment, diskQuestions, existingValues)
+    }
   await promptAndStoreAnswer(
     environment,
     databaseAndMonitoringQuestions,
@@ -1004,6 +1035,26 @@ ALL_QUESTIONS.push(
       scope: 'REPOSITORY' as const
     },
   ]
+
+  if (enableEncryption){
+    derivedUpdates.push({
+      name: 'ENCRYPTION_KEY',
+      type: 'SECRET' as const,
+      didExist: findExistingValue(
+        'ENCRYPTION_KEY',
+        'SECRET',
+        'ENVIRONMENT',
+        existingValues
+      ),
+      value: findExistingOrDefine(
+        'ENCRYPTION_KEY',
+        'SECRET',
+        'ENVIRONMENT',
+        generateLongPassword()
+      ),
+      scope: 'ENVIRONMENT' as const
+    })
+  }
 
   if ('production' === environment_type) {
     derivedUpdates.push({
