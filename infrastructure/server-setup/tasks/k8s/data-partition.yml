@@ -173,20 +173,6 @@
     mode: ugo+rwx
   when: not minio_data_backup.stat.exists
 
-- name: Check wireguard data backup directory
-  stat:
-    path: /data/wireguard
-  register: wireguard_data
-
-- name: 'Create wireguard backup directory'
-  file:
-    path: /data/wireguard
-    state: directory
-    group: 1000
-    owner: 1000
-    mode: ugo+rwx
-  when: not wireguard_data.stat.exists
-
 - name: Check vsexport data directory
   stat:
     path: /data/vsexport
@@ -214,14 +200,6 @@
     owner: 1000
     mode: ugo+rwx
   when: not vsexport_data_backup.stat.exists
-
-- name: 'Create secrets directory'
-  file:
-    path: /data/secrets
-    state: directory
-    group: 1000
-    owner: 1000
-    mode: g+rwx
 
 - name: 'Create acme file for traefik'
   file:
