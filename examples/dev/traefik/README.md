@@ -6,9 +6,15 @@ Available installation options:
 - `values-dns-challenge.yaml`: Lets-encrypt configuration with DNS challenge
 - `values-custom-ssl.yaml`: Custom SSL Certificate example
 
-**How to install??**
+# How to install?
 
 ```
 helm upgrade --install traefik traefik-repo/traefik --namespace traefik --create-namespace -f values.yaml
 ```
 
+# How to create Custom SSL Certificate
+
+
+1. 
+1. Go to traefik namespace
+2. 
