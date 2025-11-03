@@ -75,7 +75,10 @@ jobs:
     needs: prepare
     env:
       namespace: opencrvs-${{ inputs.environment }}
-    runs-on: [self-hosted, k8s, e2e]
+    runs-on:
+      - self-hosted
+      - k8s
+      - ${{ inputs.environment }}
     strategy:
       max-parallel: 1  # Ensure jobs run one by one
       fail-fast: true  # Stop on first failure
