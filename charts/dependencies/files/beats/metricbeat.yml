@@ -2,7 +2,7 @@ system.hostfs: /hostfs
 
 metricbeat.modules:
 - module: kubernetes
-  period: 10s
+  period: 1m
   host: ${NODE_NAME}
   hosts: ["https://${NODE_IP}:10250"]
   bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
@@ -28,11 +28,11 @@ metricbeat.modules:
     - process_summary
     - core
     - socket
-  period: 10s
+  period: 1m
 - module: system
   metricsets:
     - filesystem
-  period: 60s
+  period: 5m
   processors:
     - drop_event.when.regexp:
         system.filesystem.mount_point: "^/hostfs/run"
