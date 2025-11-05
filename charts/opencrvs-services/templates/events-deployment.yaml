@@ -113,6 +113,14 @@ spec:
           {{- end }}
           {{- include "render-env-vars" (dict "service_name" "events" "Values" .Values) }}
           {{ include "resources-helper" (dict "service_name" "events" "Values" .Values) | indent 10 }}
+          livenessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up x
+              port: {{ .Values.events.port }}
+          readinessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up
+              port: {{ .Values.events.port }}
           ports:
             - containerPort: {{ .Values.events.port }}
               protocol: TCP

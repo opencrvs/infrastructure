@@ -131,7 +131,14 @@ spec:
           ports:
             - containerPort: {{ .Values.countryconfig.port }}
               protocol: TCP
-          # TODO: Implement liveness and readiness probes
+          livenessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up x
+              port: {{ .Values.countryconfig.port }}
+          readinessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up
+              port: {{ .Values.countryconfig.port }}
           volumeMounts:
             - mountPath: /secrets/public-key.pem
               name: public-key

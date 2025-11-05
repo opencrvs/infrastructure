@@ -90,7 +90,14 @@ spec:
           ports:
             - containerPort: {{ .Values.config.port }}
               protocol: TCP
-          # TODO: Add liveness and readiness probes
+          livenessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up x
+              port: {{ .Values.config.port }}
+          readinessProbe:
+            httpGet:
+              path: /ping # FIXME: not real healthz, just checking if http server is up
+              port: {{ .Values.config.port }}
           volumeMounts:
             - mountPath: /secrets/public-key.pem
               name: public-key
