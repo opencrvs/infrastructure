@@ -43,6 +43,14 @@ spec:
           ports:
             - containerPort: {{ .Values.hearth.port }}
               protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /fhir/Location?_count=1
+              port: {{ .Values.hearth.port }}
+          readinessProbe:
+            httpGet:
+              path: /fhir/Location?_count=1
+              port: {{ .Values.hearth.port }}
           volumeMounts:
             - mountPath: /secrets/public-key.pem
               name: hearth-cm-public-key
