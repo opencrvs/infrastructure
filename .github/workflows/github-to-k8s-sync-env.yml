@@ -10,8 +10,10 @@ on:
         default: "development"
         type: choice
         options:
-          - ""
-      namespace_template:
+          - demo1
+          - production
+          - staging
+      mapping_file:
         description: "Secrets mapping template"
         default: "opencrvs"
         type: choice
