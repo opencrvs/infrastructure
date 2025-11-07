@@ -272,7 +272,7 @@ const githubOtherQuestions = [
         value: 'false'
       }
     ],
-    valueType: 'SECRET' as const,
+    valueType: 'VARIABLE' as const,
     validate: notEmpty,
     valueLabel: 'APPROVAL_REQUIRED',
     initial: process.env.APPROVAL_REQUIRED,
