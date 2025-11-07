@@ -7,14 +7,21 @@
 #
 # Copyright (C) The OpenCRVS Authors located at https://github.com/opencrvs/opencrvs-core/blob/master/AUTHORS.
 ansible_python_interpreter: /usr/bin/python3
-encrypt_data: False
 
-backup_server_user: 'backup'
-backup_server_user_home: '/home/backup'
 crontab_user: root
 provisioning_user: provision
 kubernetes_version: "v1.33"
 pod_network_cidr: "192.168.0.0/16"
 calico_version: "v3.26.1"
+
+# Kubernetes secret in opencrvs-deps-<env name> namespace
 backup_server_ssh_credentials_secret: "backup-server-ssh-credentials"
+# Path on backup server where to private key is stored
 backup_ssh_key_path: /home/backup/.ssh/id_ed25519
+# User for ssh connection to backup server
+backup_server_user: 'backup'
+# Home directory for user on backup server
+backup_server_user_home: '/home/backup'
+
+# Disk Encryption key location as an example (in production use a hardware security module)
+disk_encryption_key_path: /root/disk-encryption-key.txt

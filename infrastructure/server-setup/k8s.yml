@@ -20,7 +20,15 @@
             - data-partition
       tags:
         - data-partition
-
+    - include_tasks:
+        file: tasks/k8s/validate-data-partition.yml
+        apply:
+          tags:
+            - data-partition
+            - decrypt-on-boot
+      tags:
+        - data-partition
+        - decrypt-on-boot
     - include_tasks:
         file: tasks/k8s/decrypt-on-boot.yml
         apply:
@@ -28,6 +36,7 @@
             - decrypt-on-boot
       tags:
         - decrypt-on-boot
+
     - name: Include system preparation tasks
       include_tasks: tasks/k8s/system-preparation.yml
       tags:

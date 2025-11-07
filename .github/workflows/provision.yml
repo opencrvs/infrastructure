@@ -23,6 +23,7 @@ on:
           - application
           - tools
           - fail2ban
+          - data-partition
           - decrypt-on-boot
           - checks
           - containerd-setup
