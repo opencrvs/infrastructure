@@ -1,0 +1,81 @@
+{{ if and .Values.minio.enabled .Values.backup.enabled }}
+---
+apiVersion: batch/v1
+{{ if .Values.backup.cronjob }}
+kind: CronJob
+{{- else }}
+kind: Job
+{{- end }}
+metadata:
+  name: minio-backup
+  labels:
+    app: minio
+    job-type: backup
+spec:
+  {{ if .Values.backup.cronjob }}
+  schedule: {{ .Values.minio.backup_schedule | default .Values.backup.schedule }}
+  jobTemplate:
+    spec:
+  {{- end }}
+      template:
+        metadata:
+          labels:
+            app: minio
+            job-type: backup
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              command: ["/scripts/backup.sh"]
+              image: "bash"
+              env:
+                - name: BACKUP_MODE
+                  value: "mirror"
+              {{- if not .Values.minio.use_default_credentials }}
+                - name: MINIO_ROOT_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: minio-opencrvs-users
+                      key: MINIO_ROOT_USER
+                - name: MINIO_ROOT_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: minio-opencrvs-users
+                      key: MINIO_ROOT_PASSWORD
+              {{- end }}
+                - name: ENCRYPT_PASS
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.backup_encryption_secret }}
+                      key: backup_encryption_key
+                - name: BACKUP_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.backup_server_secret }}
+                      key: user
+                - name: BACKUP_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.backup_server_secret }}
+                      key: host
+                - name: BACKUP_REMOTE_DIR
+                  value: "{{ .Values.minio.backup_server_dir | default .Values.backup.backup_server_dir }}"
+              volumeMounts:
+                - name: backup-ssh-key
+                  mountPath: /ssh
+                  readOnly: true
+                - mountPath: /scripts
+                  name: minio-scripts
+          volumes:
+            - name: backup-ssh-key
+              secret:
+                secretName: {{ .Values.backup.backup_server_secret }}
+                defaultMode: 0400
+                items:
+                  - key: ssh_key
+                    path: ssh_key
+            - name: minio-scripts
+              configMap:
+                name: minio-scripts
+                defaultMode: 0755
+{{- end }}

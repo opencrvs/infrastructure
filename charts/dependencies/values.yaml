@@ -128,7 +128,13 @@ influxdb:
 
 # Backup configuration
 backup:
+  # Enable or disable backup
   enabled: false
+  # Run backup jobs as cronjob
+  # Default: true
+  # If you need to run manual backup, then set this property to false
+  # and run helm template ... instead
+  cronjob: true
   # Schedule job
   schedule: "0 1 * * *"
   # Secret to store backup server connection configuration:
@@ -139,9 +145,15 @@ backup:
   backup_server_dir: /home/backup/demo
   backup_encryption_secret: backup-encryption-secret
 
-# Backup configuration
+# Restore configuration
 restore:
+  # Enable or disable restore
   enabled: false
+  # Run backup jobs as cronjob
+  # Default: true
+  # If you need to run manual restore, then set this property to false
+  # and run helm template ... instead
+  cronjob: true
   # Schedule job
   schedule: "0 0 * * *"
   # Secret to store backup server connection configuration:
