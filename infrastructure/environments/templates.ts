@@ -109,7 +109,7 @@ export function generateInventory(env: string, values: Record<string, any>){
   template = template.replace('{{BACKUP_BLOCK}}', backupBlock);
 
   // Generate kube_api_host line
-  let kubeApiHost = '    kube_api_host: ' + (values['kube_api_host'] || '');
+  let kubeApiHost = 'kube_api_host: ' + (values['kube_api_host'] || '');
   template = template.replace('{{KUBE_API_HOST_BLOCK}}', kubeApiHost);
 
   const updated = replacePlaceholders(template, values);

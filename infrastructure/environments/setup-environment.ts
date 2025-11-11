@@ -1231,23 +1231,6 @@ ALL_QUESTIONS.push(
       scope: 'ENVIRONMENT' as const
     },
     {
-      name: 'ENCRYPTION_KEY',
-      type: 'SECRET' as const,
-      didExist: findExistingValue(
-        'ENCRYPTION_KEY',
-        'SECRET',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      value: findExistingOrDefine(
-        'ENCRYPTION_KEY',
-        'SECRET',
-        'ENVIRONMENT',
-        generateLongPassword()
-      ),
-      scope: 'ENVIRONMENT' as const
-    },
-    {
       type: 'VARIABLE' as const,
       name: 'ACTIVATE_USERS',
       value: 'production' === environment_type ? 'false' : 'true',
@@ -1357,6 +1340,25 @@ ALL_QUESTIONS.push(
     }
   ]
 
+  if (enableEncryption){
+    applicationServerUpdates.push({
+      name: 'ENCRYPTION_KEY',
+      type: 'SECRET' as const,
+      didExist: findExistingValue(
+        'ENCRYPTION_KEY',
+        'SECRET',
+        'ENVIRONMENT',
+        existingValues
+      ),
+      value: findExistingOrDefine(
+        'ENCRYPTION_KEY',
+        'SECRET',
+        'ENVIRONMENT',
+        generateLongPassword()
+      ),
+      scope: 'ENVIRONMENT' as const
+    })
+  }
 
   derivedUpdates.push(...applicationServerUpdates)
 
