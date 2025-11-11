@@ -63,11 +63,9 @@ jobs:
       - name: Set variables for ansible
         id: ansible-variables
         run: |
-          JSON_WITH_NEWLINES=$(cat<<EOF
-            ${{ toJSON(env) }}
-          EOF)
-          JSON_WITHOUT_NEWLINES=$(echo $JSON_WITH_NEWLINES | jq -R -c .)
-          echo "EXTRA_VARS=$JSON_WITHOUT_NEWLINES" >> $GITHUB_OUTPUT
+          echo '${{ toJSON(env) }}' > tmp_vars.json
+          JSON_WITHOUT_EMPTY=$(jq -c 'with_entries(select(.value | type == "string" and length > 0))' tmp_vars.json | jq -R )
+          echo "EXTRA_VARS=$JSON_WITHOUT_EMPTY" >> $GITHUB_OUTPUT
         env:
           encrypted_disk_size: ${{ vars.DISK_SPACE }}
           disk_encryption_key: ${{ secrets.ENCRYPTION_KEY }}
