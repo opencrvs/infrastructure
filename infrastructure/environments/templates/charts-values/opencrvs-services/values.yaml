@@ -16,7 +16,7 @@ hpa:
 
 env:
   APN_SERVICE_URL: "http://apm-server.opencrvs-deps-{{env}}.svc.cluster.local:8200"
-
+  QA_ENV: {{is_qa_env}}
 influxdb:
   host: influxdb-0.influxdb.opencrvs-deps-{{env}}.svc.cluster.local
 elasticsearch:
@@ -46,11 +46,12 @@ imagePullSecrets:
   - name: dockerhub-credentials
 
 countryconfig:
-  smtp-config:
-    - ALERT_EMAIL
-    - SENDER_EMAIL_ADDRESS
-    - SMTP_HOST
-    - SMTP_PASSWORD
-    - SMTP_PORT
-    - SMTP_SECURE
-    - SMTP_USERNAME
+  secrets:
+    smtp-config:
+      - ALERT_EMAIL
+      - SENDER_EMAIL_ADDRESS
+      - SMTP_HOST
+      - SMTP_PASSWORD
+      - SMTP_PORT
+      - SMTP_SECURE
+      - SMTP_USERNAME

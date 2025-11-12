@@ -904,7 +904,13 @@ ALL_QUESTIONS.push(
   const backupHost = infrastructure.backupHost || ''
   log('\n', kleur.bold().underline('Running configuration files updates'))
   generateInventory(environment, {worker_nodes: workerNodes, backup_host: backupHost, kube_api_host: infrastructure.kubeAPIHost})
-  copyChartsValues(environment, { env: environment, environment_type: environment_type })
+  copyChartsValues(
+    environment, 
+    { env: environment,
+      environment_type: environment_type,
+      is_qa_env: environment !== 'production' ? "true" : "false"
+    }
+  )
   await updateWorkflowEnvironments();
 
   log('\n', kleur.bold().underline('Databases & monitoring'))
