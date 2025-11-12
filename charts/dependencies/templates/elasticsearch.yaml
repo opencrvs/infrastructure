@@ -33,28 +33,6 @@ spec:
   selector:
     app: elasticsearch
 
-{{- if .Values.backup.enabled }}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: elasticsearch-backup-jobs
-data:
-  root: |
-    {{ .Values.elasticsearch.backup_schedule | default .Values.backup.schedule }} /scripts/backup.sh >> /proc/1/fd/1 2>&1
-{{- end }}
-
-{{- if .Values.restore.enabled }}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: elasticsearch-restore-jobs
-data:
-  root: |
-    {{ .Values.elasticsearch.restore_schedule | default .Values.restore.schedule }} /scripts/restore.sh >> /proc/1/fd/1 2>&1
-{{- end }}
-
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -144,86 +122,6 @@ spec:
               name: elasticsearch
             - mountPath: /data/backups/elasticsearch
               name: elasticsearch-backup
-      {{- if .Values.backup.enabled }}
-        - name: backup
-          command: ["crond", "-f", "-L", "/var/log/cron.log"]
-          image: "bash"
-          env:
-          {{- if not .Values.elasticsearch.use_default_credentials }}
-            - name: ELASTIC_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.elasticsearch.admin_user_secret_name }}
-                  key: ELASTIC_PASSWORD
-          {{- end }}
-            - name: ENCRYPT_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.backup.backup_encryption_secret }}
-                  key: backup_encryption_key
-            - name: BACKUP_USER
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.backup.backup_server_secret }}
-                  key: user
-            - name: BACKUP_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.backup.backup_server_secret }}
-                  key: host
-            - name: BACKUP_REMOTE_DIR
-              value: "{{ .Values.elasticsearch.backup_server_dir | default .Values.backup.backup_server_dir }}"
-          volumeMounts:
-            - name: backup-ssh-key
-              mountPath: /ssh
-              readOnly: true
-            - mountPath: /data/backups/elasticsearch
-              name: elasticsearch-backup
-            - mountPath: /scripts
-              name: elasticsearch-scripts
-            - name: backup-crontab
-              mountPath: /etc/crontabs
-      {{- end }}
-      {{- if .Values.restore.enabled }}
-        - name: restore
-          command: ["crond", "-f", "-L", "/var/log/cron.log"]
-          image: "bash"
-          env:
-          {{- if not .Values.elasticsearch.use_default_credentials }}
-            - name: ELASTIC_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.elasticsearch.admin_user_secret_name }}
-                  key: ELASTIC_PASSWORD
-          {{- end }}
-            - name: ENCRYPT_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.restore.backup_encryption_secret }}
-                  key: backup_encryption_key
-            - name: BACKUP_USER
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.restore.backup_server_secret }}
-                  key: user
-            - name: BACKUP_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.restore.backup_server_secret }}
-                  key: host
-            - name: BACKUP_REMOTE_DIR
-              value: "{{ .Values.elasticsearch.restore_server_dir | default .Values.restore.backup_server_dir }}"
-          volumeMounts:
-            - name: restore-ssh-key
-              mountPath: /ssh
-              readOnly: true
-            - mountPath: /data/backups/elasticsearch
-              name: elasticsearch-backup
-            - mountPath: /scripts
-              name: elasticsearch-scripts
-            - name: restore-crontab
-              mountPath: /etc/crontabs
-      {{- end }}
       restartPolicy: Always
       volumes:
         - name: elasticsearch-backup
@@ -236,35 +134,5 @@ spec:
           hostPath:
             path: {{ .Values.elasticsearch.host_data_path | default "/data/elasticsearch" }}
             type: DirectoryOrCreate
-      {{- end }}
-      {{- if or .Values.backup.enabled .Values.restore.enabled }}
-        - name: elasticsearch-scripts
-          configMap:
-            name: elasticsearch-scripts
-            defaultMode: 0755
-      {{- end }}
-      {{- if or .Values.backup.enabled }}
-        - name: backup-ssh-key
-          secret:
-            secretName: {{ .Values.backup.backup_server_secret }}
-            defaultMode: 0400
-            items:
-              - key: ssh_key
-                path: ssh_key
-        - name: backup-crontab
-          configMap:
-            name: elasticsearch-backup-jobs
-      {{- end }}
-      {{- if or .Values.restore.enabled }}
-        - name: restore-ssh-key
-          secret:
-            secretName: {{ .Values.backup.backup_server_secret }}
-            defaultMode: 0400
-            items:
-              - key: ssh_key
-                path: ssh_key
-        - name: restore-crontab
-          configMap:
-            name: elasticsearch-restore-jobs
       {{- end }}
 {{- end }}

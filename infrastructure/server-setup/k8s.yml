@@ -93,7 +93,13 @@
   tasks:
     # FIXME: It should be started under provision user
     - name: Configure Extra SANs for Kube API server
-      include_tasks: tasks/k8s/kube-api-add-extra-sans.yml
+      include_tasks:
+        file: tasks/k8s/kube-api-add-extra-sans.yml
+        apply:
+          tags:
+            - k8s
+      tags:
+        - k8s
     - name: Distribute kubeconfig into users directory
       include_tasks:
         file: tasks/k8s/user-kubeconfig.yml

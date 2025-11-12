@@ -381,12 +381,13 @@ Please follow the instructions in the [Backup Configuration](#backup-configurati
 > 🔑 Note: The `restore-encryption-secret` may differ from the `backup-encryption-secret`.
 > If you need to restore backups from a production environment into a staging environment, copy the encryption key from production into the staging `restore-encryption-secret`.
 
-Example command to create the restore encryption secret:
+Command to create the restore encryption secret:
 
 ```bash
 kubectl create secret generic restore-encryption-secret \
   --from-literal=backup_encryption_key=<your-encryption-key>
 ```
+
 
 ---
 

@@ -5,7 +5,7 @@ kind: Job
 metadata:
   annotations:
     "helm.sh/hook": post-install
-    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-weight": "3"
   labels:
     app: data-seed
   name: data-seed

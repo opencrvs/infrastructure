@@ -3,7 +3,7 @@ kind: Job
 metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-weight": "4"
   labels:
     app: elasticsearch-reindex
   name: elasticsearch-reindex
