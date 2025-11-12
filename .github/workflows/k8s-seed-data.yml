@@ -27,14 +27,10 @@ jobs:
           secret: ${{ github.TOKEN }}
           approvers: ${{ vars.GH_APPROVERS }}
           minimum-approvals: 1
-          issue-title: >
-            Deploy (${{ inputs.environment }}): core: ${{ inputs.core-image-tag }} 
-            country config: ${{ inputs.countryconfig-image-tag }}
-
+          issue-title: "Data seeding (${{ inputs.environment }})"
           issue-body: >
-            Please approve or deny the deployment of core: ${{ inputs.core-image-tag }} 
-            country config: ${{ inputs.countryconfig-image-tag }} to ${{ inputs.environment }}
-
+            Please approve or deny ${{ inputs.environment }} environment seeding
+            initiated from GitHub Actions by @${{ github.actor }}.
           exclude-workflow-initiator-as-approver: false
 
   seed:

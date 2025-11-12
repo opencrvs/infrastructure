@@ -23,14 +23,10 @@ jobs:
           secret: ${{ github.TOKEN }}
           approvers: ${{ vars.GH_APPROVERS }}
           minimum-approvals: 1
-          issue-title: >
-            Deploy (${{ inputs.environment }}): core: ${{ inputs.core-image-tag }} 
-            country config: ${{ inputs.countryconfig-image-tag }}
-
+          issue-title: "Deploy dependencies (${{ inputs.environment }})"
           issue-body: >
-            Please approve or deny the deployment of core: ${{ inputs.core-image-tag }} 
-            country config: ${{ inputs.countryconfig-image-tag }} to ${{ inputs.environment }}
-
+            Please approve or deny the OpenCRVS dependencies deployment to ${{ inputs.environment }}
+            initiated from GitHub Actions by @${{ github.actor }}.
           exclude-workflow-initiator-as-approver: false
 
   github-to-k8s-sync-env:

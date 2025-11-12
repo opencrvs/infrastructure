@@ -46,7 +46,8 @@ jobs:
 
           issue-body: >
             Please approve or deny the deployment of core: ${{ inputs.core-image-tag }} 
-            country config: ${{ inputs.countryconfig-image-tag }} to ${{ inputs.environment }}
+            country config: ${{ inputs.countryconfig-image-tag }} to ${{ inputs.environment }} 
+            initiated from GitHub Actions by @${{ github.actor }}.
 
           exclude-workflow-initiator-as-approver: false
 
