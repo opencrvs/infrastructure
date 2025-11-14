@@ -38,7 +38,7 @@ fi
 backup(){
   for DB in $DATABASES; do
     echo "[$(date +%F\ %H:%M:%S)] Backing up PostgreSQL '$DB' database"
-    pg_dump -h $POSTGRES_HOST -U $POSTGRES_USER -d $DB -F c -f $BACKUP_DIR/${DB}.dump
+    pg_dump -v -h $POSTGRES_HOST -U $POSTGRES_USER -d $DB -F c -f $BACKUP_DIR/${DB}.dump
     echo "[$(date +%F\ %H:%M:%S)] Backups completed: $BACKUP_DIR/${DB}.dump"
   done
   # Dump roles without passwords

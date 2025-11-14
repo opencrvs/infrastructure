@@ -62,7 +62,7 @@ restore_databases(){
     DB_ARCHIVE_PATH="$WORK_PATH/$DB.dump"
     if [ -f "$DB_ARCHIVE_PATH" ]; then
       echo "[$(date +%F\ %H:%M:%S)] Restoring database: $DB"
-      pg_restore -h $POSTGRES_HOST -U $POSTGRES_USER -d $DB -F c $DB_ARCHIVE_PATH
+      pg_restore -v -h $POSTGRES_HOST -U $POSTGRES_USER -d $DB -F c $DB_ARCHIVE_PATH
     else
       echo "[$(date +%F\ %H:%M:%S)] [WARN] Archive for $DB not found: $DB_ARCHIVE_PATH" >&2
     fi
