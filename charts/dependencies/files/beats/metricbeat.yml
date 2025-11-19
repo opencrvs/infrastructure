@@ -29,9 +29,6 @@ metricbeat.modules:
     - core
     - socket
   period: 1m
-  processors:
-    - drop_fields:
-      fields: ["metricset.module", "host.os.build"]
 - module: system
   metricsets:
     - filesystem
