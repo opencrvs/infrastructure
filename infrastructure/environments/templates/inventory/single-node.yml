@@ -26,11 +26,11 @@ all:
     #   state: present
     #   role: admin
     # Allowed roles:
-    # - operator, read only access to OS, full access to kubernetes cluster
-    # - admin, full access
+    # - operator: grant read only access to OS and full access to kubernetes cluster
+    # - admin: grant full access to OS and kubernetes cluster
     # Allowed states:
-    # - present, user is allowed to login
-    # - absent, account is disabled
+    # - present: user is allowed to login
+    # - absent: user account is disabled
     users: []
 
   children:
