@@ -1042,26 +1042,6 @@ ALL_QUESTIONS.push(
     },
   ]
 
-  if (enableEncryption){
-    derivedUpdates.push({
-      name: 'ENCRYPTION_KEY',
-      type: 'SECRET' as const,
-      didExist: findExistingValue(
-        'ENCRYPTION_KEY',
-        'SECRET',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      value: findExistingOrDefine(
-        'ENCRYPTION_KEY',
-        'SECRET',
-        'ENVIRONMENT',
-        generateLongPassword()
-      ),
-      scope: 'ENVIRONMENT' as const
-    })
-  }
-
   if ('production' === environment_type) {
     derivedUpdates.push({
       name: 'BACKUP_ENCRYPTION_PASSPHRASE',
