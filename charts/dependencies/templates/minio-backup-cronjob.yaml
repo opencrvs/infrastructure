@@ -60,6 +60,7 @@ spec:
                       key: host
                 - name: BACKUP_REMOTE_DIR
                   value: "{{ .Values.minio.backup_server_dir | default .Values.backup.backup_server_dir }}"
+              {{- include "render-env-vars" (dict "service_name" "backup" "Values" .Values) | nindent 4 }}
               volumeMounts:
                 - name: backup-ssh-key
                   mountPath: /ssh

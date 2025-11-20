@@ -163,7 +163,8 @@ restore:
   backup_server_secret: backup-server-ssh-credentials
   # backup_server_dir: /home/backup/demo
   backup_encryption_secret: restore-encryption-secret
-
+  
+  env: {}
 # Priority class for datastore pods to avoid eviction
 priority_class:
   name: opencrvs-datastore-high-priority
