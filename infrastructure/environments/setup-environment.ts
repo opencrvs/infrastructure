@@ -364,7 +364,7 @@ const infrastructureQuestions = [
     name: 'kubeAPIHost',
     type: 'text' as const,
     message: 
-      `Please enter Kubernetes hosts/IP to expose API endpoint, (default: first ethernet IP address):`,
+      `Please enter host/IP to expose Kubernetes API endpoint, (default: Master first IP address):`,
     valueType: 'VARIABLE' as const,
     // validate: notEmpty,
     valueLabel: 'KUBE_API_HOST',
@@ -1623,6 +1623,16 @@ ALL_QUESTIONS.push(
 curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\
 bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}` : ''
 
+  const backup_message = backupHost && backupHost !== "" ? 
+`
+-----------------------
+➡️ ${kleur.bold().yellow('COPY the SSH public key from the master VM to your clipboard')}
+-----------------------
+➡️ ${kleur.bold().yellow('Run following command on backup server to create provision user and setup SSH key:')}
+
+curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\
+bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}` : ''
+
   log(`
 ${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
 Follow the steps below to complete the setup of your environment:
@@ -1636,6 +1646,8 @@ bash opencrvs-bootstrap.sh --owner ${githubOrganisation} \\
             --token ${githubToken} \\
             --enable-runner
 ${worker_message}
+
+${backup_message}
 
 ${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
     `)
