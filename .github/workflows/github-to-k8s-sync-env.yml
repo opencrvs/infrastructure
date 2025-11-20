@@ -71,15 +71,12 @@ jobs:
             echo "  name: $secret_name"
             echo "type: Opaque"
             echo "stringData:"
-            # Get only the actual array values, filtering out comments and empty lines
-            yq e ".\"$secret_name\"[]" "$mapping_file" | while IFS= read -r key; do
-              # Skip comments (lines starting with #)
+            while IFS= read -r key; do
+              # Skip comments
               if echo "$key" | grep -q "^[[:space:]]*#"; then
                 continue
               fi
-              if echo "$key" | grep -q "^#"; then
-                continue
-              fi
+
               if echo "$key" | grep -q ":"; then
                 github_var=$(echo "$key" | cut -d: -f1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
                 k8s_var=$(echo "$key" | cut -d: -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
@@ -87,7 +84,9 @@ jobs:
                 github_var="$key"
                 k8s_var="$key"
               fi
+
               value=$(grep "^$github_var=" "$env_file" | cut -d= -f2- || true)
+
               if [ -n "$value" ]; then
                 echo "  $k8s_var: $value"
               else
@@ -95,10 +94,10 @@ jobs:
                 echo "  $k8s_var: ''"
                 skip_manifest=true
               fi
-            done
+            done < <(yq e ".\"$secret_name\"[]" "$mapping_file")
           } > "k8s-secrets/$secret_name.yaml"
-          if [ "$skip_manifest" = true ]; then
-            echo "⚠️  Skipping $secret_name manifest due to missing variables"
+          if [ "$skip_manifest" == "true" ]; then
+            echo "⚠️  Skipping Kubernetes secret $secret_name due to empty or not defined GitHub secrets or variables"
             rm -f "k8s-secrets/$secret_name.yaml"
           fi
           done
