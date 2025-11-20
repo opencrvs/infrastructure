@@ -61,6 +61,7 @@ jobs:
 
           # Iterate over all kubernetes secret names in mapping
           for secret_name in $(yq e 'keys | .[]' "$mapping_file"); do
+          skip_manifest=false
           echo "🔧 Generating Secret: $secret_name"
 
           {
@@ -92,9 +93,14 @@ jobs:
               else
                 echo "⚠️  Warning: $github_var not found in env_file → setting $k8s_var as empty" >&2
                 echo "  $k8s_var: ''"
+                skip_manifest=true
               fi
             done
           } > "k8s-secrets/$secret_name.yaml"
+          if [ "$skip_manifest" = true ]; then
+            echo "⚠️  Skipping $secret_name manifest due to missing variables"
+            rm -f "k8s-secrets/$secret_name.yaml"
+          fi
           done
 
           echo "✅ Generated manifests:"

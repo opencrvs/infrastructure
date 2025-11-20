@@ -52,7 +52,6 @@ elasticsearch:
   admin_user_secret_name: elasticsearch-admin-user
   auth_mode: auto
   auth_users:
-    - KIBANA_USER
     - KIBANA_SYSTEM:kibana_system
     - METRICBEAT:beats_system
     - APM:apm_system
@@ -75,7 +74,8 @@ elasticsearch:
 monitoring:
   enabled: false
 
-kibana: {}
+kibana:
+  users_secret: kibana-users-secret
 metricbeat:
   dashboards:
     - kubernetes-e0195ce0-bcaf-11ec-b64f-7dd6e8e82013
@@ -163,7 +163,7 @@ restore:
   backup_server_secret: backup-server-ssh-credentials
   # backup_server_dir: /home/backup/demo
   backup_encryption_secret: restore-encryption-secret
-  
+
   env: {}
 # Priority class for datastore pods to avoid eviction
 priority_class:
