@@ -4,7 +4,11 @@
 - name: Comment active swap entries in fstab
   ansible.builtin.replace:
     path: /etc/fstab
+<<<<<<< HEAD
     regexp: '^([^#].*[ \t]swap[ \t].*)$'
+=======
+    regexp: '^([^#].*\s+swap\s+.*)$'
+>>>>>>> cff2993 (fix: Swap was not disabled by provision script)
     replace: '# \1'
     backup: yes
 
