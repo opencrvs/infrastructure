@@ -138,6 +138,7 @@ mongodb:
 postgres:
   # Postgres hostname configuration
   host: postgres-0.postgres.opencrvs-deps-dev.svc.cluster.local
+  port: 5432
   auth_mode: disabled
   # auth_mode:
   # - disabled: Default credentials are used postgres/postgres
@@ -246,7 +247,8 @@ dashboards:
   use_default_credentials: true
   port: 4444
   env:
-    OPENCRVS_METABASE_MAP_NAME: Full country
+    METABASE_DATABASE_SSL: false
+    OPENCRVS_METABASE_MAP_NAME: Farajaland
     OPENCRVS_METABASE_MAP_REGION_KEY: State
     OPENCRVS_METABASE_MAP_REGION_NAME: State
     OPENCRVS_METABASE_SITE_NAME: OpenCRVS Dashboards
