@@ -2,9 +2,6 @@ storage_type: host_path
 
 environment_type: production
 
-ingress:
-  tls_resolver: letsencrypt
-
 minio:
   use_default_credentials: false
 
