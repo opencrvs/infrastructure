@@ -46,17 +46,17 @@ ports:
     hostPort: 443
     protocol: TCP
     nodePort: 30443
-    # ADJUST OR REMOVE THIS LINE
+    # 👇 Adjust this section at websecure entrypoint
     tls:
       enabled: true
       certResolver: letsencrypt
 
+# 👇 Adjust this section if needed
 certificatesResolvers:
   letsencrypt:
     acme:
       tlsChallenge: true
-      httpChallenge:
-        entryPoint: web
+      # 👇 Provide admin email address
       email: vadym@opencrvs.org
       # Storage for certificates:
       storage: /certificates/acme.json
