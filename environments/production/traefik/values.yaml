@@ -46,6 +46,10 @@ ports:
     hostPort: 443
     protocol: TCP
     nodePort: 30443
+    # ADJUST OR REMOVE THIS LINE
+    tls:
+      enabled: true
+      certResolver: letsencrypt
 
 certificatesResolvers:
   letsencrypt:
