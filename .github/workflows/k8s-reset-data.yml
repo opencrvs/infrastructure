@@ -88,7 +88,7 @@ jobs:
           - data-migration
     steps:
         - name: Download helm release values file into /tmp/opencrvs-${{ inputs.environment }}.json
-          uses: actions/download-artifact@v5
+          uses: actions/download-artifact@v6
           with:
             name: opencrvs-${{ inputs.environment }}-values-file
             path: /tmp
