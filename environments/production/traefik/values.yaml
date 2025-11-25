@@ -41,7 +41,7 @@ ports:
     hostPort: 443
     protocol: TCP
     redirectTo:
-      name: websecure
+      port: websecure
 
 
 certificatesResolvers:
