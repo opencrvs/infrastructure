@@ -1,5 +1,5 @@
 name: Reset environment
-run-name: "Reset ${{ inputs.environment }} environment"
+run-name: "Reset ${{ inputs.environment }} by ${{ github.actor }}"
 on:
   workflow_dispatch:
     inputs:
@@ -86,8 +86,6 @@ jobs:
           - postgres-data-migration
           - postgres-on-update-analytics
           - data-migration
-          - data-seed
-          - elasticsearch-reindex
     steps:
         - name: Download helm release values file into /tmp/opencrvs-${{ inputs.environment }}.json
           uses: actions/download-artifact@v5
