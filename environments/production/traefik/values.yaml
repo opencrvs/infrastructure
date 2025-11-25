@@ -40,11 +40,13 @@ ports:
     nodePort: 30443
     hostPort: 443
     protocol: TCP
+    redirectTo: websecure
+
 
 certificatesResolvers:
   letsencrypt:
     acme:
-      tlsChallenge: false
+      tlsChallenge: true
       httpChallenge:
         entryPoint: web
       email: vadym@opencrvs.org
