@@ -1,5 +1,9 @@
 name: Seed environment
+<<<<<<< HEAD
 run-name: "Seed ${{ inputs.environment }} by ${{ github.actor }}"
+=======
+run-name: "Reset ${{ inputs.environment }} environment"
+>>>>>>> 2a0472f (fix: Run data-seed as separate step from reset)
 on:
   workflow_dispatch:
     inputs:
