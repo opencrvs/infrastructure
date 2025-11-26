@@ -125,6 +125,11 @@ spec:
                 secretKeyRef:
                   key: EVENTS_APP_POSTGRES_USER
                   name: {{ .Values.postgres.users_secret }}
+            - name: EVENTS_MIGRATION_USER
+              valueFrom:
+                secretKeyRef:
+                  key: EVENTS_MIGRATOR_POSTGRES_USER
+                  name: {{ .Values.postgres.users_secret }}
           {{- end }}
 
           {{- if or (eq .Values.minio.auth_mode "auto") (eq .Values.minio.auth_mode "use_secret") }}
