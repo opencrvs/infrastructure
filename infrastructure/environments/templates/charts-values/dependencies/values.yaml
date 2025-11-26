@@ -17,6 +17,9 @@ mongodb:
 postgres:
   use_default_credentials: false
 
+redis:
+  auth_mode: acl
+
 monitoring:
   enabled: true
 
