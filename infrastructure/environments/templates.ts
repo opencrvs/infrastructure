@@ -9,7 +9,8 @@ function replacePlaceholders(content: string, replacements: Record<string, strin
   let updated = content;
   for (const [key, value] of Object.entries(replacements)) {
     const regex = new RegExp(`\\{\\{${key}\\}\\}`, "g"); // matches ${KEY}
-    updated = updated.replace(regex, value);
+    let clear_value = String(value).replace(/[\x00-\x1F\x7F]/g, ""); // remove control characters
+    updated = updated.replace(regex, clear_value);
   }
   return updated;
 }
@@ -67,21 +68,32 @@ export function copyChartsValues(env: string, replacements: Record<string, strin
  * });
  */
 export function generateInventory(env: string, values: Record<string, any>){
-  const worker_nodes: Array<string> = values['worker_nodes'] || [];
-  const env_type_template = worker_nodes.length > 0 ? "multi-node" : "single-node";
-  const templatePath = path.join(__dirname, "templates", "inventory", `${env_type_template}.yml`);
+  // Template and output paths
+  const templatePath = path.join(__dirname, "templates", "inventory", "inventory.template.yml");
   const outputPath = path.join(__dirname, "..", "server-setup", "inventory", `${env}.yml`);
+
+  // Check if output file already exists
   if (fs.existsSync(outputPath)) {
     log(`⚠️ Skipping ${templatePath}, file already exists at ${outputPath}`);
     return;
   }
   let template = fs.readFileSync(templatePath, "utf-8");
+
+  // Extract worker nodes and backup host from values
+  let worker_nodes = values['worker_nodes'].map((e: string) => String(e)
+    .replace(/[\x00-\x1F\x7F]/g, ""))
+    .filter((e: string) => e.length > 0);
+
   // Generate workers block
-  let workersBlock = `
+  if (worker_nodes && worker_nodes.length > 0) {
+    let workersBlock = `
+    # Workers section is optional, for single node cluster feel free to remove this section
+    # section can be added later
+    # more workers can be added later as well
     workers:
       hosts:`;
-  if (worker_nodes && worker_nodes.length > 0) {
-    worker_nodes.forEach((host, index) => {
+
+    worker_nodes.forEach((host: string, index: number) => {
       const isFirstWorker = index === 0;
       workersBlock += `
         worker${index}:
@@ -91,29 +103,33 @@ export function generateInventory(env: string, values: Record<string, any>){
             role: data1` : ''}
 `;
     });
-  }
+  
   template = template.replace('{{WORKERS_BLOCK}}', workersBlock);
+  } else {
+    // No worker nodes, remove the placeholder
+    template = template.replace('{{WORKERS_BLOCK}}', '');
+  }
+
 
   // Generate backup block if backup_host is provided
-  const backupHost = values['backup_host'] || '';
+  const backupHost = String(values['backup_host']).replace(/[\x00-\x1F\x7F]/g, "");
   let backupBlock = '';
-  if (backupHost) {
+  if (backupHost.length > 0) {
     backupBlock = `
+    # backup section is optional, feel free to remove if backups are not enabled
+    # section can be added later
     backup:
       hosts:
         backup1:
           ansible_host: ${backupHost}
 `;
   }
-
   template = template.replace('{{BACKUP_BLOCK}}', backupBlock);
 
-  // Generate kube_api_host line
-  let kubeApiHost = 'kube_api_host: ' + (values['kube_api_host'] || '');
-  template = template.replace('{{KUBE_API_HOST_BLOCK}}', kubeApiHost);
-
+  // Determine if single-node or multi-node
+  values['single_node'] = (worker_nodes.length > 0 || backupHost) ? "false" : "true";
   const updated = replacePlaceholders(template, values);
-
+  values
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, updated);
   log(`✅ Generated inventory file at ${outputPath}`);
