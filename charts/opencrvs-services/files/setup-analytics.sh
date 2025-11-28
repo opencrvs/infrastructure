@@ -6,7 +6,6 @@ set -euo pipefail
 : "${POSTGRES_PORT:=5432}"
 : "${POSTGRES_PASSWORD:?Must set POSTGRES_PASSWORD}"
 : "${POSTGRES_USER:?Must set POSTGRES_USER}"
-: "${ANALYTICS_POSTGRES_PASSWORD:?Must set ANALYTICS_POSTGRES_PASSWORD}"
 : "${ANALYTICS_POSTGRES_USER:?Must set ANALYTICS_POSTGRES_USER}"
 : "${KEEP_ALIVE_SECONDS:=0}" # Prevent Swarm from marking this task as failed due to early exit
 : "${TARGET_DB:=events}"
@@ -18,31 +17,6 @@ until PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_POR
   -U "$POSTGRES_USER" -d postgres -c '\q' 2>/dev/null; do
   sleep 2
 done
-
-sleep "$KEEP_ALIVE_SECONDS"
-
-create_or_update_role() {
-  local role=$1
-  local password=$2
-  local db=$3
-  echo "Creating or updating role '$role' with access to database '$db'..."
-  PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
-    -U "$POSTGRES_USER" -d postgres <<EOSQL
-DO \$\$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${role}') THEN
-    EXECUTE format('CREATE ROLE %I LOGIN PASSWORD %L', '${role}', '${password}');
-  ELSE
-    EXECUTE format('ALTER ROLE %I WITH PASSWORD %L', '${role}', '${password}');
-  END IF;
-
-  EXECUTE format('GRANT CONNECT ON DATABASE %I TO %I', '${db}', '${role}');
-END
-\$\$;
-EOSQL
-}
-
-create_or_update_role "$ANALYTICS_POSTGRES_USER" "$ANALYTICS_POSTGRES_PASSWORD" "$TARGET_DB"
 
 # Schema + tables + grants
 PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
