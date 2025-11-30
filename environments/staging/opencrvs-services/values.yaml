@@ -19,6 +19,9 @@ influxdb:
 elasticsearch:
   auth_mode: auto
   host: elasticsearch.opencrvs-deps-staging.svc.cluster.local
+  reindex:
+    enabled: true
+    schedule: "0 3 * * *"
 
 
 minio:
