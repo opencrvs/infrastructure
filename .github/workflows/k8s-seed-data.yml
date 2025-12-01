@@ -94,6 +94,7 @@ jobs:
             helm template -f ${{ needs.prepare.outputs.values-file }} \
                 --set data_cleanup.enabled=true \
                 --set data_seed.enabled=true \
+                --set data_seed.env.ACTIVATE_USERS=${{ vars.ACTIVATE_USERS }} \
                 --namespace ${namespace} \
                 -s templates/${{ matrix.job-name }}-job.yaml \
                 oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -n ${namespace} --wait=true -f -
