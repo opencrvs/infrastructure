@@ -58,11 +58,11 @@ type Answer = SecretAnswer | VariableAnswer
 type Answers = Answer[]
 type AnswerWithNullValue =
   | (Omit<SecretAnswer, 'value'> & {
-      value: SecretAnswer['value'] | null
-    })
+    value: SecretAnswer['value'] | null
+  })
   | (Omit<VariableAnswer, 'value'> & {
-      value: VariableAnswer['value'] | null
-    })
+    value: VariableAnswer['value'] | null
+  })
 
 function questionToPrompt<T extends string>({
   // eslint-disable-next-line no-unused-vars
@@ -152,10 +152,9 @@ async function promptAndStoreAnswer(
             type: 'confirm' as const,
             scope: questionWithVariableLabel.scope,
             message: `${kleur.yellow(
-              `${
-                existingSecret.scope === 'REPOSITORY'
-                  ? 'Repository secret'
-                  : 'Secret'
+              `${existingSecret.scope === 'REPOSITORY'
+                ? 'Repository secret'
+                : 'Secret'
               } ${kleur.cyan(
                 existingSecret.name
               )} already exists in Github. Do you want to update it?`
@@ -363,7 +362,7 @@ const infrastructureQuestions = [
   {
     name: 'kubeAPIHost',
     type: 'text' as const,
-    message: 
+    message:
       `Please enter Kubernetes hosts/IP to expose API endpoint, (default: first ethernet IP address):`,
     valueType: 'VARIABLE' as const,
     // validate: notEmpty,
@@ -374,7 +373,7 @@ const infrastructureQuestions = [
   {
     name: 'workerNodes',
     type: 'text' as const,
-    message: 
+    message:
       `Please enter Kubernetes workers hosts/IP addresses (comma-separated), (default: no workers):`,
     valueType: 'VARIABLE' as const,
     // validate: notEmpty,
@@ -385,7 +384,7 @@ const infrastructureQuestions = [
   {
     name: 'backupHost',
     type: 'text' as const,
-    message: 
+    message:
       `Please enter backup server host/IP address, (default: no backup):`,
     valueType: 'VARIABLE' as const,
     // validate: ,
@@ -760,861 +759,872 @@ ALL_QUESTIONS.push(
 )
 
 
-;(async () => {
-  const { type: environment_type } = await prompts<string>(
-    [
-      {
-        name: 'type',
-        type: 'select' as const,
-        scope: 'ENVIRONMENT' as const,
-        message: 'Purpose for the environment?',
-        choices: [
-          { title: 'Development/Quality assurance/Testing (no PII data)', value: 'non-production' },
-          { title: 'Staging/Production (hosts PII data, requires frequent backups)', value: 'production' },
-        ]
-      }
-    ].map(questionToPrompt)
-  )
-  
-  const { environment } = await prompts(
-     [
-          {
-      name: 'environment',
-      type: 'text' as const,
-      message: 'What is the name of your environment?',
-      validate: notEmpty,
-      initial: process.env.ENV,
-      scope: 'REPOSITORY' as const
-    }
-    ].map(questionToPrompt),
-    {
-      onCancel: () => {
-        process.exit(1)
-      }
-    }
-  )
-
-  // Read users .env file based on the environment name they gave above, e.g. .env.production
-  dotenv.config({
-    path: `${process.cwd()}/.env.${environment}`
-  })
-
-  log('\n', kleur.bold().underline('Github'))
-
-  const { githubOrganisation, githubRepository } = await prompts(
-    githubQuestions.map(questionToPrompt),
-    {
-      onCancel: () => {
-        process.exit(1)
-      }
-    }
-  )
-
-  const { githubToken } = await promptAndStoreAnswer(
-    environment,
-    githubTokenQuestion,
-    []
-  )
-
-  const octokit = new Octokit({
-    auth: githubToken
-  })
-
-  await createEnvironment(
-    octokit,
-    environment,
-    githubOrganisation,
-    githubRepository
-  )
-
-  const repositoryId = await getRepositoryId(
-    octokit,
-    githubOrganisation,
-    githubRepository
-  )
-
-  const existingRepositorySecrets = await listRepositorySecrets(
-    octokit,
-    githubOrganisation,
-    githubRepository
-  )
-  const existingRepositoryVariables = await listRepositoryVariables(
-    octokit,
-    githubOrganisation,
-    githubRepository
-  )
-  const existingEnvironmentVariables = await listEnvironmentVariables(
-    octokit,
-    repositoryId,
-    environment
-  )
-
-  const existingEnvironmentSecrets = await listEnvironmentSecrets(
-    octokit,
-    githubOrganisation,
-    repositoryId,
-    environment
-  )
-
-  const existingValues = [
-    ...existingEnvironmentVariables,
-    ...existingRepositoryVariables,
-    ...existingRepositorySecrets,
-    ...existingEnvironmentSecrets
-  ]
-
-  if (
-    existingEnvironmentVariables.length > 0 ||
-    existingEnvironmentSecrets.length > 0
-  ) {
-    log(
-      '\nEnvironment with the name',
-      environment,
-      'already exists in Github.\n',
-      'Found',
-      existingEnvironmentVariables.length,
-      'existing variables and',
-      existingEnvironmentSecrets.length,
-      'secrets'
+  ; (async () => {
+    const { type: environment_type } = await prompts<string>(
+      [
+        {
+          name: 'type',
+          type: 'select' as const,
+          scope: 'ENVIRONMENT' as const,
+          message: 'Purpose for the environment?',
+          choices: [
+            { title: 'Development/Quality assurance/Testing (no PII data)', value: 'non-production' },
+            { title: 'Staging/Production (hosts PII data, requires frequent backups)', value: 'production' },
+          ]
+        }
+      ].map(questionToPrompt)
     )
-  } else {
-    log(kleur.green('\nSuccessfully logged in to Github\n'))
-  }
-  if (environment_type === 'production') {
-    log('\n', kleur.yellow().bold(
-      'WARNING! You are setting up a production environment.\n Make sure you have read the deployment guide carefully before proceeding.\n'
-    ))
-    await promptAndStoreAnswer(environment, githubOtherQuestions, existingValues)
-  }
 
-  log('\n', kleur.bold().underline('Docker Hub'))
-  await promptAndStoreAnswer(environment, dockerhubQuestions, existingValues)
-    
-  log('\n', kleur.bold().underline('Kubernetes & Runtime'))
+    const { environment } = await prompts(
+      [
+        {
+          name: 'environment',
+          type: 'text' as const,
+          message: 'What is the name of your environment?',
+          validate: notEmpty,
+          initial: process.env.ENV,
+          scope: 'REPOSITORY' as const
+        }
+      ].map(questionToPrompt),
+      {
+        onCancel: () => {
+          process.exit(1)
+        }
+      }
+    )
 
-  const infrastructure = await promptAndStoreAnswer(
-    environment,
-    infrastructureQuestions,
-    existingValues
-  )
-  // FIXME: Review
-  const workerNodes = infrastructure.workerNodes 
-    ? infrastructure.workerNodes.split(',').map((ip: string) => ip.trim())
-    : []
-  const backupHost = infrastructure.backupHost || ''
-  log('\n', kleur.bold().underline('Running configuration files updates'))
-  generateInventory(environment, {worker_nodes: workerNodes, backup_host: backupHost, kube_api_host: infrastructure.kubeAPIHost})
-  copyChartsValues(
-    environment, 
-    { env: environment,
-      environment_type: environment_type,
-      is_qa_env: environment !== 'production' ? "true" : "false"
+    // Read users .env file based on the environment name they gave above, e.g. .env.production
+    dotenv.config({
+      path: `${process.cwd()}/.env.${environment}`
+    })
+
+    log('\n', kleur.bold().underline('Github'))
+
+    const { githubOrganisation, githubRepository } = await prompts(
+      githubQuestions.map(questionToPrompt),
+      {
+        onCancel: () => {
+          process.exit(1)
+        }
+      }
+    )
+
+    const { githubToken } = await promptAndStoreAnswer(
+      environment,
+      githubTokenQuestion,
+      []
+    )
+
+    const octokit = new Octokit({
+      auth: githubToken
+    })
+
+    await createEnvironment(
+      octokit,
+      environment,
+      githubOrganisation,
+      githubRepository
+    )
+
+    const repositoryId = await getRepositoryId(
+      octokit,
+      githubOrganisation,
+      githubRepository
+    )
+
+    const existingRepositorySecrets = await listRepositorySecrets(
+      octokit,
+      githubOrganisation,
+      githubRepository
+    )
+    const existingRepositoryVariables = await listRepositoryVariables(
+      octokit,
+      githubOrganisation,
+      githubRepository
+    )
+    const existingEnvironmentVariables = await listEnvironmentVariables(
+      octokit,
+      repositoryId,
+      environment
+    )
+
+    const existingEnvironmentSecrets = await listEnvironmentSecrets(
+      octokit,
+      githubOrganisation,
+      repositoryId,
+      environment
+    )
+
+    const existingValues = [
+      ...existingEnvironmentVariables,
+      ...existingRepositoryVariables,
+      ...existingRepositorySecrets,
+      ...existingEnvironmentSecrets
+    ]
+
+    if (
+      existingEnvironmentVariables.length > 0 ||
+      existingEnvironmentSecrets.length > 0
+    ) {
+      log(
+        '\nEnvironment with the name',
+        environment,
+        'already exists in Github.\n',
+        'Found',
+        existingEnvironmentVariables.length,
+        'existing variables and',
+        existingEnvironmentSecrets.length,
+        'secrets'
+      )
+    } else {
+      log(kleur.green('\nSuccessfully logged in to Github\n'))
     }
-  )
-  await updateWorkflowEnvironments();
+    if (environment_type === 'production') {
+      log('\n', kleur.yellow().bold(
+        'WARNING! You are setting up a production environment.\n Make sure you have read the deployment guide carefully before proceeding.\n'
+      ))
+      await promptAndStoreAnswer(environment, githubOtherQuestions, existingValues)
+    }
 
-  log('\n', kleur.bold().underline('Databases & monitoring'))
+    log('\n', kleur.bold().underline('Docker Hub'))
+    await promptAndStoreAnswer(environment, dockerhubQuestions, existingValues)
 
-  var enableEncryption = true
-  const encryption_key_defined = findExistingValue(
-            'ENCRYPTION_KEY',
-            'SECRET',
-            'ENVIRONMENT',
-            existingValues
+    log('\n', kleur.bold().underline('Kubernetes & Runtime'))
+
+    const infrastructure = await promptAndStoreAnswer(
+      environment,
+      infrastructureQuestions,
+      existingValues
+    )
+    // FIXME: Review
+    const workerNodes = infrastructure.workerNodes
+      ? infrastructure.workerNodes.split(',').map((ip: string) => ip.trim())
+      : []
+    const backupHost = infrastructure.backupHost || ''
+    log('\n', kleur.bold().underline('Running configuration files updates'))
+    generateInventory(
+      environment,
+      {
+        worker_nodes: workerNodes,
+        backup_host: backupHost,
+        kube_api_host: infrastructure.kubeAPIHost || ''
+      }
+    )
+    copyChartsValues(
+      environment,
+      {
+        env: environment,
+        environment_type: environment_type,
+        // FIXME: In general that should be environment_type,
+        // Hardcode like this blocks us from being generic:
+        // https://github.com/opencrvs/opencrvs-core/issues/11171
+        is_qa_env: environment !== 'production' ? "true" : "false"
+      }
+    )
+    await updateWorkflowEnvironments();
+
+    log('\n', kleur.bold().underline('Databases & monitoring'))
+
+    var enableEncryption = true
+    const encryption_key_defined = findExistingValue(
+      'ENCRYPTION_KEY',
+      'SECRET',
+      'ENVIRONMENT',
+      existingValues
     )
 
     if (!encryption_key_defined) {
-        const answers_enable_encryption = await prompts(
-          [
-            {
-              name: 'enableEncryption',
-              type: 'confirm' as const,
-              message: 'Do you want to enable disk encryption?',
-              scope: 'ENVIRONMENT' as const,
-              initial: Boolean(process.env.ENABLE_ENCRYPTION)
-            }
-          ].map(questionToPrompt)
-        )
-        enableEncryption = answers_enable_encryption.enableEncryption
+      const answers_enable_encryption = await prompts(
+        [
+          {
+            name: 'enableEncryption',
+            type: 'confirm' as const,
+            message: 'Do you want to enable disk encryption?',
+            scope: 'ENVIRONMENT' as const,
+            initial: Boolean(process.env.ENABLE_ENCRYPTION)
+          }
+        ].map(questionToPrompt)
+      )
+      enableEncryption = answers_enable_encryption.enableEncryption
     }
     if (enableEncryption) {
       console.log('\n', kleur.bold().green('✔'), kleur.bold().yellow(' Disk encryption is enabled'))
       await promptAndStoreAnswer(environment, diskQuestions, existingValues)
     }
-  await promptAndStoreAnswer(
-    environment,
-    databaseAndMonitoringQuestions,
-    existingValues
-  )
-  log('\n', kleur.bold().underline('Sentry'))
-  const sentryDSNExists = findExistingValue(
-    'SENTRY_DSN',
-    'SECRET',
-    'ENVIRONMENT',
-    existingValues
-  )
-
-  if (sentryDSNExists) {
-    await promptAndStoreAnswer(environment, sentryQuestions, existingValues)
-  } else {
-    const { useSentry } = await prompts(
-      [
-        {
-          name: 'useSentry',
-          type: 'confirm' as const,
-          message: 'Do you want to use Sentry?',
-          scope: 'ENVIRONMENT' as const,
-          initial: Boolean(process.env.SENTRY_DNS)
-        }
-      ].map(questionToPrompt)
+    await promptAndStoreAnswer(
+      environment,
+      databaseAndMonitoringQuestions,
+      existingValues
+    )
+    log('\n', kleur.bold().underline('Sentry'))
+    const sentryDSNExists = findExistingValue(
+      'SENTRY_DSN',
+      'SECRET',
+      'ENVIRONMENT',
+      existingValues
     )
 
-    if (useSentry) {
+    if (sentryDSNExists) {
       await promptAndStoreAnswer(environment, sentryQuestions, existingValues)
+    } else {
+      const { useSentry } = await prompts(
+        [
+          {
+            name: 'useSentry',
+            type: 'confirm' as const,
+            message: 'Do you want to use Sentry?',
+            scope: 'ENVIRONMENT' as const,
+            initial: Boolean(process.env.SENTRY_DNS)
+          }
+        ].map(questionToPrompt)
+      )
+
+      if (useSentry) {
+        await promptAndStoreAnswer(environment, sentryQuestions, existingValues)
+      }
     }
-  }
 
-  log('\n', kleur.bold().underline('METABASE ADMIN'))
-  await promptAndStoreAnswer(
-    environment,
-    metabaseAdminQuestions,
-    existingValues
-  )
+    log('\n', kleur.bold().underline('METABASE ADMIN'))
+    await promptAndStoreAnswer(
+      environment,
+      metabaseAdminQuestions,
+      existingValues
+    )
 
-  log('\n', kleur.bold().underline('SMTP'))
-  await promptAndStoreAnswer(environment, emailQuestions, existingValues)
+    log('\n', kleur.bold().underline('SMTP'))
+    await promptAndStoreAnswer(environment, emailQuestions, existingValues)
 
-  log('\n', kleur.bold().underline('Notification'))
+    log('\n', kleur.bold().underline('Notification'))
 
-  const { notificationTransport } = await promptAndStoreAnswer(
-    environment,
-    notificationTransportQuestions,
-    existingValues
-  )
+    const { notificationTransport } = await promptAndStoreAnswer(
+      environment,
+      notificationTransportQuestions,
+      existingValues
+    )
 
-  if (notificationTransport.includes('sms')) {
-    await promptAndStoreAnswer(environment, smsQuestions, existingValues)
-  }
-
-
-  const allAnswers = ALL_ANSWERS.reduce((acc, answer) => {
-    return { ...acc, ...answer }
-  })
-
-  /*
-   * Variables the user doesn't need to set manually
-   */
-  const answerOrExisting = (
-    variable: string | undefined,
-    existingValue: Variable | undefined,
-    // eslint-disable-next-line no-unused-vars
-    fn: (value: string | undefined) => string
-  ) => fn(variable || existingValue?.value) || ''
-
-  function findExistingOrDefine(
-    name: string,
-    type: 'SECRET' | 'VARIABLE',
-    scope: 'REPOSITORY' | 'ENVIRONMENT',
-    newValue: string
-  ) {
-    return findExistingValue(name, type, scope, existingValues)
-      ? null
-      : process.env[name] || newValue
-  }
-
-  const derivedUpdates: AnswerWithNullValue[] = [
-    {
-      name: 'GH_ENCRYPTION_PASSWORD',
-      type: 'SECRET' as const,
-      didExist: findExistingValue(
-        'GH_ENCRYPTION_PASSWORD',
-        'SECRET',
-        'REPOSITORY',
-        existingValues
-      ),
-      value: findExistingOrDefine(
-        'GH_ENCRYPTION_PASSWORD',
-        'SECRET',
-        'REPOSITORY',
-        generateLongPassword()
-      ),
-      scope: 'REPOSITORY' as const
-    },
-  ]
-
-  if ('production' === environment_type) {
-    derivedUpdates.push({
-      name: 'BACKUP_ENCRYPTION_PASSPHRASE',
-      type: 'SECRET' as const,
-      didExist: findExistingValue(
-        'BACKUP_ENCRYPTION_PASSPHRASE',
-        'SECRET',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      value: findExistingOrDefine(
-        'BACKUP_ENCRYPTION_PASSPHRASE',
-        'SECRET',
-        'ENVIRONMENT',
-        generateLongPassword()
-      ),
-      scope: 'ENVIRONMENT' as const
-    })
-  }
-
-  const applicationServerUpdates = [
-    {
-      name: 'ELASTICSEARCH_SUPERUSER_PASSWORD',
-      type: 'SECRET' as const,
-      didExist: findExistingValue(
-        'ELASTICSEARCH_SUPERUSER_PASSWORD',
-        'SECRET',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      value: findExistingOrDefine(
-        'ELASTICSEARCH_SUPERUSER_PASSWORD',
-        'SECRET',
-        'ENVIRONMENT',
-        generateLongPassword()
-      ),
-      scope: 'ENVIRONMENT' as const
-    },
-    {
-      name: 'KIBANA_SYSTEM_PASSWORD',
-      type: 'SECRET' as const,
-      didExist: findExistingValue(
-        'KIBANA_SYSTEM_PASSWORD',
-        'SECRET',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      value: findExistingOrDefine(
-        'KIBANA_SYSTEM_PASSWORD',
-        'SECRET',
-        'ENVIRONMENT',
-        generateLongPassword()
-      ),
-      scope: 'ENVIRONMENT' as const
-    },
-    {
-      name: 'MINIO_ROOT_USER',
-      type: 'SECRET' as const,
-      didExist: findExistingValue(
-        'MINIO_ROOT_USER',
-        'SECRET',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      value: findExistingOrDefine(
-        'MINIO_ROOT_USER',
-        'SECRET',
-        'ENVIRONMENT',
-        generateLongPassword()
-      ),
-      scope: 'ENVIRONMENT' as const
-    },
-    {
-      name: 'MINIO_ROOT_PASSWORD',
-      type: 'SECRET' as const,
-      didExist: findExistingValue(
-        'MINIO_ROOT_PASSWORD',
-        'SECRET',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      value: findExistingOrDefine(
-        'MINIO_ROOT_PASSWORD',
-        'SECRET',
-        'ENVIRONMENT',
-        generateLongPassword()
-      ),
-      scope: 'ENVIRONMENT' as const
-    },
-    {
-      name: 'MONGODB_ADMIN_USER',
-      type: 'SECRET' as const,
-      didExist: findExistingValue(
-        'MONGODB_ADMIN_USER',
-        'SECRET',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      value: findExistingOrDefine(
-        'MONGODB_ADMIN_USER',
-        'SECRET',
-        'ENVIRONMENT',
-        generateLongPassword()
-      ),
-      scope: 'ENVIRONMENT' as const
-    },
-    {
-      name: 'MONGODB_ADMIN_PASSWORD',
-      type: 'SECRET' as const,
-      didExist: findExistingValue(
-        'MONGODB_ADMIN_PASSWORD',
-        'SECRET',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      value: findExistingOrDefine(
-        'MONGODB_ADMIN_PASSWORD',
-        'SECRET',
-        'ENVIRONMENT',
-        generateLongPassword()
-      ),
-      scope: 'ENVIRONMENT' as const
-    },
-    {
-      name: 'POSTGRES_USER',
-      type: 'SECRET' as const,
-      didExist: findExistingValue(
-        'POSTGRES_USER',
-        'SECRET',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      value: findExistingOrDefine(
-        'POSTGRES_USER',
-        'SECRET',
-        'ENVIRONMENT',
-        generateLongPassword()
-      ),
-      scope: 'ENVIRONMENT' as const
-    },
-    {
-      name: 'POSTGRES_PASSWORD',
-      type: 'SECRET' as const,
-      didExist: findExistingValue(
-        'POSTGRES_PASSWORD',
-        'SECRET',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      value: findExistingOrDefine(
-        'POSTGRES_PASSWORD',
-        'SECRET',
-        'ENVIRONMENT',
-        generateLongPassword()
-      ),
-      scope: 'ENVIRONMENT' as const
-    },
-    {
-      name: 'SUPER_USER_PASSWORD',
-      type: 'SECRET' as const,
-      didExist: findExistingValue(
-        'SUPER_USER_PASSWORD',
-        'SECRET',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      value: findExistingOrDefine(
-        'SUPER_USER_PASSWORD',
-        'SECRET',
-        'ENVIRONMENT',
-        generateLongPassword()
-      ),
-      scope: 'ENVIRONMENT' as const
-    },
-    {
-      type: 'VARIABLE' as const,
-      name: 'ACTIVATE_USERS',
-      value: 'production' === environment_type ? 'false' : 'true',
-      didExist: findExistingValue(
-        'ACTIVATE_USERS',
-        'VARIABLE',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      scope: 'ENVIRONMENT' as const
-    },
-    {
-      type: 'VARIABLE' as const,
-      name: 'AUTH_HOST',
-      value: answerOrExisting(
-        allAnswers.domain,
-        findExistingValue('DOMAIN', 'VARIABLE', 'ENVIRONMENT', existingValues),
-        (val) => `https://auth.${val}`
-      ),
-      didExist: findExistingValue(
-        'AUTH_HOST',
-        'VARIABLE',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      scope: 'ENVIRONMENT' as const
-    },
-    {
-      type: 'VARIABLE' as const,
-      name: 'COUNTRY_CONFIG_HOST',
-      value: answerOrExisting(
-        allAnswers.domain,
-        findExistingValue('DOMAIN', 'VARIABLE', 'ENVIRONMENT', existingValues),
-        (val) => `https://countryconfig.${val}`
-      ),
-      didExist: findExistingValue(
-        'COUNTRY_CONFIG_HOST',
-        'VARIABLE',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      scope: 'ENVIRONMENT' as const
-    },
-    {
-      type: 'VARIABLE' as const,
-      name: 'GATEWAY_HOST',
-      value: answerOrExisting(
-        allAnswers.domain,
-        findExistingValue('DOMAIN', 'VARIABLE', 'ENVIRONMENT', existingValues),
-        (val) => `https://gateway.${val}`
-      ),
-      didExist: findExistingValue(
-        'GATEWAY_HOST',
-        'VARIABLE',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      scope: 'ENVIRONMENT' as const
-    },
-    {
-      type: 'VARIABLE' as const,
-      name: 'CONTENT_SECURITY_POLICY_WILDCARD',
-      value: answerOrExisting(
-        allAnswers.domain,
-        findExistingValue('DOMAIN', 'VARIABLE', 'ENVIRONMENT', existingValues),
-        (val) => `*.${val}`
-      ),
-      didExist: findExistingValue(
-        'CONTENT_SECURITY_POLICY_WILDCARD',
-        'VARIABLE',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      scope: 'ENVIRONMENT' as const
-    },
-    {
-      type: 'VARIABLE' as const,
-      name: 'CLIENT_APP_URL',
-      value: answerOrExisting(
-        allAnswers.domain,
-        findExistingValue('DOMAIN', 'VARIABLE', 'ENVIRONMENT', existingValues),
-        (val) => `https://register.${val}`
-      ),
-      didExist: findExistingValue(
-        'CLIENT_APP_URL',
-        'VARIABLE',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      scope: 'ENVIRONMENT' as const
-    },
-    {
-      type: 'VARIABLE' as const,
-      name: 'LOGIN_URL',
-      value: answerOrExisting(
-        allAnswers.domain,
-        findExistingValue('DOMAIN', 'VARIABLE', 'ENVIRONMENT', existingValues),
-        (val) => `https://login.${val}`
-      ),
-      didExist: findExistingValue(
-        'LOGIN_URL',
-        'VARIABLE',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      scope: 'ENVIRONMENT' as const
+    if (notificationTransport.includes('sms')) {
+      await promptAndStoreAnswer(environment, smsQuestions, existingValues)
     }
-  ]
 
-  if (enableEncryption){
-    applicationServerUpdates.push({
-      name: 'ENCRYPTION_KEY',
-      type: 'SECRET' as const,
-      didExist: findExistingValue(
-        'ENCRYPTION_KEY',
-        'SECRET',
-        'ENVIRONMENT',
-        existingValues
-      ),
-      value: findExistingOrDefine(
-        'ENCRYPTION_KEY',
-        'SECRET',
-        'ENVIRONMENT',
-        generateLongPassword()
-      ),
-      scope: 'ENVIRONMENT' as const
+
+    const allAnswers = ALL_ANSWERS.reduce((acc, answer) => {
+      return { ...acc, ...answer }
     })
-  }
 
-  derivedUpdates.push(...applicationServerUpdates)
+    /*
+     * Variables the user doesn't need to set manually
+     */
+    const answerOrExisting = (
+      variable: string | undefined,
+      existingValue: Variable | undefined,
+      // eslint-disable-next-line no-unused-vars
+      fn: (value: string | undefined) => string
+    ) => fn(variable || existingValue?.value) || ''
 
+    function findExistingOrDefine(
+      name: string,
+      type: 'SECRET' | 'VARIABLE',
+      scope: 'REPOSITORY' | 'ENVIRONMENT',
+      newValue: string
+    ) {
+      return findExistingValue(name, type, scope, existingValues)
+        ? null
+        : process.env[name] || newValue
+    }
 
-  const updates = getAnswers(existingValues)
-    .concat(
-      ...derivedUpdates.filter(
-        (update): update is Answer => update.value !== null
-      )
-    )
-    .filter(
-      (variable) =>
-        Boolean(variable.value) &&
-        // Only update values that changed
-        (variable.type !== 'VARIABLE' ||
-          variable.value !== variable.didExist?.value)
-    )
+    const derivedUpdates: AnswerWithNullValue[] = [
+      {
+        name: 'GH_ENCRYPTION_PASSWORD',
+        type: 'SECRET' as const,
+        didExist: findExistingValue(
+          'GH_ENCRYPTION_PASSWORD',
+          'SECRET',
+          'REPOSITORY',
+          existingValues
+        ),
+        value: findExistingOrDefine(
+          'GH_ENCRYPTION_PASSWORD',
+          'SECRET',
+          'REPOSITORY',
+          generateLongPassword()
+        ),
+        scope: 'REPOSITORY' as const
+      },
+    ]
 
-  storeSecrets(environment, updates)
-
-  /*
-   * List out all updates to the variables and confirm with the user
-   */
-
-  const newSecrets = updates.filter(
-    (update): update is SecretAnswer =>
-      update.type === 'SECRET' && !update.didExist
-  )
-  const updatedSecrets = updates.filter(
-    (update): update is SecretAnswer =>
-      update.type === 'SECRET' && Boolean(update.didExist)
-  )
-  const newVariables = updates.filter(
-    (update): update is VariableAnswer =>
-      update.type === 'VARIABLE' && !update.didExist
-  )
-  const updatedVariables = updates.filter(
-    (update): update is VariableAnswer =>
-      update.type === 'VARIABLE' && Boolean(update.didExist)
-  )
-
-  const unknownVariables = existingValues.filter((value) => {
-    return !ALL_QUESTIONS.find(
-      (question) =>
-        question.valueLabel === value.name &&
-        question.valueType === value.type &&
-        question.scope === value.scope
-    )
-  })
-
-  log('')
-
-  if (newSecrets.length > 0) {
-    log(
-      kleur.yellow(
-        `The following secrets will be added to Github for environment ${environment}:`
-      )
-    )
-    newSecrets
-      .filter(({ scope }) => scope === 'ENVIRONMENT')
-      .forEach((secret) => {
-        log(secret.name, '=', secret.value)
+    if ('production' === environment_type) {
+      derivedUpdates.push({
+        name: 'BACKUP_ENCRYPTION_PASSPHRASE',
+        type: 'SECRET' as const,
+        didExist: findExistingValue(
+          'BACKUP_ENCRYPTION_PASSPHRASE',
+          'SECRET',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        value: findExistingOrDefine(
+          'BACKUP_ENCRYPTION_PASSPHRASE',
+          'SECRET',
+          'ENVIRONMENT',
+          generateLongPassword()
+        ),
+        scope: 'ENVIRONMENT' as const
       })
-    log('')
-    log(
-      kleur.yellow(`The following secrets will be added to Github repository:`)
-    )
-    newSecrets
-      .filter(({ scope }) => scope === 'REPOSITORY')
-      .forEach((secret) => {
-        log(secret.name, '=', secret.value)
+    }
+
+    const applicationServerUpdates = [
+      {
+        name: 'ELASTICSEARCH_SUPERUSER_PASSWORD',
+        type: 'SECRET' as const,
+        didExist: findExistingValue(
+          'ELASTICSEARCH_SUPERUSER_PASSWORD',
+          'SECRET',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        value: findExistingOrDefine(
+          'ELASTICSEARCH_SUPERUSER_PASSWORD',
+          'SECRET',
+          'ENVIRONMENT',
+          generateLongPassword()
+        ),
+        scope: 'ENVIRONMENT' as const
+      },
+      {
+        name: 'KIBANA_SYSTEM_PASSWORD',
+        type: 'SECRET' as const,
+        didExist: findExistingValue(
+          'KIBANA_SYSTEM_PASSWORD',
+          'SECRET',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        value: findExistingOrDefine(
+          'KIBANA_SYSTEM_PASSWORD',
+          'SECRET',
+          'ENVIRONMENT',
+          generateLongPassword()
+        ),
+        scope: 'ENVIRONMENT' as const
+      },
+      {
+        name: 'MINIO_ROOT_USER',
+        type: 'SECRET' as const,
+        didExist: findExistingValue(
+          'MINIO_ROOT_USER',
+          'SECRET',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        value: findExistingOrDefine(
+          'MINIO_ROOT_USER',
+          'SECRET',
+          'ENVIRONMENT',
+          generateLongPassword()
+        ),
+        scope: 'ENVIRONMENT' as const
+      },
+      {
+        name: 'MINIO_ROOT_PASSWORD',
+        type: 'SECRET' as const,
+        didExist: findExistingValue(
+          'MINIO_ROOT_PASSWORD',
+          'SECRET',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        value: findExistingOrDefine(
+          'MINIO_ROOT_PASSWORD',
+          'SECRET',
+          'ENVIRONMENT',
+          generateLongPassword()
+        ),
+        scope: 'ENVIRONMENT' as const
+      },
+      {
+        name: 'MONGODB_ADMIN_USER',
+        type: 'SECRET' as const,
+        didExist: findExistingValue(
+          'MONGODB_ADMIN_USER',
+          'SECRET',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        value: findExistingOrDefine(
+          'MONGODB_ADMIN_USER',
+          'SECRET',
+          'ENVIRONMENT',
+          generateLongPassword()
+        ),
+        scope: 'ENVIRONMENT' as const
+      },
+      {
+        name: 'MONGODB_ADMIN_PASSWORD',
+        type: 'SECRET' as const,
+        didExist: findExistingValue(
+          'MONGODB_ADMIN_PASSWORD',
+          'SECRET',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        value: findExistingOrDefine(
+          'MONGODB_ADMIN_PASSWORD',
+          'SECRET',
+          'ENVIRONMENT',
+          generateLongPassword()
+        ),
+        scope: 'ENVIRONMENT' as const
+      },
+      {
+        name: 'POSTGRES_USER',
+        type: 'SECRET' as const,
+        didExist: findExistingValue(
+          'POSTGRES_USER',
+          'SECRET',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        value: findExistingOrDefine(
+          'POSTGRES_USER',
+          'SECRET',
+          'ENVIRONMENT',
+          generateLongPassword()
+        ),
+        scope: 'ENVIRONMENT' as const
+      },
+      {
+        name: 'POSTGRES_PASSWORD',
+        type: 'SECRET' as const,
+        didExist: findExistingValue(
+          'POSTGRES_PASSWORD',
+          'SECRET',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        value: findExistingOrDefine(
+          'POSTGRES_PASSWORD',
+          'SECRET',
+          'ENVIRONMENT',
+          generateLongPassword()
+        ),
+        scope: 'ENVIRONMENT' as const
+      },
+      {
+        name: 'SUPER_USER_PASSWORD',
+        type: 'SECRET' as const,
+        didExist: findExistingValue(
+          'SUPER_USER_PASSWORD',
+          'SECRET',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        value: findExistingOrDefine(
+          'SUPER_USER_PASSWORD',
+          'SECRET',
+          'ENVIRONMENT',
+          generateLongPassword()
+        ),
+        scope: 'ENVIRONMENT' as const
+      },
+      {
+        type: 'VARIABLE' as const,
+        name: 'ACTIVATE_USERS',
+        value: 'production' === environment_type ? 'false' : 'true',
+        didExist: findExistingValue(
+          'ACTIVATE_USERS',
+          'VARIABLE',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        scope: 'ENVIRONMENT' as const
+      },
+      {
+        type: 'VARIABLE' as const,
+        name: 'AUTH_HOST',
+        value: answerOrExisting(
+          allAnswers.domain,
+          findExistingValue('DOMAIN', 'VARIABLE', 'ENVIRONMENT', existingValues),
+          (val) => `https://auth.${val}`
+        ),
+        didExist: findExistingValue(
+          'AUTH_HOST',
+          'VARIABLE',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        scope: 'ENVIRONMENT' as const
+      },
+      {
+        type: 'VARIABLE' as const,
+        name: 'COUNTRY_CONFIG_HOST',
+        value: answerOrExisting(
+          allAnswers.domain,
+          findExistingValue('DOMAIN', 'VARIABLE', 'ENVIRONMENT', existingValues),
+          (val) => `https://countryconfig.${val}`
+        ),
+        didExist: findExistingValue(
+          'COUNTRY_CONFIG_HOST',
+          'VARIABLE',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        scope: 'ENVIRONMENT' as const
+      },
+      {
+        type: 'VARIABLE' as const,
+        name: 'GATEWAY_HOST',
+        value: answerOrExisting(
+          allAnswers.domain,
+          findExistingValue('DOMAIN', 'VARIABLE', 'ENVIRONMENT', existingValues),
+          (val) => `https://gateway.${val}`
+        ),
+        didExist: findExistingValue(
+          'GATEWAY_HOST',
+          'VARIABLE',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        scope: 'ENVIRONMENT' as const
+      },
+      {
+        type: 'VARIABLE' as const,
+        name: 'CONTENT_SECURITY_POLICY_WILDCARD',
+        value: answerOrExisting(
+          allAnswers.domain,
+          findExistingValue('DOMAIN', 'VARIABLE', 'ENVIRONMENT', existingValues),
+          (val) => `*.${val}`
+        ),
+        didExist: findExistingValue(
+          'CONTENT_SECURITY_POLICY_WILDCARD',
+          'VARIABLE',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        scope: 'ENVIRONMENT' as const
+      },
+      {
+        type: 'VARIABLE' as const,
+        name: 'CLIENT_APP_URL',
+        value: answerOrExisting(
+          allAnswers.domain,
+          findExistingValue('DOMAIN', 'VARIABLE', 'ENVIRONMENT', existingValues),
+          (val) => `https://register.${val}`
+        ),
+        didExist: findExistingValue(
+          'CLIENT_APP_URL',
+          'VARIABLE',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        scope: 'ENVIRONMENT' as const
+      },
+      {
+        type: 'VARIABLE' as const,
+        name: 'LOGIN_URL',
+        value: answerOrExisting(
+          allAnswers.domain,
+          findExistingValue('DOMAIN', 'VARIABLE', 'ENVIRONMENT', existingValues),
+          (val) => `https://login.${val}`
+        ),
+        didExist: findExistingValue(
+          'LOGIN_URL',
+          'VARIABLE',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        scope: 'ENVIRONMENT' as const
+      }
+    ]
+
+    if (enableEncryption) {
+      applicationServerUpdates.push({
+        name: 'ENCRYPTION_KEY',
+        type: 'SECRET' as const,
+        didExist: findExistingValue(
+          'ENCRYPTION_KEY',
+          'SECRET',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        value: findExistingOrDefine(
+          'ENCRYPTION_KEY',
+          'SECRET',
+          'ENVIRONMENT',
+          generateLongPassword()
+        ),
+        scope: 'ENVIRONMENT' as const
       })
-    log('')
-  }
-  if (updatedSecrets.length > 0) {
-    log(
-      kleur.yellow(
-        `The following secrets will be updated in Github for environment ${environment}:`
+    }
+
+    derivedUpdates.push(...applicationServerUpdates)
+
+
+    const updates = getAnswers(existingValues)
+      .concat(
+        ...derivedUpdates.filter(
+          (update): update is Answer => update.value !== null
+        )
       )
+      .filter(
+        (variable) =>
+          Boolean(variable.value) &&
+          // Only update values that changed
+          (variable.type !== 'VARIABLE' ||
+            variable.value !== variable.didExist?.value)
+      )
+
+    storeSecrets(environment, updates)
+
+    /*
+     * List out all updates to the variables and confirm with the user
+     */
+
+    const newSecrets = updates.filter(
+      (update): update is SecretAnswer =>
+        update.type === 'SECRET' && !update.didExist
     )
-    updatedSecrets.forEach((secret) => {
-      log(secret.name, '=', secret.value)
-    })
-    log('')
-  }
-  if (newVariables.length > 0) {
-    log(
-      kleur.yellow(
-        `The following variables will be added to Github for environment ${environment}:`
-      )
+    const updatedSecrets = updates.filter(
+      (update): update is SecretAnswer =>
+        update.type === 'SECRET' && Boolean(update.didExist)
     )
-    newVariables.forEach((variable) => {
-      log(variable.name, '=', variable.value)
-    })
-    log('')
-  }
-  if (updatedVariables.length > 0) {
-    log(
-      kleur.yellow(
-        `The following variables will be updated in Github for environment ${environment}:`
-      )
+    const newVariables = updates.filter(
+      (update): update is VariableAnswer =>
+        update.type === 'VARIABLE' && !update.didExist
+    )
+    const updatedVariables = updates.filter(
+      (update): update is VariableAnswer =>
+        update.type === 'VARIABLE' && Boolean(update.didExist)
     )
 
-    updatedVariables.forEach((variable) => {
+    const unknownVariables = existingValues.filter((value) => {
+      return !ALL_QUESTIONS.find(
+        (question) =>
+          question.valueLabel === value.name &&
+          question.valueType === value.type &&
+          question.scope === value.scope
+      )
+    })
+
+    log('')
+
+    if (newSecrets.length > 0) {
       log(
-        variable.name,
-        '=',
-        variable.value,
-        `(was ${variable.didExist?.value})`
+        kleur.yellow(
+          `The following secrets will be added to Github for environment ${environment}:`
+        )
       )
-    })
-    log('')
-  }
-
-  if (unknownVariables.length > 0) {
-    log(
-      kleur.yellow(
-        `The following unknown variables/secrets were stored in Github are not managed by this script:`
+      newSecrets
+        .filter(({ scope }) => scope === 'ENVIRONMENT')
+        .forEach((secret) => {
+          log(secret.name, '=', secret.value)
+        })
+      log('')
+      log(
+        kleur.yellow(`The following secrets will be added to Github repository:`)
       )
-    )
-    log('')
-    log(kleur.blue(`Repository:`))
-
-    unknownVariables
-      .filter(({ scope }) => scope === 'REPOSITORY')
-      .forEach((variable) => {
-        log(kleur.cyan(variable.type) + ':', variable.name)
+      newSecrets
+        .filter(({ scope }) => scope === 'REPOSITORY')
+        .forEach((secret) => {
+          log(secret.name, '=', secret.value)
+        })
+      log('')
+    }
+    if (updatedSecrets.length > 0) {
+      log(
+        kleur.yellow(
+          `The following secrets will be updated in Github for environment ${environment}:`
+        )
+      )
+      updatedSecrets.forEach((secret) => {
+        log(secret.name, '=', secret.value)
       })
-
-    log('')
-    log(kleur.blue(`Environment:`))
-
-    unknownVariables
-      .filter(({ scope }) => scope === 'ENVIRONMENT')
-      .forEach((variable) => {
-        log(kleur.cyan(variable.type) + ':', variable.name)
+      log('')
+    }
+    if (newVariables.length > 0) {
+      log(
+        kleur.yellow(
+          `The following variables will be added to Github for environment ${environment}:`
+        )
+      )
+      newVariables.forEach((variable) => {
+        log(variable.name, '=', variable.value)
       })
+      log('')
+    }
+    if (updatedVariables.length > 0) {
+      log(
+        kleur.yellow(
+          `The following variables will be updated in Github for environment ${environment}:`
+        )
+      )
 
-    log('')
+      updatedVariables.forEach((variable) => {
+        log(
+          variable.name,
+          '=',
+          variable.value,
+          `(was ${variable.didExist?.value})`
+        )
+      })
+      log('')
+    }
+
+    if (unknownVariables.length > 0) {
+      log(
+        kleur.yellow(
+          `The following unknown variables/secrets were stored in Github are not managed by this script:`
+        )
+      )
+      log('')
+      log(kleur.blue(`Repository:`))
+
+      unknownVariables
+        .filter(({ scope }) => scope === 'REPOSITORY')
+        .forEach((variable) => {
+          log(kleur.cyan(variable.type) + ':', variable.name)
+        })
+
+      log('')
+      log(kleur.blue(`Environment:`))
+
+      unknownVariables
+        .filter(({ scope }) => scope === 'ENVIRONMENT')
+        .forEach((variable) => {
+          log(kleur.cyan(variable.type) + ':', variable.name)
+        })
+
+      log('')
+      log(
+        kleur.yellow(
+          `These variables will not be updated by this script. If you want to update them, you will need to do so manually.`
+        )
+      )
+      log('')
+    }
+
+    if (
+      ([] as Array<any>)
+        .concat(newSecrets)
+        .concat(updatedSecrets)
+        .concat(newVariables)
+        .concat(updatedVariables).length === 0
+    ) {
+      process.exit(0)
+    }
+
+    const { confirm } = await prompts([
+      {
+        name: 'confirm',
+        type: 'confirm' as const,
+        message: 'Do you want to continue?',
+        initial: true
+      }
+    ])
+
+    if (!confirm) {
+      process.exit(0)
+    }
+
+    for (const newSecret of newSecrets) {
+      log(`Creating secret ${newSecret.name} with value ${newSecret.value}`)
+      if (newSecret.scope === 'ENVIRONMENT') {
+        await createEnvironmentSecret(
+          octokit,
+          repositoryId,
+          environment,
+          newSecret.name,
+          newSecret.value,
+          githubOrganisation,
+          githubRepository
+        )
+      } else {
+        await createRepositorySecret(
+          octokit,
+          repositoryId,
+          newSecret.name,
+          newSecret.value,
+          githubOrganisation,
+          githubRepository
+        )
+      }
+    }
+    for (const updatedSecret of updatedSecrets) {
+      log(
+        `Updating secret ${updatedSecret.name} with value ${updatedSecret.value}`
+      )
+      if (updatedSecret.scope === 'ENVIRONMENT') {
+        await createEnvironmentSecret(
+          octokit,
+          repositoryId,
+          environment,
+          updatedSecret.name,
+          updatedSecret.value,
+          githubOrganisation,
+          githubRepository
+        )
+      } else {
+        await createRepositorySecret(
+          octokit,
+          repositoryId,
+          updatedSecret.name,
+          updatedSecret.value,
+          githubOrganisation,
+          githubRepository
+        )
+      }
+    }
+
+    for (const newVariable of newVariables) {
+      log(`Creating variable ${newVariable.name} with value ${newVariable.value}`)
+      if (newVariable.scope === 'ENVIRONMENT') {
+        await createEnvironmentVariable(
+          octokit,
+          repositoryId,
+          environment,
+          newVariable.name,
+          newVariable.value
+        )
+      } else {
+        await createRepositoryVariable(
+          octokit,
+          repositoryId,
+          newVariable.name,
+          newVariable.value
+        )
+      }
+
+    }
+
+    for (const updatedVariable of updatedVariables) {
+      log(
+        `Updating variable ${updatedVariable.name} with value ${updatedVariable.value}`
+      )
+      if (updatedVariable.scope === 'ENVIRONMENT') {
+        await updateEnvironmentVariable(
+          octokit,
+          repositoryId,
+          environment,
+          updatedVariable.name,
+          updatedVariable.value
+        )
+      } else {
+        await updateRepositoryVariable(
+          octokit,
+          repositoryId,
+          updatedVariable.name,
+          updatedVariable.value
+        )
+      }
+    }
+
     log(
-      kleur.yellow(
-        `These variables will not be updated by this script. If you want to update them, you will need to do so manually.`
+      kleur.green(
+        `Successfully updated Github secrets and variables for environment ${environment}`
       )
     )
-    log('')
-  }
 
-  if (
-    ([] as Array<any>)
-      .concat(newSecrets)
-      .concat(updatedSecrets)
-      .concat(newVariables)
-      .concat(updatedVariables).length === 0
-  ) {
-    process.exit(0)
-  }
-
-  const { confirm } = await prompts([
-    {
-      name: 'confirm',
-      type: 'confirm' as const,
-      message: 'Do you want to continue?',
-      initial: true
-    }
-  ])
-
-  if (!confirm) {
-    process.exit(0)
-  }
-
-  for (const newSecret of newSecrets) {
-    log(`Creating secret ${newSecret.name} with value ${newSecret.value}`)
-    if (newSecret.scope === 'ENVIRONMENT') {
-      await createEnvironmentSecret(
-        octokit,
-        repositoryId,
-        environment,
-        newSecret.name,
-        newSecret.value,
-        githubOrganisation,
-        githubRepository
-      )
-    } else {
-      await createRepositorySecret(
-        octokit,
-        repositoryId,
-        newSecret.name,
-        newSecret.value,
-        githubOrganisation,
-        githubRepository
-      )
-    }
-  }
-  for (const updatedSecret of updatedSecrets) {
-    log(
-      `Updating secret ${updatedSecret.name} with value ${updatedSecret.value}`
-    )
-    if (updatedSecret.scope === 'ENVIRONMENT') {
-      await createEnvironmentSecret(
-        octokit,
-        repositoryId,
-        environment,
-        updatedSecret.name,
-        updatedSecret.value,
-        githubOrganisation,
-        githubRepository
-      )
-    } else {
-      await createRepositorySecret(
-        octokit,
-        repositoryId,
-        updatedSecret.name,
-        updatedSecret.value,
-        githubOrganisation,
-        githubRepository
-      )
-    }
-  }
-
-  for (const newVariable of newVariables) {
-    log(`Creating variable ${newVariable.name} with value ${newVariable.value}`)
-    if (newVariable.scope === 'ENVIRONMENT') {
-      await createEnvironmentVariable(
-        octokit,
-        repositoryId,
-        environment,
-        newVariable.name,
-        newVariable.value
-      )
-    } else {
-      await createRepositoryVariable(
-        octokit,
-        repositoryId,
-        newVariable.name,
-        newVariable.value
-      )
-    }
-
-  }
-
-  for (const updatedVariable of updatedVariables) {
-    log(
-      `Updating variable ${updatedVariable.name} with value ${updatedVariable.value}`
-    )
-    if (updatedVariable.scope === 'ENVIRONMENT') {
-      await updateEnvironmentVariable(
-        octokit,
-        repositoryId,
-        environment,
-        updatedVariable.name,
-        updatedVariable.value
-      )
-    } else {
-      await updateRepositoryVariable(
-        octokit,
-        repositoryId,
-        updatedVariable.name,
-        updatedVariable.value
-      )
-    }
-  }
-
-  log(
-    kleur.green(
-      `Successfully updated Github secrets and variables for environment ${environment}`
-    )
-  )
-
-  const worker_message = workerNodes.length > 0 ? 
-`
+    const worker_message = workerNodes.length > 0 ?
+      `
 -----------------------
 ➡️ ${kleur.bold().yellow('COPY the SSH public key from the master VM to your clipboard')}
 -----------------------
@@ -1623,7 +1633,7 @@ ALL_QUESTIONS.push(
 curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\
 bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}` : ''
 
-  log(`
+    log(`
 ${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
 Follow the steps below to complete the setup of your environment:
 ${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
@@ -1639,9 +1649,9 @@ ${worker_message}
 
 ${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
     `)
-  log('\nAll variables stored in', kleur.cyan(`.env.${environment}`))
-  log(kleur.bold().yellow('DO NOT COMMIT THIS FILE TO GIT!'))
-})()
+    log('\nAll variables stored in', kleur.cyan(`.env.${environment}`))
+    log(kleur.bold().yellow('DO NOT COMMIT THIS FILE TO GIT!'))
+  })()
 
 function getAnswers(existingValues: (Secret | Variable)[]): Answers {
   return ALL_ANSWERS.flatMap((answerObject) => {
