@@ -45,6 +45,8 @@ imagePullSecrets:
   - name: dockerhub-credentials
 
 countryconfig:
+  env:
+    QA_ENV: false
   secrets:
     smtp-config:
       - ALERT_EMAIL
