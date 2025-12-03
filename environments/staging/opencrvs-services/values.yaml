@@ -19,7 +19,7 @@ influxdb:
 elasticsearch:
   auth_mode: auto
   host: elasticsearch.opencrvs-deps-staging.svc.cluster.local
-  reindex:
+  cronjob:
     enabled: true
     schedule: "0 3 * * *"
 
