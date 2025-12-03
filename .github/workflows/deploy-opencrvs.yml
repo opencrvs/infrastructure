@@ -63,9 +63,12 @@ jobs:
     env:
       ENV: ${{ inputs.environment }}
       BRANCH: ${{ github.ref_name }}
+      GITHUB_ACTOR: ${{ github.actor }}
       CORE_IMAGE_TAG: ${{ inputs.core-image-tag }}
       COUNTRYCONFIG_IMAGE_TAG: ${{ inputs.countryconfig-image-tag }}
       COUNTRYCONFIG_IMAGE_NAME: ${{ secrets.DOCKERHUB_ACCOUNT || 'opencrvs' }}/${{ secrets.DOCKERHUB_REPO || 'ocrvs-farajaland'}}
+      SENDER_EMAIL_ADDRESS: ${{ secrets.SENDER_EMAIL_ADDRESS }}
+      ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
     runs-on:
       - self-hosted
       - k8s
@@ -111,6 +114,7 @@ jobs:
             || echo "Secret $secret doesn't exist in opencrvs-deps-${ENV} namespace"
           done
       - name: Deploy with Helm
+        id: deploy
         run: |
           helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
             --timeout 15m \
@@ -132,3 +136,21 @@ jobs:
           jq -r '.items[] | select(.metadata.labels.status=="pending-install" or .metadata.labels.status=="pending-upgrade" or .metadata.labels.status=="pending-rollback") | .metadata.name' | \
           xargs -r kubectl -n "opencrvs-${ENV}" delete secret || \
           echo "No helm locks found, all is good"
+      - name: Send email
+        if: always()
+        run: |
+          echo "OpenCRVS deployment status: ${{ steps.deploy.outcome }}"
+          subject="🚀 OpenCRVS deployment to '$ENV' completed successfully"
+          if [ "${{ steps.deploy.outcome }}" == 'failure' ]; then
+            subject="⚠️ OpenCRVS deployment to '$ENV' has failed"
+          fi
+          EMAIL_PAYLOAD="{
+            \"subject\": \"$subject\",
+            \"html\": \"${subject} with images '$CORE_IMAGE_TAG' for core and '$COUNTRYCONFIG_IMAGE_TAG' for country config.<br/>Deployed by GitHub user: @${GITHUB_ACTOR}\",
+            \"from\": \"${SENDER_EMAIL_ADDRESS}\",
+            \"to\": \"${ALERT_EMAIL}\"
+          }"
+
+          curl -X POST http://countryconfig.opencrvs-$ENV.svc.cluster.local:3040/email \
+               -H 'Content-Type: application/json' \
+               -d "$EMAIL_PAYLOAD"
