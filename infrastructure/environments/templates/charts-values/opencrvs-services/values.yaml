@@ -30,7 +30,7 @@ mongodb:
   host: mongodb-0.mongodb.opencrvs-deps-{{env}}.svc.cluster.local
 
 redis:
-  auth_mode: acl
+  auth_mode: use_secret
   host: redis-0.redis.opencrvs-deps-{{env}}.svc.cluster.local
 
 postgres:
