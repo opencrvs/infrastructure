@@ -42,6 +42,7 @@ jobs:
         run: |
           echo "SENDER_EMAIL_ADDRESS: $SENDER_EMAIL_ADDRESS -> ${{ vars.SENDER_EMAIL_ADDRESS }}"
           echo "ALERT_EMAIL: $ALERT_EMAIL -> ${{ vars.ALERT_EMAIL }}"
+          echo "${{ toJSON(vars) }}"
       - name: Waiting for manual approval
         if: ${{ (vars.APPROVAL_REQUIRED || 'false') == 'true' }}
         uses: trstringer/manual-approval@v1
