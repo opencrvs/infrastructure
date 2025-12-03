@@ -47,6 +47,8 @@ jobs:
     env:
       ENV: ${{ inputs.environment }}
       GITHUB_ACTOR: ${{ github.actor }}
+      SENDER_EMAIL_ADDRESS: ${{ secrets.SENDER_EMAIL_ADDRESS }}
+      ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
