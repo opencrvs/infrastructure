@@ -31,8 +31,6 @@ spec:
               env:
                 - name: RESTORE_MODE
                   value: "mirror"
-                - name: RESTORE_DATE
-                  value: {{ .Values.restore.date }}
               {{- if not .Values.minio.use_default_credentials }}
                 - name: MINIO_ROOT_USER
                   valueFrom:
@@ -62,6 +60,7 @@ spec:
                       key: host
                 - name: BACKUP_REMOTE_DIR
                   value: "{{ .Values.minio.backup_server_dir | default .Values.restore.backup_server_dir }}"
+              {{- include "render-env-vars" (dict "service_name" "restore" "Values" .Values) | nindent 4 }}
               volumeMounts:
                 - name: backup-ssh-key
                   mountPath: /ssh

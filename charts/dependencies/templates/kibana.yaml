@@ -70,13 +70,13 @@ spec:
             - name: KIBANA_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.elasticsearch.users_secret }}
-                  key: KIBANA_USER_ELASTIC_USERNAME
+                  name: {{ .Values.kibana.users_secret }}
+                  key: KIBANA_USERNAME
             - name: KIBANA_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.elasticsearch.users_secret }}
-                  key: KIBANA_USER_ELASTIC_PASSWORD
+                  name: {{ .Values.kibana.users_secret }}
+                  key: KIBANA_PASSWORD
             - name: METRICBEAT_ELASTIC_USERNAME
               valueFrom:
                 secretKeyRef:

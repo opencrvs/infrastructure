@@ -66,6 +66,7 @@ spec:
                       key: host
                 - name: BACKUP_REMOTE_DIR
                   value: "{{ .Values.postgres.backup_server_dir | default .Values.backup.backup_server_dir }}"
+              {{- include "render-env-vars" (dict "service_name" "backup" "Values" .Values) | nindent 4 }}
               command: ["/scripts/backup.sh"]
               volumeMounts:
                 - name: backup-ssh-key
