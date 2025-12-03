@@ -6,8 +6,8 @@ metadata:
   # - https://github.com/opencrvs/opencrvs-core/issues/7451
   # - https://opencrvsworkspace.slack.com/archives/C02LU432JGK/p1757940561135439
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "1"
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "2"
   labels:
     app: migration
   name: {{ .Values.data_migration.job_name | default "data-migration" }}
