@@ -16,11 +16,18 @@
 - name: Add Kubernetes APT repository
   shell: echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ kubernetes_version }}/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
 
-- name: Update apt cache and install Kubernetes components
-  shell: apt-get update && apt-get install -y kubelet kubeadm kubectl
-
-- name: Hold Kubernetes packages
-  shell: apt-mark hold kubelet kubeadm kubectl
+- name: Install specific Kubernetes version
+  become: yes
+  ansible.builtin.apt:
+    update_cache: yes
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: present
 
 - name: Enable kubelet service
-  shell: systemctl enable kubelet
+  become: yes
+  ansible.builtin.systemd:
+    name: kubelet
+    enabled: yes
