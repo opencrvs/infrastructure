@@ -16,7 +16,7 @@
 elasticsearch:
   host: elasticsearch.opencrvs-deps-dev.svc.cluster.local
   port: 9200
-  reindex:
+  cronjob:
     enabled: false
     schedule: "0 2 * * *"
   # auth_mode:

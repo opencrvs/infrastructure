@@ -15,7 +15,8 @@ spec:
     spec:
 {{ include "elasticsearch-reindex.podSpec" . | indent 2 }}
 
-{{- if .Values.elasticsearch.reindex.enabled }}
+{{- if .Values.elasticsearch.cronjob.enabled }}
+---
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -23,7 +24,7 @@ metadata:
     app: elasticsearch
   name: elasticsearch-reindex
 spec:
-  schedule: "{{ .Values.elasticsearch.reindex.schedule }}"
+  schedule: "{{ .Values.elasticsearch.cronjob.schedule }}"
   jobTemplate:
     spec:
 {{ include "elasticsearch-reindex.podSpec" . | indent 6 }}
