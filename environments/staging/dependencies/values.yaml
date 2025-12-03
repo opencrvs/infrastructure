@@ -22,7 +22,7 @@ monitoring:
 
 elastalert:
   env:
-    HTTP_POST2_ALERT_URL: http://countryconfig.opencrvs-staging.svc.cluster.local:3040
+    HTTP_POST2_ALERT_URL: http://countryconfig.opencrvs-staging.svc.cluster.local:3040/email
 
 # Restore configuration
 restore:
