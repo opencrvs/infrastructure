@@ -103,10 +103,20 @@ spec:
                 secretKeyRef:
                   key: events_migrator_db_url
                   name: {{ .Values.postgres.urls_secret }}
+            - name: EVENTS_SUPERUSER_POSTGRES_URL
+              valueFrom:
+                secretKeyRef:
+                  key: events_superuser_db_url
+                  name: {{ .Values.postgres.urls_secret }}
             - name: EVENTS_DB_USER
               valueFrom:
                 secretKeyRef:
                   key: EVENTS_APP_POSTGRES_USER
+                  name: {{ .Values.postgres.users_secret }}
+            - name: EVENTS_MIGRATION_USER
+              valueFrom:
+                secretKeyRef:
+                  key: EVENTS_MIGRATOR_POSTGRES_USER
                   name: {{ .Values.postgres.users_secret }}
           {{- end }}
 
