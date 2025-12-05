@@ -45,6 +45,20 @@ spec:
               value: {{ .Values.influxdb.port | quote }}
             - name: MINIO_HOST
               value: {{ .Values.minio.host | quote }}
+            - name: MONGO_HOST
+              value: {{ .Values.mongodb.host }}
+            - name: MONGO_PORT
+              value: "27017"
+            - name: MONGO_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mongodb.admin_user_secret_name }}
+                  key: MONGODB_ADMIN_USER
+            - name: MONGO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mongodb.admin_user_secret_name }}
+                  key: MONGODB_ADMIN_PASSWORD
           {{- if eq .Values.mongodb.auth_mode "disabled" }}
             - name: APPLICATION_CONFIG_MONGO_URL
               value: mongodb://{{ .Values.mongodb.host }}/application-config
