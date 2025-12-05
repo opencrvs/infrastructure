@@ -17,6 +17,7 @@ on:
         type: choice
         options:
           - all
+          - checks
           - updates
           - users
           - backup
@@ -25,7 +26,6 @@ on:
           - fail2ban
           - data-partition
           - decrypt-on-boot
-          - checks
           - containerd-setup
           - k8s
           - system-preparation

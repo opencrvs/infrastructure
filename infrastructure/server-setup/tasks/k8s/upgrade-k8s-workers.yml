@@ -1,0 +1,16 @@
+
+- name: Display upgrade status
+  ansible.builtin.debug:
+    msg: |
+      Kubelet version: {{ kubelet_version }}
+      Server version: {{ current_k8s_version }}
+      Target version: {{ kubernetes_version }}
+      Upgrade needed: {{ upgrade_needed }}
+
+- name: Restart kubelet
+  become: yes
+  when: upgrade_needed
+  ansible.builtin.systemd:
+    name: kubelet
+    state: restarted
+    daemon_reload: yes

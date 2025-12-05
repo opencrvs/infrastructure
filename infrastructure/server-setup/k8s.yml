@@ -69,6 +69,8 @@
       include_tasks: tasks/k8s/init-master.yml
     - name: Include network plugin installation
       include_tasks: tasks/k8s/install-network-plugin.yml
+    - name: Upgrade cluster
+      include_tasks: tasks/k8s/upgrade-k8s-master.yml
 
 - name: Join Worker Nodes
   hosts: workers
@@ -79,6 +81,8 @@
     - name: Include worker node join cluster
       include_tasks: tasks/k8s/join-workers.yml
       when: single_node == false
+    - name: Upgrade cluster
+      include_tasks: tasks/k8s/upgrade-k8s-workers.yml
 
 - name: Configure k8s cluster components
   hosts: master
