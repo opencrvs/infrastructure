@@ -64,6 +64,7 @@
 - name: Initialize Kubernetes Master
   hosts: master
   tags: k8s
+  gather_facts: yes
   tasks:
     - name: Include master initialization
       include_tasks: tasks/k8s/init-master.yml
