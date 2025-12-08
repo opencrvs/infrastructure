@@ -101,8 +101,6 @@
   register: kubectl_result
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
-  retries: 5
-  delay: 10
 
 - name: Show result of restart
   debug:

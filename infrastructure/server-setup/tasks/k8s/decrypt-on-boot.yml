@@ -80,7 +80,6 @@
    - encryptedFileSystemPostCheck.stat.exists
 
 - name: 'Setup systemd to mount encrypted folder'
-  when: disk_encryption_key is defined
   shell: systemctl daemon-reload && systemctl enable reboot.service
   when:
     - disk_encryption_key is defined
