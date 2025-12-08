@@ -38,20 +38,29 @@
         - decrypt-on-boot
 
     - name: Include system preparation tasks
-      include_tasks: tasks/k8s/system-preparation.yml
+      include_tasks:
+        file: tasks/k8s/system-preparation.yml
+        apply:
+          tags:
+            - system-preparation
       tags:
         - system-preparation
-      
     - name: Include containerd installation tasks
-      include_tasks: tasks/k8s/install-containerd.yml
+      include_tasks:
+        file: tasks/k8s/install-containerd.yml
+        apply:
+          tags:
+            - containerd-setup
       tags:
         - containerd-setup
-
     - name: Include Kubernetes installation tasks
-      include_tasks: tasks/k8s/install-kubernetes.yml
+      include_tasks:
+        file: tasks/k8s/install-kubernetes.yml
+        apply:
+          tags:
+            - kubernetes-installation
       tags:
-        - kubernetes-installation
-
+          - kubernetes-installation
 - name: Initialize Kubernetes Master
   hosts: master
   tags: k8s
