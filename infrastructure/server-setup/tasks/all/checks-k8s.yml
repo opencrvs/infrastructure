@@ -33,12 +33,6 @@
         target_major: "{{ k8s_target_version.split('.')[0] }}"
         target_minor: "{{ k8s_target_version.split('.')[1] }}"
 
-    # Do we need to fail?
-    - name: Check if versions are identical
-      ansible.builtin.fail:
-        msg: "Current version {{ current_k8s_version }} is already at target version {{ k8s_target_version }}"
-      when: current_k8s_version == k8s_target_version
-
     - name: Check if downgrade attempt
       ansible.builtin.fail:
         msg: |
