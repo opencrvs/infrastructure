@@ -61,10 +61,10 @@
             - kubernetes-installation
       tags:
           - kubernetes-installation
-- name: Initialize Kubernetes Master
+
+- name: Kubernetes Master
   hosts: master
   tags: k8s
-  gather_facts: yes
   tasks:
     - name: Include master initialization
       include_tasks: tasks/k8s/init-master.yml
@@ -73,7 +73,7 @@
     - name: Upgrade cluster
       include_tasks: tasks/k8s/upgrade-k8s-master.yml
 
-- name: Join Worker Nodes
+- name: Kubernetes Worker Nodes
   hosts: workers
   tags:
     - join-workers
