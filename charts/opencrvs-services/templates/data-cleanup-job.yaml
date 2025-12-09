@@ -50,7 +50,7 @@ spec:
           {{- end }}
           {{- include "render-env-vars" (dict "service_name" "data_cleanup" "Values" .Values) }}
         - name: cleanup-postgres
-          image: docker.io/chumaky/postgres_mongo_fdw:17.6_fdw5.5.2
+          image: postgres:17
           command: ["/bin/bash", "-c"]
           args:
             - |

@@ -64,7 +64,7 @@ spec:
             {{- end }}
       {{- end }}
       containers: 
-        - image: docker.io/chumaky/postgres_mongo_fdw:17.6_fdw5.5.2
+        - image: postgres:17
           name: postgres
           env:
           {{- if .Values.postgres.use_default_credentials }}
