@@ -6,16 +6,16 @@ metadata:
     "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "1"
   labels:
-    app: postgres-on-update-core
-  name: postgres-on-update-core
+    app: postgres-on-deploy
+  name: postgres-on-deploy
 spec:
   template:
     metadata:
       labels:
-        app: postgres-on-update-core
+        app: postgres-on-deploy
     spec:
       containers:
-        - name: postgres-on-update-core
+        - name: postgres-on-deploy
           command: ["bash", "-c", "/scripts/on-deploy.sh"]
           image: postgres:17
           env:
@@ -73,10 +73,10 @@ spec:
           {{- include "render-env-vars" (dict "service_name" "postgres_on_deploy" "Values" .Values) }}
           volumeMounts:
             - mountPath: /scripts
-              name: postgres-on-update-script
+              name: postgres-on-deploy-script
       volumes:
-        - name: postgres-on-update-script
+        - name: postgres-on-deploy-script
           configMap:
-            name: postgres-on-update-script
+            name: postgres-on-deploy-script
             defaultMode: 0755
       restartPolicy: "OnFailure"
