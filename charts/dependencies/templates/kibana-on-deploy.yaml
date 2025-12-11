@@ -30,11 +30,17 @@ spec:
                   key: ELASTIC_PASSWORD
           volumeMounts:
             - mountPath: /scripts
-              name: kibana-on-update-script
+              name: kibana-on-deploy-script
+            - mountPath: /config
+              name: kibana-configmap
       volumes:
-        - name: kibana-on-update-script
+        - name: kibana-on-deploy-script
           configMap:
-            name: kibana-on-update-script
+            name: kibana-on-deploy-script
+            defaultMode: 0755
+        - name: kibana-configmap
+          configMap:
+            name: {{ .Values.kibana.custom_config_configmap | default "kibana-on-deploy-script" }}
             defaultMode: 0755
       restartPolicy: "OnFailure"
 {{- end }}

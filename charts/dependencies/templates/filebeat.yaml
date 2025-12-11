@@ -59,18 +59,21 @@ spec:
           requests:
             memory: 100Mi
         volumeMounts:
-          - name: config
+          - name: filebeat-config
             mountPath: /etc/filebeat.yml
             subPath: filebeat.yml
-          - name: config
+          - name: filebeat-ilm-config
             mountPath: /usr/share/filebeat/rollover-policy.json
             subPath: filebeat-rollover-policy.json
           - name: varlog
             mountPath: /var/log
       volumes:
-        - name: config
+        - name: filebeat-config
           configMap:
-            name: beats-config
+            name: {{ .Values.filebeat.custom_config_configmap | default "filebeat-config" }}
+        - name: filebeat-ilm-config
+          configMap:
+            name: {{ .Values.filebeat.custom_ilm_configmap | default "filebeat-ilm-config" }}
         - name: varlog
           hostPath:
             path: /var/log

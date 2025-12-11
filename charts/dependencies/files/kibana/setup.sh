@@ -80,7 +80,7 @@ _curl --connect-timeout 60 -u elastic:$ELASTICSEARCH_SUPERUSER_PASSWORD "$kibana
 done
 
 # Import configuration
-_curl --connect-timeout 60 -u elastic:$ELASTICSEARCH_SUPERUSER_PASSWORD -X POST "${KIBANA_URL}/api/saved_objects/_import?overwrite=true" -H 'kbn-xsrf: true' --form file=@/scripts/config.ndjson > /dev/null
+_curl --connect-timeout 60 -u elastic:$ELASTICSEARCH_SUPERUSER_PASSWORD -X POST "${KIBANA_URL}/api/saved_objects/_import?overwrite=true" -H 'kbn-xsrf: true' --form file=@/config/config.ndjson > /dev/null
 
 # Re-enable all alerts
 _curl --connect-timeout 60 -u elastic:$ELASTICSEARCH_SUPERUSER_PASSWORD "$kibana_alerting_api_url" | jq -r '.data[].id' | while read -r id; do

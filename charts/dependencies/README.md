@@ -277,7 +277,10 @@ elasticsearch:
   use_default_credentials: false
 ```
 
-For backward compatibility `HTTP_POST2_ALERT_URL` environment variable needs to be added to elastalert configuration. All alerts will be send to country config service and forwarded to email address
+### Elastalert
+
+
+For backward compatibility `HTTP_POST2_ALERT_URL` environment variable needs to be added to elastalert configuration. All alerts will be send to country config service and forwarded to email address defined while SMTP server configuration.
 
 See example:
 ```yaml
@@ -287,6 +290,108 @@ elastalert:
 ```
 
 > NOTE: This behavior will be changed in future releases, see [#10608](https://github.com/opencrvs/opencrvs-core/issues/10608)
+
+**Custom rules**
+
+Elastalert rules can be extended by modifying or defining new rules. Rules can be stored as Kubernetes configmap within the same namespace as elastalert deployment. 
+
+1. Create new folder and place rules there, e/g:
+    ```
+    ~$ ls -1 custom-rules/
+    alert.yaml
+    log-alert-foo.yaml
+    log-error-bar.yaml
+    custom-service-error-foo.yaml
+    custom-service-error-bar.yaml
+    ssh-alert.yaml
+    ```
+2. Run following command to create configmap from rules:
+    ```
+    kubectl create configmap elastalert-custom-rules \
+        --from-file=custom-rules/
+    ```
+    `custom-rules/` is a path to the folder with rules
+3. Add `elastalert.custom_rules_configmap` to values.yaml to point elastalert to new configmap:
+    ```yaml
+    elastalert:
+      custom_rules_configmap: elastalert-custom-rules
+    ```
+4. Re-deploy dependencies helm chart
+
+### Kibana
+
+Kibana has support for custom configuration shipped by default as config.ndjson file in helm chart: [charts/dependencies/files/kibana/config.ndjson](https://github.com/opencrvs/infrastructure/blob/develop/charts/dependencies/files/kibana/config.ndjson)
+
+If you need to customize that file please do following steps:
+1. Create configmap from `config.ndjson`
+   ```bash
+   kubectl create cm kibana-custom-config --from-file config.ndjson 
+   ```
+2. Add `kibana.custom_config_configmap` to values.yaml to point  kibana to new configmap:
+   ```yaml
+   kibana:
+     custom_config_configmap: kibana-custom-config
+   ```
+3. Re-deploy dependencies helm chart
+
+### Filebeat and metricbeat configuration
+
+
+Following keys can be defined for filebeat and metricbeat
+
+- `custom_config_configmap`: Configmap name for custom configuration file
+- `custom_ilm_configmap`: Configmap name for custom index lifecycle management policies (ILM)
+
+
+By providing custom configuration file you will be able to adjust ILM policies, logs and metrics to monitor and other settings critical for your environment.
+
+Configuration example for filebeat:
+```yaml
+filebeat:
+  custom_config_configmap: filebeat-custom-config
+  custom_ilm_configmap: filebeat-ilm-custom-policy
+metricbeat:
+  custom_config_configmap: filebeat-custom-config
+  custom_ilm_configmap: filebeat-ilm-custom-policy
+```
+
+**Please do following steps to create custom configuration for filebeat and metricbeat**:
+
+1. Create configmap from custom configuration file
+   ```bash
+   kubectl create configmap filebeat-custom-config --from-file <beat name>.yml
+   ```
+   Configuration file names `filebeat.yml` and `metricbeat.yml` are hardcoded within helm chart. Please keep original file names while creating custom configmaps, for example:
+   ```
+   kubectl create configmap filebeat-custom-config --from-file filebeat.yml
+   kubectl create configmap metricbeat-custom-config --from-file metricbeat.yml
+   ```
+2. Add `<beat name>.custom_config_configmap` to values.yaml to point beat to new configuration file:
+   ```yaml
+   <beat name>:
+     custom_config_configmap: <beat name>-config
+   ```
+3. Re-deploy dependencies helm chart
+
+
+**Use same steps to configure ILM policies, example on how to create configmap with ILM policies:**
+
+```
+kubectl create cm <beat name>-ilm-custom-policy --from-file <beat name>-rollover-policy.json
+```
+Configuration file names `filebeat-rollover-policy.json` and `metricbeat-rollover-policy.json` are hardcoded within helm chart. Please keep original file names while creating custom configmaps, for example:
+```
+kubectl create configmap filebeat-ilm-custom-policy --from-file filebeat-rollover-policy.json
+kubectl create configmap metricbeat-ilm-custom-policy --from-file metricbeat-rollover-policy.json
+```
+
+**Dashboard configuration**
+
+By default filebeat and metricbeat are loading Kibana dashboards, use custom configuration files to limit number of dashboards. Check official documentation:
+- [Filebeat Configure Kibana dashboard loading](https://www.elastic.co/docs/reference/beats/filebeat/configuration-dashboards)
+- [Metricbeat Configure Kibana dashboard loading](https://www.elastic.co/docs/reference/beats/metricbeat/configuration-dashboards)
+
+**NOTE:** Loading custom Dashboards as part of helm chart is not supported, please create issue at https://github.com/orgs/opencrvs/projects/4/views/17 if this feature is really needed for you.
 
 
 ## Backup Configuration
