@@ -5,7 +5,7 @@
   register: k8s_is_installed
 
 - name: Pre-flight checks block
-  when: k8s_is_installed
+  when: k8s_is_installed.stat.exists
   block:
     - name: Get current Kubernetes version
       ansible.builtin.shell: kubectl version | grep 'Server Version' | awk '{print $3}' | sed 's/v//'
