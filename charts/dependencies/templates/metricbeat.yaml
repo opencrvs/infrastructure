@@ -88,12 +88,14 @@ spec:
                 fieldRef:
                   fieldPath: status.hostIP
           volumeMounts:
-            - name: config
+            - name: metricbeat-config
               mountPath: /etc/metricbeat.yml
               subPath: metricbeat.yml
-            - name: config
+              readOnly: true
+            - name: metricbeat-ilm-config
               mountPath: /usr/share/metricbeat/rollover-policy.json
               subPath: metricbeat-rollover-policy.json
+              readOnly: true
             - name: proc
               mountPath: /hostfs/proc
               readOnly: true
@@ -111,9 +113,12 @@ spec:
               memory: 100Mi
               cpu: 50m
       volumes:
-        - name: config
+        - name: metricbeat-config
           configMap:
-            name: beats-config
+            name: {{ .Values.metricbeat.custom_config_configmap | default "metricbeat-config" }}
+        - name: metricbeat-ilm-config
+          configMap:
+            name: {{ .Values.metricbeat.custom_ilm_configmap | default "metricbeat-ilm-config" }}
         - name: proc
           hostPath:
             path: /proc

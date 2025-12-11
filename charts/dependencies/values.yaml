@@ -76,13 +76,26 @@ monitoring:
 
 kibana:
   users_secret: kibana-users-secret
+  # Configmap for custom configuration file
+  # custom_config_configmap: kibana-custom-config
+
 metricbeat:
-  dashboards:
-    - kubernetes-e0195ce0-bcaf-11ec-b64f-7dd6e8e82013
-filebeat: {}
+  # Configmap for custom configuration file
+  # custom_config_configmap: metricbeat-config
+  # Configmap for custom index lifecycle management policy
+  # custom_ilm_configmap: metricbeat-ilm-policy
+
+filebeat:
+  # Configmap for custom configuration file
+  # custom_config_configmap: filebeat-config
+  # Configmap for custom index lifecycle management policy
+  # custom_ilm_configmap: filebeat-ilm-policy
+
 logstash: {}
 
 elastalert:
+  # Create configmap with custom rules for elastalert
+  # custom_rules_configmap: 
   env: {}
 
 minio:

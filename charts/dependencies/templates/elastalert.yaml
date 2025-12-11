@@ -62,11 +62,20 @@ spec:
                 echo "processing file $f"
                 envsubst < "$f" > "/rules/$(basename $f)"
               done
+              [ ! -d /rules-custom ] && exit 0
+              for f in /rules-custom/*.yaml; do
+                echo "processing file $f"
+                envsubst < "$f" > "/rules/$(basename $f)"
+              done              
           volumeMounts:
             - name: rules
               mountPath: /rules
             - name: rules-templates
               mountPath: /rules-templates
+          {{- if .Values.elastalert.custom_rules_configmap }}
+            - name: custom-rules
+              mountPath: /rules-custom
+          {{- end }}
       containers:
         - name: elastalert
           image: jertel/elastalert2:2.25.0
@@ -97,4 +106,9 @@ spec:
         - name: rules-templates
           configMap:
             name: elastalert-rules
+      {{- if .Values.elastalert.custom_rules_configmap }}
+        - name: custom-rules
+          configMap:
+            name: {{ .Values.elastalert.custom_rules_configmap }}
+      {{- end }}
 {{- end }}
