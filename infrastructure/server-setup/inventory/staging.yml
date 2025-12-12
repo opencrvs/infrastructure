@@ -98,6 +98,11 @@ all:
           - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL23KrPmFT6tZxR5d7dsTybtDf5j9DWzJcoR/Y7iJfL6 github
         state: present
         role: admin
+      - name: alise
+        ssh_keys:
+          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINRSRTqm3vOfjyTutISEtbVp7ZddoWa9NZDZLeWZGzLy/Y7iJfL6 github
+        state: present
+        role: operator
 
   children:
     master:
