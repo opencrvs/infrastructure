@@ -153,4 +153,9 @@ jobs:
 
           curl -X POST http://countryconfig.opencrvs-$ENV.svc.cluster.local:3040/email \
                -H 'Content-Type: application/json' \
-               -d "$EMAIL_PAYLOAD"
+               -d "$EMAIL_PAYLOAD" \
+               --connect-timeout 5 \
+               --max-time 10 \
+               --fail \
+               --silent \
+               --show-error || echo "Error: Failed to reach countryconfig service"
