@@ -25,6 +25,7 @@
         msg: |
           Current Kubernetes version: {{ current_k8s_version }}
           Target Kubernetes version: {{ k8s_target_version }}
+          Configuration files exist: {{ k8s_is_installed.stat.exists }}
 
     - name: Parse version numbers
       ansible.builtin.set_fact:
