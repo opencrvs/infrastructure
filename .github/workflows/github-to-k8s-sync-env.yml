@@ -6,71 +6,73 @@ on:
       environment:
         description: "Target environment"
         required: true
-        default: "dev"
+        default: "development"
         type: choice
         options:
           - ""
-      mapping_file:
+      namespace_template:
         description: "Secrets mapping template"
         default: "opencrvs"
         type: choice
         options:
           - opencrvs
-          - deps     
+          - opencrvs-deps
   workflow_call:
     inputs:
       environment:
         type: string
         default: dev
-      mapping_file:
+      namespace_template:
         type: string
         default: opencrvs 
 
 jobs:
   sync-env:
     environment: ${{ inputs.environment }}
-    env:
-      mapping_file: ${{ inputs.mapping_file || 'opencrvs' }}
     runs-on:
+      # - ubuntu-latest
       - self-hosted
       - k8s
       - ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v5
+      # Create a temporary file for environment variables
+      # to store GitHub Secrets and Variables (base64 encoded)
       - name: Export all secrets and environment variables
         run: |
-            # Create a temporary file for environment variables
             ENV_FILE=$(mktemp)
             jq -n -r '
                 [${{ toJSON(secrets) }}, ${{ toJSON(vars) }}] 
                 | add
-                | to_entries
-                | map(select(.value | test("\n") | not))
-                | map("\(.key)=\"\(.value)\"")
-                | .[]
+                | with_entries(.value |= @base64)
+                | to_entries[] 
+                | "\(.key)=\(.value)"
             ' > $ENV_FILE
 
             echo env_file=$ENV_FILE >> $GITHUB_ENV
             cat $ENV_FILE
+
       - name: Preprocess mapping into Secret YAMLs
         run: |
           set -euo pipefail
           mkdir -p k8s-secrets
 
-          mapping_file=".github/TEMPLATES/secret-mapping-${mapping_file}.yml"
+          mapping_file=".github/TEMPLATES/secret-mapping-${{ inputs.namespace_template }}.yml"
 
           # Iterate over all kubernetes secret names in mapping
           for secret_name in $(yq e 'keys | .[]' "$mapping_file"); do
           skip_manifest=false
-          echo "🔧 Generating Secret: $secret_name"
-
+          type=$(yq e ".\"$secret_name\".\"type\"" "$mapping_file")
+          if [ -z "$type" ] || [ "$type" == "null" ]; then
+            type="Opaque"
+          fi
+          namespace=$(yq e ".\"$secret_name\".\"namespace\"" "$mapping_file")
+          if [ -z "$namespace" ] || [ "$namespace" == "null" ]; then
+            namespace="${{ inputs.namespace_template }}-${{ inputs.environment }}"
+          fi
+          echo "🔧 Generating Secret: $secret_name, type: $type"
           {
-            echo "apiVersion: v1"
-            echo "kind: Secret"
-            echo "metadata:"
-            echo "  name: $secret_name"
-            echo "type: Opaque"
-            echo "stringData:"
+            echo "data:"
             while IFS= read -r key; do
               # Skip comments
               if echo "$key" | grep -q "^[[:space:]]*#"; then
@@ -94,7 +96,13 @@ jobs:
                 echo "  $k8s_var: ''"
                 skip_manifest=true
               fi
-            done < <(yq e ".\"$secret_name\"[]" "$mapping_file")
+            done < <(yq e ".\"$secret_name\".\"data\"[]" "$mapping_file")
+            echo "apiVersion: v1"
+            echo "kind: Secret"
+            echo "type: $type"
+            echo "metadata:"
+            echo "  name: $secret_name"
+            echo "  namespace: $namespace"
           } > "k8s-secrets/$secret_name.yaml"
           if [ "$skip_manifest" == "true" ]; then
             echo "⚠️  Skipping Kubernetes secret $secret_name due to empty or not defined GitHub secrets or variables"
@@ -108,17 +116,15 @@ jobs:
       - name: Apply secrets to Kubernetes
         run: |
           set -euo pipefail
-          if [ "$mapping_file" = "opencrvs" ]; then
-            namespace="opencrvs-${{ inputs.environment || 'demo' }}"
-          else
-            namespace="opencrvs-deps-${{ inputs.environment || 'demo' }}"
-          fi
-          echo "ℹ️  Using namespace: $namespace"
-          kubectl get namespace $namespace >/dev/null 2>&1 || kubectl create namespace $namespace
           for f in k8s-secrets/*.yaml; do
-            echo "🚀 Applying $f"
+            namespace=$(yq e ".metadata.namespace" "$f")
+            [ "$namespace" == "null" ] && echo "ℹ️  No namespace defined for $f, skipping secret creation" && continue
+            echo "🚀 Applying $f within namespace"
+            kubectl get namespace $namespace >/dev/null 2>&1 || kubectl create namespace $namespace
             yq eval . "$f" > /dev/null && echo "✅ $f is valid YAML" || echo "❌ $f has YAML errors" && cat "$f"
             kubectl apply -n $namespace -f "$f"
+            echo "Dropping last-applied-configuration annotation for secret $(basename ${f/.yaml/})"
+            kubectl annotate secret -n $namespace "$(basename ${f/.yaml/})" kubectl.kubernetes.io/last-applied-configuration-
           done
 
       - name: Cleanup secrets and variables
