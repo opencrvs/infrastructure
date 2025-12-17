@@ -34,7 +34,7 @@ jobs:
     uses: ./.github/workflows/github-to-k8s-sync-env.yml
     with:
       environment: ${{ inputs.environment }}
-      mapping_file: "deps"
+      namespace_template: "opencrvs-deps"
     secrets: inherit
 
   deploy:
