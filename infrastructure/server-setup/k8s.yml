@@ -95,8 +95,6 @@
       include_tasks: tasks/k8s/metrics-server.yml
     - name: Install k8s self-hosted runner
       include_tasks: tasks/k8s/self-hosted-runner.yml
-    - name: Create backup server secret
-      include_tasks: tasks/k8s/backup-secret.yml
 
 - name: Additional configuration
   become: yes
