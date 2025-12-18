@@ -69,8 +69,6 @@ jobs:
           k8s_runner_token: ${{ secrets.GH_TOKEN }}
           repository: ${{ github.repository }}
           k8s_cluster_env: ${{ inputs.environment }}
-          docker_username: ${{ secrets.DOCKER_USERNAME }}
-          docker_password: ${{ secrets.DOCKER_TOKEN }}
           smtp_host: ${{ secrets.SMTP_HOST }}
           smtp_port: ${{ secrets.SMTP_PORT }}
           smtp_user: ${{ secrets.SMTP_USERNAME }}

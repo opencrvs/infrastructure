@@ -1,5 +1,6 @@
 name: Sync GitHub env to Kubernetes
-run-name: Sync GitHub env to Kubernetes for ${{ inputs.environment }}
+run-name: "Sync GitHub env to k8s for ${{ inputs.environment }} (${{ inputs.namespace_template }})"
+
 on:
   workflow_dispatch:
     inputs:
@@ -30,7 +31,6 @@ jobs:
   sync-env:
     environment: ${{ inputs.environment }}
     runs-on:
-      # - ubuntu-latest
       - self-hosted
       - k8s
       - ${{ inputs.environment }}
@@ -38,6 +38,8 @@ jobs:
       - uses: actions/checkout@v5
       # Create a temporary file for environment variables
       # to store GitHub Secrets and Variables (base64 encoded)
+      # Making those values base64 encoded allows us to avoid further complex escaping issues
+      # with special characters and multiline values when generating Kubernetes Secret manifests
       - name: Export all secrets and environment variables
         run: |
             ENV_FILE=$(mktemp)
@@ -67,7 +69,7 @@ jobs:
             type="Opaque"
           fi
           namespace=$(yq e ".\"$secret_name\".\"namespace\"" "$mapping_file")
-          if [ -z "$namespace" ] || [ "$namespace" == "null" ]; then
+          if [ -z "$namespace" ] || [ "$namespace" = "null" ]; then
             namespace="${{ inputs.namespace_template }}-${{ inputs.environment }}"
           fi
           echo "🔧 Generating Secret: $secret_name, type: $type"
@@ -110,11 +112,30 @@ jobs:
           fi
           done
 
-          echo "✅ Generated manifests:"
-          ls -l k8s-secrets
+      - name: Map Dockerhub credentials if available
+        env:
+          # TODO: Rename to DOCKERHUB_USERNAME after swarm migration
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKER_USERNAME || '' }}
+          # TODO: Rename to DOCKERHUB_TOKEN after swarm migration 
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKER_TOKEN || '' }}
+          DOCKERHUB_SECRET_NAME: ${{ vars.DOCKERHUB_SECRET_NAME || 'dockerhub-credentials' }}
+          NAMESPACE_TEMPLATE: ${{ inputs.namespace_template }}
+        run: |
+          if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_TOKEN" ] && [ "z$NAMESPACE_TEMPLATE" = "zopencrvs" ]; then
+            kubectl create secret docker-registry "$DOCKERHUB_SECRET_NAME" \
+              --docker-server=https://index.docker.io/v1/ \
+              --docker-username="$DOCKERHUB_USERNAME" \
+              --docker-password="$DOCKERHUB_TOKEN" \
+              --dry-run=client -o yaml > "k8s-secrets/$DOCKERHUB_SECRET_NAME.yaml"
+            echo "✅ Generated Docker Registry Secret manifest: k8s-secrets/$DOCKERHUB_SECRET_NAME.yaml"
+          else
+            echo "ℹ️  Dockerhub credentials not provided, skipping Docker Registry Secret creation for $DOCKERHUB_SECRET_NAME"
+          fi
 
       - name: Apply secrets to Kubernetes
         run: |
+          echo "✅ Generated manifests:"
+          ls -l k8s-secrets
           set -euo pipefail
           for f in k8s-secrets/*.yaml; do
             namespace=$(yq e ".metadata.namespace" "$f")

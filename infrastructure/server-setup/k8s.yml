@@ -96,8 +96,6 @@
       include_tasks: tasks/k8s/self-hosted-runner.yml
     - name: Create backup server secret
       include_tasks: tasks/k8s/backup-secret.yml
-    - name: Add DockerHub credentials
-      include_tasks: tasks/k8s/dockerhub-secret.yml
 
 - name: Additional configuration
   become: yes
