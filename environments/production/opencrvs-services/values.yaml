@@ -51,7 +51,3 @@ countryconfig:
       - SMTP_PORT
       - SMTP_SECURE
       - SMTP_USERNAME
-
-
-dashboards:
-  enabled: true
