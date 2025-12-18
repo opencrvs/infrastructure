@@ -13,7 +13,7 @@ on:
           - demo1
           - production
           - staging
-      mapping_file:
+      namespace_template:
         description: "Secrets mapping template"
         default: "opencrvs"
         type: choice
