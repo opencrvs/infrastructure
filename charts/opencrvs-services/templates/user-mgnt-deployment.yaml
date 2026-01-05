@@ -52,18 +52,11 @@ spec:
                   name: {{ .Values.mongodb.urls_secret }}
           {{- end }}
           {{- include "render-env-vars" (dict "service_name" "user_mgnt" "Values" .Values) }}
-          {{ include "resources-helper" (dict "service_name" "user_mgnt" "Values" .Values) | indent 10 }}
+          {{- include "resources-helper" (dict "service_name" "user_mgnt" "Values" .Values) | indent 10 }}
+          {{- include "probes-helper" (dict "service_name" "user_mgnt" "Values" .Values) | indent 10 }}
           ports:
             - containerPort: {{ .Values.user_mgnt.port }}
               protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /ping # FIXME: not real healthz, just checking if http server is up x
-              port: {{ .Values.user_mgnt.port }}
-          readinessProbe:
-            httpGet:
-              path: /ping # FIXME: not real healthz, just checking if http server is up
-              port: {{ .Values.user_mgnt.port }}
           volumeMounts:
             - mountPath: /secrets/public-key.pem
               name: public-key

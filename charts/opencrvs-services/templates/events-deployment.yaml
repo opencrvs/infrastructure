@@ -112,15 +112,8 @@ spec:
                   name: {{ .Values.mongodb.urls_secret }}
           {{- end }}
           {{- include "render-env-vars" (dict "service_name" "events" "Values" .Values) }}
-          {{ include "resources-helper" (dict "service_name" "events" "Values" .Values) | indent 10 }}
-          livenessProbe:
-            httpGet:
-              path: /health/ready
-              port: {{ .Values.events.port }}
-          readinessProbe:
-            httpGet:
-              path: /health/ready
-              port: {{ .Values.events.port }}
+          {{- include "resources-helper" (dict "service_name" "events" "Values" .Values) | indent 10 }}
+          {{- include "probes-helper" (dict "service_name" "events" "Values" .Values) | indent 10 }}
           ports:
             - containerPort: {{ .Values.events.port }}
               protocol: TCP
