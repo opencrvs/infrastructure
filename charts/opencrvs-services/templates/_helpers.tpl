@@ -151,3 +151,54 @@ spec:
 {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+
+probes-helper
+---
+This is a helper template that dynamically generates Kubernetes Pod HTTP probes:
+- liveness
+- readiness
+- startup
+
+It accounts for both global and service-specific environment variables and secrets.
+
+Parameters:
+- .ServiceName: The name of the microservice, which is used to access service-specific values.
+- .Values: The top-level Values object for the Helm chart.
+
+*/}}
+{{- define "probes-helper" -}}
+{{- $service_name := .service_name }}
+{{- $service_key_name := ( $service_name | replace "-" "_" ) }}
+{{- $global := .Values.probes }}
+{{- $service_values := index .Values $service_key_name | default dict }}
+{{- $service := $service_values.probes | default dict }}
+livenessProbe:
+  failureThreshold: 5
+  httpGet:
+    path: {{ ( $service.liveness | default dict ).path | default $global.liveness.path }}
+    port: {{ $service_values.port }}
+    scheme: HTTP
+  periodSeconds: {{ ( $service.liveness | default dict ).periodSeconds | default $global.liveness.periodSeconds }}
+  successThreshold: 1
+  timeoutSeconds: {{ ( $service.liveness | default dict ).timeoutSeconds | default $global.liveness.timeoutSeconds }}
+readinessProbe:
+  failureThreshold: 5
+  httpGet:
+    path: {{ ( $service.readiness | default dict ).path | default $global.readiness.path }}
+    port: {{ $service_values.port }}
+    scheme: HTTP
+  periodSeconds: {{ ( $service.readiness | default dict ).periodSeconds | default $global.readiness.periodSeconds }}
+  successThreshold: 1
+  timeoutSeconds: {{ ( $service.readiness | default dict ).timeoutSeconds | default $global.readiness.timeoutSeconds }}
+startupProbe:
+  failureThreshold: 30
+  httpGet:
+    path: {{ ( $service.startup | default dict ).path | default $global.startup.path }}
+    port: {{ $service_values.port }}
+    scheme: HTTP
+  periodSeconds: {{ ( $service.startup | default dict ).periodSeconds | default $global.startup.periodSeconds }}
+  successThreshold: 1
+  timeoutSeconds: {{ ( $service.startup | default dict ).timeoutSeconds | default $global.startup.timeoutSeconds }}
+{{- end }}

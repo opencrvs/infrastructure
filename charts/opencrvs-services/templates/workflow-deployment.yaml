@@ -62,18 +62,11 @@ spec:
                   name: {{ .Values.redis.users_secret }}
           {{- end }}
           {{- include "render-env-vars" (dict "service_name" "workflow" "Values" .Values) }}
-          {{ include "resources-helper" (dict "service_name" "workflow" "Values" .Values) | indent 10 }}
+          {{- include "resources-helper" (dict "service_name" "workflow" "Values" .Values) | indent 10 }}
+          {{- include "probes-helper" (dict "service_name" "workflow" "Values" .Values) | indent 10 }}
           ports:
             - containerPort: {{ .Values.workflow.port }}
               protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /ping # FIXME: not real healthz, just checking if http server is up x
-              port: {{ .Values.workflow.port }}
-          readinessProbe:
-            httpGet:
-              path: /ping # FIXME: not real healthz, just checking if http server is up
-              port: {{ .Values.workflow.port }}
           volumeMounts:
             - mountPath: /secrets/public-key.pem
               name: public-key

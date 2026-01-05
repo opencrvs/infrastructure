@@ -86,20 +86,11 @@ spec:
                   name: {{ .Values.mongodb.urls_secret }}
           {{- end }}
           {{- include "render-env-vars" (dict "service_name" "config" "Values" .Values) }}
-          {{ include "resources-helper" (dict "service_name" "config" "Values" .Values) | indent 10 }}
+          {{- include "resources-helper" (dict "service_name" "config" "Values" .Values) | indent 10 }}
+          {{- include "probes-helper" (dict "service_name" "config" "Values" .Values) | indent 10 }}
           ports:
             - containerPort: {{ .Values.config.port }}
               protocol: TCP
-          livenessProbe:
-            failureThreshold: 9
-            httpGet:
-              path: /ping # FIXME: not real healthz, just checking if http server is up x
-              port: {{ .Values.config.port }}
-          readinessProbe:
-            failureThreshold: 9
-            httpGet:
-              path: /ping # FIXME: not real healthz, just checking if http server is up
-              port: {{ .Values.config.port }}
           volumeMounts:
             - mountPath: /secrets/public-key.pem
               name: public-key
