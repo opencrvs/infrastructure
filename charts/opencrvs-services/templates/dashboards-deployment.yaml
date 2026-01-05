@@ -54,12 +54,18 @@ spec:
       initContainers:
         - name: copy-assets
           image: "{{ .Values.countryconfig.image.name }}:{{ .Values.countryconfig.image.tag }}-assets"
+          # TODO: [[ -d /assets/metabase ]]: condition was added temporary
+          # to avoid failures until PR will be shipped as part of release to everyone
+          # ETA: OpenCRVS v2.0
+          # Related PR: https://github.com/opencrvs/opencrvs-countryconfig/pull/1184
+          # Related Issue: https://github.com/opencrvs/opencrvs-core/issues/11192
           command:
             - sh
             - -c
             - >
-              cp -R /assets/* /data-assets/ &&
-              chmod +x /data-assets/*.sh || true
+              [[ -d /assets/metabase ]] && cp -R /assets/metabase/* /data-assets/ ||
+              cp -R /assets/* /data-assets/;
+              chmod +x /data-assets/*.sh
           volumeMounts:
             - name: assets
               mountPath: /data-assets
