@@ -1,4 +1,11 @@
 ---
+# TODO: REVIEW: Refactor job move to countryconfig assets
+#       - delete setup-analytics.sh from helm chart
+#       - remove configmap reference: postgres-on-update-script
+#       - Remove related logic
+# ETA: OpenCRVS v2.0
+# Related PR: https://github.com/opencrvs/opencrvs-countryconfig/pull/1184
+# Related Issue: https://github.com/opencrvs/opencrvs-core/issues/11192
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -14,10 +21,25 @@ spec:
       labels:
         app: postgres-on-update-analytics
     spec:
+      initContainers:
+        - name: copy-assets
+          image: "{{ .Values.countryconfig.image.name }}:{{ .Values.countryconfig.image.tag }}-assets"
+          command:
+            - sh
+            - -c
+            - >
+              [[ -d /assets/postgres/ ]] && cp -R /assets/postgres/* /data-assets/ ||
+              cp -LR /scripts/* /data-assets/;
+              chmod +x /data-assets/*.sh || true
+          volumeMounts:
+            - name: assets
+              mountPath: /data-assets
+            # TODO: See comment at the top of this file
+            - mountPath: /scripts
+              name: postgres-on-update-script
       containers:
         - name: postgres-on-update-analytics
-          command: ["bash", "-c", "/scripts/setup-analytics.sh"]
-          # command: ["bash", "-c", "/scripts/on-deploy.sh;"]
+          command: ["bash", "-c", "/data-assets/setup-analytics.sh"]
           image: postgres:17
           env:
             - name: POSTGRES_HOST
@@ -73,11 +95,14 @@ spec:
                   key: EVENTS_ANALYTICS_POSTGRES_PASSWORD
           {{- include "render-env-vars" (dict "service_name" "postgres_on_deploy" "Values" .Values) }}
           volumeMounts:
-            - mountPath: /scripts
-              name: postgres-on-update-script
+            - name: assets
+              mountPath: /data-assets
       volumes:
+        # TODO: See comment at the top of this file
         - name: postgres-on-update-script
           configMap:
             name: postgres-on-update-script
             defaultMode: 0755
+        - name: assets
+          emptyDir: {}
       restartPolicy: "OnFailure"

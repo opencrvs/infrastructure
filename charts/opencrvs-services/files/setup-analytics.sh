@@ -12,6 +12,9 @@ set -euo pipefail
 
 TARGET_DB=${TARGET_DB//-/_}
 
+echo "This script will become deprecated in v2.0"
+echo "Check Related Issue: https://github.com/opencrvs/opencrvs-core/issues/11192"
+
 echo "Waiting for PostgreSQL to be ready at ${POSTGRES_HOST}:${POSTGRES_PORT}..."
 until PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" \
   -U "$POSTGRES_USER" -d postgres -c '\q' 2>/dev/null; do
