@@ -28,9 +28,8 @@ spec:
             - sh
             - -c
             - >
-              [[ -d /assets/postgres/ ]] && cp -R /assets/postgres/* /data-assets/ ||
-              cp -R /scripts/* /data-assets/;
-              chmod +x /data-assets/*.sh || true
+              [[ -d /assets/postgres/ ]] && cp -Rv /assets/postgres/* /data-assets/ ||
+              cp -Rv /scripts/* /data-assets/;
           volumeMounts:
             - name: assets
               mountPath: /data-assets
@@ -39,7 +38,8 @@ spec:
               name: postgres-on-update-script
       containers:
         - name: postgres-on-update-analytics
-          command: ["bash", "-c", "/data-assets/setup-analytics.sh"]
+          # command: ["bash", "-c", "/data-assets/setup-analytics.sh"]
+          command: ["sleep", "3600"]
           image: postgres:17
           env:
             - name: POSTGRES_HOST
