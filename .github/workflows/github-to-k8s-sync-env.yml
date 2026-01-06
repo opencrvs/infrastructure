@@ -49,16 +49,17 @@ jobs:
 
   get-restore-encryption-key:
     needs: get-restore-env-name
+    environment: ${{ inputs.environment }}
     if: needs.get-restore-env-name.outputs.restore_env_name
     name: Get production backup encryption key
     uses: ./.github/workflows/get-secret-from-environment.yml
     with:
       secret_name: 'BACKUP_ENCRYPTION_PASSPHRASE'
-      env_name: ${{ needs.get-restore-env-name.outputs.restore_env_name}}
+      env_name: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
     secrets:
       gh_token: ${{ secrets.GH_TOKEN }}
       encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
-    #   BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+      BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
 
 
   sync-env:
