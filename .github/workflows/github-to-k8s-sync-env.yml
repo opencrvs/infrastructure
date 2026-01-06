@@ -51,7 +51,7 @@ jobs:
     if: needs.get-restore-env-name.outputs.restore_env_name
     name: Get secrets for restore environment ${{ needs.get-restore-env-name.outputs.restore_env_name}}
     runs-on: ubuntu-24.04
-    environment: ${{ vars.RESTORE_ENVIRONMENT_NAME }}
+    environment: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
     outputs:
       BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
     steps:
