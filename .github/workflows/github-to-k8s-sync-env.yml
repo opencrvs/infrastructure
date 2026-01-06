@@ -55,8 +55,8 @@ jobs:
     with:
       secret_name: 'BACKUP_ENCRYPTION_PASSPHRASE'
       env_name: ${{ needs.get-restore-env-name.outputs.restore_env_name}}
-    # secrets:
-    #   gh_token: ${{ secrets.GH_TOKEN }}
+    secrets:
+      gh_token: ${{ secrets.GH_TOKEN }}
     #   encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
     #   BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
 
