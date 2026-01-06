@@ -51,6 +51,18 @@ jobs:
           echo "restore-env-name=${{ vars.RESTORE_ENVIRONMENT_NAME }}" >> $GITHUB_OUTPUT
           fi
           echo "restore-env-name=${{ vars.RESTORE_ENVIRONMENT_NAME }}"
+  get-secrets:
+    needs: get-restore-env-name
+    if: needs.get-restore-env-name.outputs.restore_env_name != 'false'
+    name: Get secrets for restore environment
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
+    steps:
+      - name: Fetch secrets for restore environment
+        run: |
+          echo "Fetching secrets for environment: ${{ needs.get-restore-env-name.outputs.restore_env_name }} ${{toJSON(secrets)}}}}"
+
+          # Add commands here to fetch and store secrets as needed
   # get-backup-user:
   #   name: Get backup user
   #   uses: ./.github/workflows/get-secret-from-environment.yml
