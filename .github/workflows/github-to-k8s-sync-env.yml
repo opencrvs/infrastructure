@@ -7,16 +7,15 @@ on:
       environment:
         description: "Target environment"
         required: true
-        default: "development"
+        default: "staging"
         type: choice
         options:
-          - demo1
           - production
           - staging
       restore_environment:
         description: "Restore environment name"
         required: false
-        default: "false"
+        default: "production"
         type: string
       namespace_template:
         description: "Secrets mapping template"
@@ -38,6 +37,20 @@ on:
         default: "false"
 
 jobs:
+  get-restore-env-name:
+    name: Determine restore environment name
+    outputs:
+      restore_env_name: ${{ steps.set-restore-env.outputs.restore-env-name }}
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Set restore environment name
+        id: set-restore-env
+        run: |
+          if [ "${{ vars.RESTORE_ENVIRONMENT_NAME }}" = "false" ] || [ -z "${{ inputs.restore_environment }}" ]; then
+          echo "restore-env-name=${{ inputs.environment }}" >> $GITHUB_OUTPUT
+          fi
+          echo "restore-env-name=${{ inputs.environment }}"
   # get-backup-user:
   #   name: Get backup user
   #   uses: ./.github/workflows/get-secret-from-environment.yml
