@@ -97,6 +97,7 @@ jobs:
       BACKUP_SERVER_USER: ${{ secrets.BACKUP_SERVER_USER }}
   sync-env:
     needs:
+      - get-restore-env-name
       - get-restore-ssh-key
       - get-restore-host
       - get-restore-ssh-user
@@ -127,6 +128,7 @@ jobs:
             echo env_file=$ENV_FILE >> $GITHUB_ENV
             cat $ENV_FILE | cut -d\= -f1
       - name: Save restore (backup source) environment secrets
+        if: needs.get-restore-env-name.outputs.restore_env_name
         run: |
           RESTORE_ENCRYPTION_PASSPHRASE=$(echo "${{ needs.get-restore-encryption-key.outputs.secret_value }}" | base64 --decode | \
           openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
