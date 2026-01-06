@@ -71,7 +71,30 @@ jobs:
       gh_token: ${{ secrets.GH_TOKEN }}
       encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
       BACKUP_HOST_PRIVATE_KEY: ${{ secrets.BACKUP_HOST_PRIVATE_KEY }}
-
+  get-restore-host:
+    needs: get-restore-env-name
+    if: needs.get-restore-env-name.outputs.restore_env_name
+    name: Get backup server host
+    uses: ./.github/workflows/get-secret-from-environment.yml
+    with:
+      secret_name: 'BACKUP_HOST'
+      env_name: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
+    secrets:
+      gh_token: ${{ secrets.GH_TOKEN }}
+      encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
+      BACKUP_HOST: ${{ secrets.BACKUP_HOST }}
+  get-restore-ssh-user:
+    needs: get-restore-env-name
+    if: needs.get-restore-env-name.outputs.restore_env_name
+    name: Get backup server ssh user
+    uses: ./.github/workflows/get-secret-from-environment.yml
+    with:
+      secret_name: 'BACKUP_SERVER_USER'
+      env_name: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
+    secrets:
+      gh_token: ${{ secrets.GH_TOKEN }}
+      encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
+      BACKUP_SERVER_USER: ${{ secrets.BACKUP_SERVER_USER }}
   sync-env:
     needs:
       - get-restore-encryption-key
@@ -104,10 +127,20 @@ jobs:
         run: |
           RESTORE_ENCRYPTION_PASSPHRASE=$(echo "${{ needs.get-restore-encryption-key.outputs.secret_value }}" | base64 --decode | \
           openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
+          
+          BACKUP_HOST=$(echo "${{ needs.get-restore-host.outputs.secret_value }}" | base64 --decode | \
+          openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
+
           BACKUP_HOST_PRIVATE_KEY=$(echo "${{ needs.get-restore-ssh-key.outputs.secret_value }}" | base64 --decode | \
           openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
+
+          BACKUP_SERVER_USER=$(echo "${{ needs.get-restore-ssh-user.outputs.secret_value }}" | base64 --decode | \
+          openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
+
           echo RESTORE_ENCRYPTION_PASSPHRASE=$RESTORE_ENCRYPTION_PASSPHRASE >> $env_file
+          echo BACKUP_HOST=$BACKUP_HOST >> $env_file
           echo BACKUP_HOST_PRIVATE_KEY=$BACKUP_HOST_PRIVATE_KEY >> $env_file
+          echo BACKUP_SERVER_USER=$BACKUP_SERVER_USER >> $env_file
           grep RESTORE_ENCRYPTION_PASSPHRASE $env_file || echo "No restore encryption passphrase to add"
 
       - name: Preprocess mapping into Secret YAMLs
