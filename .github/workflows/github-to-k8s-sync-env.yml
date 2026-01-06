@@ -47,10 +47,11 @@ jobs:
       - name: Set restore environment name
         id: set-restore-env
         run: |
-          if [ "${{ vars.RESTORE_ENVIRONMENT_NAME }}" = "false" ]; then
+          if [ "${{ vars.RESTORE_ENVIRONMENT_NAME }}" != "false" ]; then
+          echo "restore-env-name=${{ vars.RESTORE_ENVIRONMENT_NAME }}"
           echo "restore-env-name=${{ vars.RESTORE_ENVIRONMENT_NAME }}" >> $GITHUB_OUTPUT
           fi
-          echo "restore-env-name=${{ vars.RESTORE_ENVIRONMENT_NAME }}"
+          
   get-secrets:
     needs: get-restore-env-name
     if: needs.get-restore-env-name.outputs.restore_env_name != 'false'
