@@ -44,7 +44,7 @@ jobs:
           echo "restore-env-name=${{ vars.RESTORE_ENVIRONMENT_NAME }}" >> $GITHUB_OUTPUT
           fi
       - name: "Env name: ${{ steps.set-restore-env.outputs.restore-env-name }}"
-        environement: ${{ steps.set-restore-env.outputs.restore-env-name }}
+        environment: ${{ steps.set-restore-env.outputs.restore-env-name }}
         run: |
           echo "Determined restore environment name: ${{ steps.set-restore-env.outputs.restore-env-name }}"
   get-secrets:
