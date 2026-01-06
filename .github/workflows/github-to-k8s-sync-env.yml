@@ -28,8 +28,9 @@ on:
         type: string
         default: opencrvs
 
+environment: ${{ inputs.environment }}
+
 jobs:
-  environment: ${{ inputs.environment }}
   get-restore-env-name:
     name: Determine restore environment name
     outputs:
