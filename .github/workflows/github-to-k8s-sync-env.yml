@@ -61,7 +61,7 @@ jobs:
       - name: Fetch secrets for restore environment
         run: |
           echo "Fetching secrets for environment: ${{ needs.get-restore-env-name.outputs.restore_env_name }} ${{toJSON(secrets)}}}}"
-
+          echo "${{ toJSON(vars) }}"
           # Add commands here to fetch and store secrets as needed
   # get-backup-user:
   #   name: Get backup user
