@@ -97,6 +97,9 @@ jobs:
       BACKUP_SERVER_USER: ${{ secrets.BACKUP_SERVER_USER }}
   sync-env:
     needs:
+      - get-restore-ssh-key
+      - get-restore-host
+      - get-restore-ssh-user
       - get-restore-encryption-key
     name: Sync GitHub env to Kubernetes
     environment: ${{ inputs.environment }}
