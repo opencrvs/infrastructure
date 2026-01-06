@@ -53,11 +53,12 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
     outputs:
-      BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+      BACKUP_ENCRYPTION_PASSPHRASE: ${{ steps.fetch-secrets.outputs.BACKUP_ENCRYPTION_PASSPHRASE }}
     steps:
       - name: Fetch secrets for restore environment
+        id: fetch-secrets
         run: |
-          echo "Fetching secrets for environment: ${{ needs.get-restore-env-name.outputs.restore_env_name }} ${{toJSON(secrets)}}}}"
+          echo "BACKUP_ENCRYPTION_PASSPHRASE=${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}" >> $GITHUB_OUTPUT
           echo "${{ toJSON(vars) }}"
           # Add commands here to fetch and store secrets as needed
 
