@@ -30,7 +30,6 @@ on:
 
 jobs:
   get-restore-env-name:
-    if: ${{ inputs.namespace_template == 'opencrvs-deps' }}
     name: Get restore environment name
     outputs:
       restore_env_name: ${{ steps.set-restore-env.outputs.restore-env-name }}
