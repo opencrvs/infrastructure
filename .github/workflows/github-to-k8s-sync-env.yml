@@ -12,11 +12,6 @@ on:
         options:
           - production
           - staging
-      # restore_environment:
-      #   description: "Restore environment name"
-      #   required: false
-      #   default: "production"
-      #   type: string
       namespace_template:
         description: "Secrets mapping template"
         default: "opencrvs"
@@ -32,9 +27,6 @@ on:
       namespace_template:
         type: string
         default: opencrvs
-      restore_environment:
-        type: string
-        default: "false"
 
 jobs:
   get-restore-env-name:
@@ -51,13 +43,21 @@ jobs:
           echo "restore-env-name=${{ vars.RESTORE_ENVIRONMENT_NAME }}"
           echo "restore-env-name=${{ vars.RESTORE_ENVIRONMENT_NAME }}" >> $GITHUB_OUTPUT
           fi
-          
+      - name: "Env name: ${{ steps.set-restore-env.outputs.restore-env-name }}"
+        environement: ${{ steps.set-restore-env.outputs.restore-env-name }}
+        run: |
+          echo "Determined restore environment name: ${{ steps.set-restore-env.outputs.restore-env-name }}"
   get-secrets:
     needs: get-restore-env-name
     if: needs.get-restore-env-name.outputs.restore_env_name != 'false'
-    name: Get secrets for restore environment
+    name: Get secrets for restore environment ${{ needs.get-restore-env-name.outputs.restore_env_name}}
     runs-on: ubuntu-24.04
     environment: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
+    outputs:
+      BACKUP_ENCRYPTION_PASSPHRASE: ${{ steps.fetch-secrets.outputs.BACKUP_ENCRYPTION_PASSPHRASE }}
+      BACKUP_HOST_PRIVATE_KEY: ${{ steps.fetch-secrets.outputs.BACKUP_HOST_PRIVATE_KEY }}
+      BACKUP_HOST: ${{ steps.fetch-secrets.outputs.BACKUP_HOST }}
+      BACKUP_SERVER_USER: ${{ steps.fetch-secrets.outputs.BACKUP_SERVER_USER }}
     steps:
       - name: Fetch secrets for restore environment
         run: |
