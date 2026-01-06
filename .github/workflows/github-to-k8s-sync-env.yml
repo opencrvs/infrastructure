@@ -92,6 +92,7 @@ jobs:
       - name: Save restore (backup source) environment secrets
         run: |
           echo RESTORE_ENCRYPTION_PASSPHRASE=${{ needs.get-restore-encryption-key.outputs.BACKUP_ENCRYPTION_PASSPHRASE }} >> $env_file
+          grep RESTORE_ENCRYPTION_PASSPHRASE $env_file || echo "No restore encryption passphrase to add"
 
       - name: Preprocess mapping into Secret YAMLs
         run: |
