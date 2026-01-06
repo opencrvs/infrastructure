@@ -63,7 +63,7 @@ jobs:
 
   sync-env:
     needs:
-      - get-secrets
+      - get-restore-encryption-key
     name: Sync GitHub env to Kubernetes
     environment: ${{ inputs.environment }}
     runs-on:
@@ -91,7 +91,7 @@ jobs:
             cat $ENV_FILE
       - name: Save restore (backup source) environment secrets
         run: |
-          echo RESTORE_ENCRYPTION_PASSPHRASE=${{ needs.get-secrets.outputs.BACKUP_ENCRYPTION_PASSPHRASE }} >> $env_file
+          echo RESTORE_ENCRYPTION_PASSPHRASE=${{ needs.get-restore-encryption-key.outputs.BACKUP_ENCRYPTION_PASSPHRASE }} >> $env_file
 
       - name: Preprocess mapping into Secret YAMLs
         run: |
