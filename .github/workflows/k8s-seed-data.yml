@@ -85,7 +85,7 @@ jobs:
           - elasticsearch-reindex
     steps:
         - name: Download helm release values file into /tmp/opencrvs-${{ inputs.environment }}.json
-          uses: actions/download-artifact@v5
+          uses: actions/download-artifact@v7
           with:
             name: opencrvs-${{ inputs.environment }}-values-file
             path: /tmp
