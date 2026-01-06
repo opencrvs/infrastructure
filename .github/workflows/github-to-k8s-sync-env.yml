@@ -54,9 +54,6 @@ jobs:
     environment: ${{ vars.RESTORE_ENVIRONMENT_NAME }}
     outputs:
       BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
-      BACKUP_HOST_PRIVATE_KEY: ${{ secrets.BACKUP_HOST_PRIVATE_KEY }}
-      BACKUP_HOST: ${{ secrets.BACKUP_HOST }}
-      BACKUP_SERVER_USER: ${{ secrets.BACKUP_SERVER_USER }}
     steps:
       - name: Fetch secrets for restore environment
         run: |
@@ -92,21 +89,9 @@ jobs:
 
             echo env_file=$ENV_FILE >> $GITHUB_ENV
             cat $ENV_FILE
-      # - name: Save secrets
-      #   if: needs.get-backup-user.outputs.environment_exists == 'true'
-      #   run: |
-      #     echo "${{ needs.get-backup-user.outputs.secret_value }}" | base64 --decode | \
-      #     openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" -out /tmp/backup_user
-      #     echo "${{ needs.get-backup-host.outputs.secret_value }}" | base64 --decode | \
-      #     openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" -out /tmp/backup_host
-      #     echo "${{ needs.get-backup-encryption-key.outputs.secret_value }}" | base64 --decode | \
-      #     openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" -out /tmp/backup_encryption_key
-      #     echo "${{ needs.get-backup-ssh-key.outputs.secret_value }}" | base64 --decode | \
-      #     openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" -out /tmp/backup_ssh_key
-      #     echo BACKUP_USER=$(cat /tmp/backup_user | base64) >> $env_file
-      #     echo BACKUP_HOST=$(cat /tmp/backup_host | base64) >> $env_file
-      #     echo BACKUP_ENCRYPTION_PASSPHRASE=$(cat /tmp/backup_encryption_key | base64) >> $env_file
-      #     echo BACKUP_HOST_PRIVATE_KEY=$(cat /tmp/backup_ssh_key | base64) >> $env_file
+      - name: Save restore (backup source) environment secrets
+        run: |
+          echo RESTORE_ENCRYPTION_PASSPHRASE=${{ needs.get-secrets.outputs.BACKUP_ENCRYPTION_PASSPHRASE }} >> $env_file
 
       - name: Preprocess mapping into Secret YAMLs
         run: |
