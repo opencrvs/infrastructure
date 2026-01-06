@@ -46,21 +46,20 @@ jobs:
       - name: "Env name: ${{ steps.set-restore-env.outputs.restore-env-name }}"
         run: |
           echo "Determined restore environment name: ${{ steps.set-restore-env.outputs.restore-env-name }}"
-  get-secrets:
+
+  get-restore-encryption-key:
     needs: get-restore-env-name
     if: needs.get-restore-env-name.outputs.restore_env_name
-    name: Get secrets for restore environment ${{ needs.get-restore-env-name.outputs.restore_env_name}}
-    runs-on: ubuntu-24.04
-    environment: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
-    outputs:
-      BACKUP_ENCRYPTION_PASSPHRASE: ${{ steps.fetch-secrets.outputs.BACKUP_ENCRYPTION_PASSPHRASE }}
-    steps:
-      - name: Fetch secrets for restore environment
-        id: fetch-secrets
-        run: |
-          echo "BACKUP_ENCRYPTION_PASSPHRASE=${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}" >> $GITHUB_OUTPUT
-          echo "${{ toJSON(vars) }}"
-          # Add commands here to fetch and store secrets as needed
+    name: Get production backup encryption key
+    uses: ./.github/workflows/get-secret-from-environment.yml
+    with:
+      secret_name: 'BACKUP_ENCRYPTION_PASSPHRASE'
+      env_name: ${{ needs.get-restore-env-name.outputs.restore_env_name}}
+    # secrets:
+    #   gh_token: ${{ secrets.GH_TOKEN }}
+    #   encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
+    #   BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+
 
   sync-env:
     needs:
