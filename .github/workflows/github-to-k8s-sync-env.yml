@@ -114,7 +114,7 @@ jobs:
       # to store GitHub Secrets and Variables (base64 encoded)
       # Making those values base64 encoded allows us to avoid further complex escaping issues
       # with special characters and multiline values when generating Kubernetes Secret manifests
-      - name: Export all secrets and environment variables
+      - name: Export all secrets and environment variables from GitHub
         run: |
             ENV_FILE=$(mktemp)
             jq -n -r '
