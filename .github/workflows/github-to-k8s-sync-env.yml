@@ -88,13 +88,12 @@ jobs:
             ' > $ENV_FILE
 
             echo env_file=$ENV_FILE >> $GITHUB_ENV
-            cat $ENV_FILE
+            cat $ENV_FILE | cut -d\= -f1
       - name: Save restore (backup source) environment secrets
         run: |
-          echo "${{ needs.get-restore-encryption-key.outputs.secret_value }}" | base64 --decode | \
-          openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" -out /tmp/encryption_key
-          echo RESTORE_ENCRYPTION_PASSPHRASE=$(< /tmp/encryption_key) >> $env_file
-          rm /tmp/encryption_key
+          RESTORE_ENCRYPTION_PASSPHRASE=$(echo "${{ needs.get-restore-encryption-key.outputs.secret_value }}" | base64 --decode | \
+          openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
+          echo RESTORE_ENCRYPTION_PASSPHRASE=$RESTORE_ENCRYPTION_PASSPHRASE >> $env_file
           grep RESTORE_ENCRYPTION_PASSPHRASE $env_file || echo "No restore encryption passphrase to add"
 
       - name: Preprocess mapping into Secret YAMLs
