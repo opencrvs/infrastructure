@@ -29,6 +29,7 @@ on:
         default: opencrvs
 
 jobs:
+  environment: ${{ inputs.environment }}
   get-restore-env-name:
     name: Determine restore environment name
     outputs:
@@ -44,7 +45,6 @@ jobs:
           echo "restore-env-name=${{ vars.RESTORE_ENVIRONMENT_NAME }}" >> $GITHUB_OUTPUT
           fi
       - name: "Env name: ${{ steps.set-restore-env.outputs.restore-env-name }}"
-        environment: ${{ steps.set-restore-env.outputs.restore-env-name }}
         run: |
           echo "Determined restore environment name: ${{ steps.set-restore-env.outputs.restore-env-name }}"
   get-secrets:
@@ -52,7 +52,7 @@ jobs:
     if: needs.get-restore-env-name.outputs.restore_env_name != 'false'
     name: Get secrets for restore environment ${{ needs.get-restore-env-name.outputs.restore_env_name}}
     runs-on: ubuntu-24.04
-    environment: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
+    environment: ${{ vars.RESTORE_ENVIRONMENT_NAME }}
     outputs:
       BACKUP_ENCRYPTION_PASSPHRASE: ${{ steps.fetch-secrets.outputs.BACKUP_ENCRYPTION_PASSPHRASE }}
       BACKUP_HOST_PRIVATE_KEY: ${{ steps.fetch-secrets.outputs.BACKUP_HOST_PRIVATE_KEY }}
