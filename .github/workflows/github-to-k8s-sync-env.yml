@@ -48,9 +48,9 @@ jobs:
         id: set-restore-env
         run: |
           if [ "${{ vars.RESTORE_ENVIRONMENT_NAME }}" = "false" ] || [ -z "${{ inputs.restore_environment }}" ]; then
-          echo "restore-env-name=${{ inputs.environment }}" >> $GITHUB_OUTPUT
+          echo "restore-env-name=${{ vars.RESTORE_ENVIRONMENT_NAME }}" >> $GITHUB_OUTPUT
           fi
-          echo "restore-env-name=${{ inputs.environment }}"
+          echo "restore-env-name=${{ vars.RESTORE_ENVIRONMENT_NAME }}"
   # get-backup-user:
   #   name: Get backup user
   #   uses: ./.github/workflows/get-secret-from-environment.yml
