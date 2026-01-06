@@ -12,11 +12,11 @@ on:
         options:
           - production
           - staging
-      restore_environment:
-        description: "Restore environment name"
-        required: false
-        default: "production"
-        type: string
+      # restore_environment:
+      #   description: "Restore environment name"
+      #   required: false
+      #   default: "production"
+      #   type: string
       namespace_template:
         description: "Secrets mapping template"
         default: "opencrvs"
@@ -47,7 +47,7 @@ jobs:
       - name: Set restore environment name
         id: set-restore-env
         run: |
-          if [ "${{ vars.RESTORE_ENVIRONMENT_NAME }}" = "false" ] || [ -z "${{ inputs.restore_environment }}" ]; then
+          if [ "${{ vars.RESTORE_ENVIRONMENT_NAME }}" = "false" ]; then
           echo "restore-env-name=${{ vars.RESTORE_ENVIRONMENT_NAME }}" >> $GITHUB_OUTPUT
           fi
           echo "restore-env-name=${{ vars.RESTORE_ENVIRONMENT_NAME }}"
