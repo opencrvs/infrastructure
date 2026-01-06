@@ -49,7 +49,6 @@ jobs:
 
   get-restore-encryption-key:
     needs: get-restore-env-name
-    environment: ${{ inputs.environment }}
     if: needs.get-restore-env-name.outputs.restore_env_name
     name: Get production backup encryption key
     uses: ./.github/workflows/get-secret-from-environment.yml
