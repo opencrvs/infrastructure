@@ -38,52 +38,52 @@ on:
         default: "false"
 
 jobs:
-  get-backup-user:
-    name: Get backup user
-    uses: ./.github/workflows/get-secret-from-environment.yml
-    with:
-      secret_name: 'BACKUP_SERVER_USER'
-      env_name: ${{ inputs.restore_environment }}
-    secrets:
-      gh_token: ${{ secrets.GH_TOKEN }}
-      encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
+  # get-backup-user:
+  #   name: Get backup user
+  #   uses: ./.github/workflows/get-secret-from-environment.yml
+  #   with:
+  #     secret_name: 'BACKUP_SERVER_USER'
+  #     env_name: ${{ inputs.restore_environment }}
+  #   secrets:
+  #     gh_token: ${{ secrets.GH_TOKEN }}
+  #     encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
 
-  get-backup-host:
-    name: Get backup host
-    uses: ./.github/workflows/get-secret-from-environment.yml
-    with:
-      secret_name: 'BACKUP_HOST'
-      env_name: ${{ inputs.restore_environment }}
-    secrets:
-      gh_token: ${{ secrets.GH_TOKEN }}
-      encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
+  # get-backup-host:
+  #   name: Get backup host
+  #   uses: ./.github/workflows/get-secret-from-environment.yml
+  #   with:
+  #     secret_name: 'BACKUP_HOST'
+  #     env_name: ${{ inputs.restore_environment }}
+  #   secrets:
+  #     gh_token: ${{ secrets.GH_TOKEN }}
+  #     encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
 
-  get-backup-ssh-key:
-    name: Get backup SSH key
-    uses: ./.github/workflows/get-secret-from-environment.yml
-    with:
-      secret_name: 'BACKUP_HOST_PRIVATE_KEY'
-      env_name: ${{ inputs.restore_environment }}
-    secrets:
-      gh_token: ${{ secrets.GH_TOKEN }}
-      encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
+  # get-backup-ssh-key:
+  #   name: Get backup SSH key
+  #   uses: ./.github/workflows/get-secret-from-environment.yml
+  #   with:
+  #     secret_name: 'BACKUP_HOST_PRIVATE_KEY'
+  #     env_name: ${{ inputs.restore_environment }}
+  #   secrets:
+  #     gh_token: ${{ secrets.GH_TOKEN }}
+  #     encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
 
-  get-backup-encryption-key:
-    name: Get backup encryption key
-    uses: ./.github/workflows/get-secret-from-environment.yml
-    with:
-      secret_name: 'BACKUP_ENCRYPTION_PASSPHRASE'
-      env_name: ${{ inputs.restore_environment }}
-    secrets:
-      gh_token: ${{ secrets.GH_TOKEN }}
-      encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
+  # get-backup-encryption-key:
+  #   name: Get backup encryption key
+  #   uses: ./.github/workflows/get-secret-from-environment.yml
+  #   with:
+  #     secret_name: 'BACKUP_ENCRYPTION_PASSPHRASE'
+  #     env_name: ${{ inputs.restore_environment }}
+  #   secrets:
+  #     gh_token: ${{ secrets.GH_TOKEN }}
+  #     encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
 
   sync-env:
-    needs:
-      - get-backup-user
-      - get-backup-host
-      - get-backup-encryption-key
-      - get-backup-ssh-key
+    # needs:
+    #   - get-backup-user
+    #   - get-backup-host
+    #   - get-backup-encryption-key
+    #   - get-backup-ssh-key
     name: Sync GitHub env to Kubernetes
     environment: ${{ inputs.environment }}
     runs-on:
@@ -109,21 +109,21 @@ jobs:
 
             echo env_file=$ENV_FILE >> $GITHUB_ENV
             cat $ENV_FILE
-      - name: Save secrets
-        if: needs.get-backup-user.outputs.environment_exists == 'true'
-        run: |
-          echo "${{ needs.get-backup-user.outputs.secret_value }}" | base64 --decode | \
-          openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" -out /tmp/backup_user
-          echo "${{ needs.get-backup-host.outputs.secret_value }}" | base64 --decode | \
-          openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" -out /tmp/backup_host
-          echo "${{ needs.get-backup-encryption-key.outputs.secret_value }}" | base64 --decode | \
-          openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" -out /tmp/backup_encryption_key
-          echo "${{ needs.get-backup-ssh-key.outputs.secret_value }}" | base64 --decode | \
-          openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" -out /tmp/backup_ssh_key
-          echo BACKUP_USER=$(cat /tmp/backup_user | base64) >> $env_file
-          echo BACKUP_HOST=$(cat /tmp/backup_host | base64) >> $env_file
-          echo BACKUP_ENCRYPTION_PASSPHRASE=$(cat /tmp/backup_encryption_key | base64) >> $env_file
-          echo BACKUP_HOST_PRIVATE_KEY=$(cat /tmp/backup_ssh_key | base64) >> $env_file
+      # - name: Save secrets
+      #   if: needs.get-backup-user.outputs.environment_exists == 'true'
+      #   run: |
+      #     echo "${{ needs.get-backup-user.outputs.secret_value }}" | base64 --decode | \
+      #     openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" -out /tmp/backup_user
+      #     echo "${{ needs.get-backup-host.outputs.secret_value }}" | base64 --decode | \
+      #     openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" -out /tmp/backup_host
+      #     echo "${{ needs.get-backup-encryption-key.outputs.secret_value }}" | base64 --decode | \
+      #     openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" -out /tmp/backup_encryption_key
+      #     echo "${{ needs.get-backup-ssh-key.outputs.secret_value }}" | base64 --decode | \
+      #     openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" -out /tmp/backup_ssh_key
+      #     echo BACKUP_USER=$(cat /tmp/backup_user | base64) >> $env_file
+      #     echo BACKUP_HOST=$(cat /tmp/backup_host | base64) >> $env_file
+      #     echo BACKUP_ENCRYPTION_PASSPHRASE=$(cat /tmp/backup_encryption_key | base64) >> $env_file
+      #     echo BACKUP_HOST_PRIVATE_KEY=$(cat /tmp/backup_ssh_key | base64) >> $env_file
 
       - name: Preprocess mapping into Secret YAMLs
         run: |
