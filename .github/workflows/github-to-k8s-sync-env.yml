@@ -10,6 +10,7 @@ on:
         default: "staging"
         type: choice
         options:
+          - demo1
           - production
           - staging
       namespace_template:
