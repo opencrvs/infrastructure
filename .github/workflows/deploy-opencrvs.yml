@@ -58,7 +58,6 @@ jobs:
     uses: ./.github/workflows/github-to-k8s-sync-env.yml
     with:
       environment: ${{ inputs.environment }}
-      restore_environment: ${{ vars.RESTORE_ENVIRONMENT_NAME || 'false' }}
     secrets: inherit
   deploy:
     needs: github-to-k8s-sync-env
