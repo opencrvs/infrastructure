@@ -373,6 +373,16 @@ helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
             <th>Properties listed below can be defined particularly to specific service</th>
         </tr>
         <tr>
+            <td>login.nginx_conf_d_configmaps</td>
+            <td>{}</td>
+            <td>List of Configmap names to store custom configuration. Check <code>values.yaml</code> for more details.</td>
+        </tr>
+        <tr>
+            <td>client.nginx_conf_d_configmaps</td>
+            <td>{}</td>
+            <td> login is an nginx docker image. see description for <code>login.nginx_conf_d_configmaps</code></td>
+        </tr>
+        <tr>
             <td>data_seed.enabled</td>
             <td>true</td>
             <td>Seed data as post-install step which is executed only once while `helm install`. **Note**: default username and password is used for data seeding. **If you need to seed data again, use one-time jobs instead.</td>
