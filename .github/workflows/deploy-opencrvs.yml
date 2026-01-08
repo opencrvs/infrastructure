@@ -116,7 +116,7 @@ jobs:
       - name: Deploy with Helm
         id: deploy
         run: |
-          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services:0.1.24 \
+          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services:0.1.27 \
             --timeout 15m \
             --namespace "opencrvs-${ENV}" \
             -f environments/${ENV}/opencrvs-services/values.yaml \
@@ -128,6 +128,7 @@ jobs:
             --set image.tag="$CORE_IMAGE_TAG" \
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set countryconfig.image.name="$COUNTRYCONFIG_IMAGE_NAME" \
+            --set data_seed.env.ACTIVATE_USERS="${{ vars.ACTIVATE_USERS || 'false' }}" \
             --set hostname=${{ vars.DOMAIN }} 2>&1 | sed '/USER-SUPPLIED VALUES:/,$d'; exit ${PIPESTATUS[0]};
       - name: Cleanup Helm Locks
         if: failure() || cancelled()

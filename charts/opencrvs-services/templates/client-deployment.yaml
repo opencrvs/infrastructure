@@ -71,7 +71,23 @@ spec:
           ports:
             - containerPort: {{ .Values.client.port }}
               protocol: TCP
+          {{- if .Values.client.nginx_conf_d_configmaps }}
+          volumeMounts:
+          {{- range $config_name := .Values.client.nginx_conf_d_configmaps }}
+            - name: {{ $config_name }}
+              mountPath: /etc/nginx/conf.d/{{ $config_name }}.conf
+              subPath: "{{ $config_name }}.conf"
+          {{- end }}
+          {{- end }}
       restartPolicy: Always
+      {{- if .Values.client.nginx_conf_d_configmaps }}
+      volumes:
+      {{- range $config_name := .Values.client.nginx_conf_d_configmaps }}
+        - name: {{ $config_name }}
+          configMap:
+            name: {{ $config_name }}
+      {{- end }}
+      {{- end }}
 
 {{- include "service-helper" (dict "service_name" "client" "Values" .Values) }}
 
