@@ -253,6 +253,8 @@ auth:
 
 client:
   port: 3000
+  # client is an nginx docker image
+  # nginx_conf_d_configmaps: see description for login.nginx_conf_d_configmaps section
   probes:
     liveness:
       # /manifest.json is external countryconfig url proxied by nginx on countryconfig
@@ -308,6 +310,25 @@ gateway:
 
 login:
   port: 3020
+  # login is an nginx docker image
+  # nginx_conf_d_configmaps: 
+  #     List of Configmap names to store custom configuration:
+  #     - each configmap must contain one configuration file
+  #     - configuration file name must match with configmap name
+  #     - each configmap is mounted inside /etc/nginx/conf.d.
+  # Example:
+  # nginx_conf_d_configmaps:
+  #   - login-nginx-headers
+  #   - login-nginx-auth
+  # Mounted files:
+  # ls -1 /etc/nginx/conf.d
+  # login-nginx-headers.conf
+  # login-nginx-auth.conf
+  # default.conf <- this file exists by default
+  # Example command to create configmap:
+  # kubectl create configmap login-nginx-login --from-file=foo.conf --from-file=login-nginx-login.conf
+  # login-nginx-login: is configmap name
+  # login-nginx-login.conf is file name. it should be same as configmap with .conf ending
   probes:
     liveness:
       httpGet:
