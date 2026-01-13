@@ -50,7 +50,7 @@ jobs:
 
   get-restore-encryption-key:
     needs: get-restore-env-name
-    # if: needs.get-restore-env-name.outputs.restore_env_name
+    if: needs.get-restore-env-name.outputs.restore_env_name
     name: Get backup encryption key
     uses: ./.github/workflows/get-secret-from-environment.yml
     with:
@@ -62,7 +62,7 @@ jobs:
       BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
   get-restore-ssh-key:
     needs: get-restore-env-name
-    # if: needs.get-restore-env-name.outputs.restore_env_name
+    if: needs.get-restore-env-name.outputs.restore_env_name
     name: Get backup ssh key
     uses: ./.github/workflows/get-secret-from-environment.yml
     with:
@@ -74,7 +74,7 @@ jobs:
       BACKUP_HOST_PRIVATE_KEY: ${{ secrets.BACKUP_HOST_PRIVATE_KEY }}
   get-restore-host:
     needs: get-restore-env-name
-    # if: needs.get-restore-env-name.outputs.restore_env_name
+    if: needs.get-restore-env-name.outputs.restore_env_name
     name: Get backup host
     uses: ./.github/workflows/get-secret-from-environment.yml
     with:
@@ -86,7 +86,7 @@ jobs:
       BACKUP_HOST: ${{ secrets.BACKUP_HOST }}
   get-restore-ssh-user:
     needs: get-restore-env-name
-    # if: needs.get-restore-env-name.outputs.restore_env_name
+    if: needs.get-restore-env-name.outputs.restore_env_name
     name: Get backup ssh user
     uses: ./.github/workflows/get-secret-from-environment.yml
     with:
@@ -97,6 +97,7 @@ jobs:
       encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
       BACKUP_SERVER_USER: ${{ secrets.BACKUP_SERVER_USER }}
   sync-env:
+    if: always()
     needs:
       - get-restore-env-name
       - get-restore-ssh-key
