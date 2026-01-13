@@ -502,7 +502,8 @@ ALL_QUESTIONS.push(
       )).configureRestore
       if (configureRestore) {
         const env_list_filtered = existingEnvironments.filter(env => env !== environment);
-        restoreEnvironmentName = (await prompts(
+        restoreEnvironmentName = (await promptAndStoreAnswer(
+          environment,
           [
             {
               name: 'restoreEnvironmentName',
@@ -517,7 +518,8 @@ ALL_QUESTIONS.push(
               validate: (input: string) => 
                 env_list_filtered.includes(input) ? true : 'Please select a valid environment.'
             }
-          ].map(questionToPrompt)
+          ],
+          existingValues
         )).restoreEnvironmentName
       }
     } else {
@@ -935,10 +937,19 @@ ALL_QUESTIONS.push(
         ),
         scope: 'ENVIRONMENT' as const
       },
-    ]
-
-    if (restoreEnvironmentName) {
-            applicationServerUpdates.push({
+      {
+        type: 'VARIABLE' as const,
+        name: 'LOGIN_URL',
+        value: allAnswers.restoreEnvironmentName,
+        didExist: findExistingValue(
+          'LOGIN_URL',
+          'VARIABLE',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        scope: 'ENVIRONMENT' as const
+      },
+      {
         type: 'VARIABLE' as const,
         name: 'RESTORE_ENVIRONMENT_NAME',
         value: answerOrExisting(restoreEnvironmentName, findExistingValue(
@@ -954,9 +965,29 @@ ALL_QUESTIONS.push(
           existingValues
         ),
         scope: 'ENVIRONMENT' as const
+      }
+    ]
+
+    // if (restoreEnvironmentName) {
+    //         applicationServerUpdates.push({
+    //     type: 'VARIABLE' as const,
+    //     name: 'RESTORE_ENVIRONMENT_NAME',
+    //     value: answerOrExisting(restoreEnvironmentName, findExistingValue(
+    //       'RESTORE_ENVIRONMENT_NAME',
+    //       'VARIABLE',
+    //       'ENVIRONMENT',
+    //       existingValues
+    //     ), (val) => val || ''),
+    //     didExist: findExistingValue(
+    //       'RESTORE_ENVIRONMENT_NAME',
+    //       'VARIABLE',
+    //       'ENVIRONMENT',
+    //       existingValues
+    //     ),
+    //     scope: 'ENVIRONMENT' as const
       
-      })
-    }
+    //   })
+    // }
     if (enableEncryption) {
       applicationServerUpdates.push({
         name: 'ENCRYPTION_KEY',

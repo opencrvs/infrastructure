@@ -7,7 +7,7 @@ const notEmpty = (value: string | number) =>
 
 export const environmentQuestions = [
     {
-        name: 'type',
+        name: 'environment_type',
         type: 'select' as const,
         scope: 'ENVIRONMENT' as const,
         message: 'Purpose for the environment?',

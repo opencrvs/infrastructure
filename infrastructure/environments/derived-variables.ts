@@ -149,7 +149,7 @@ export const derivedVariables = [
   {
     name: 'RESTORE_ENVIRONMENT_NAME',
     valueLabel: 'RESTORE_ENVIRONMENT_NAME',
-    valueType: 'SECRET',
+    valueType: 'VARIABLE',
     type: 'disabled',
     scope: 'ENVIRONMENT'
   },
