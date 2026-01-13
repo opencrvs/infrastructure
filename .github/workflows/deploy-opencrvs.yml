@@ -116,7 +116,7 @@ jobs:
       - name: Deploy with Helm
         id: deploy
         run: |
-          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
+          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services:0.1.24 \
             --timeout 15m \
             --namespace "opencrvs-${ENV}" \
             -f environments/${ENV}/opencrvs-services/values.yaml \
