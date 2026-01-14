@@ -25,6 +25,11 @@ spec:
               value: "http://gateway.{{ .Release.Namespace }}.svc.cluster.local:7070"
             - name: COUNTRY_CONFIG_HOST
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
+            - name: SUPER_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: SUPER_USER_PASSWORD
+                  name: opencrvs-superuser
           {{- if or (eq .Values.minio.auth_mode "auto") (eq .Values.minio.auth_mode "use_secret") }}
             - name: MINIO_ROOT_USER
               valueFrom:

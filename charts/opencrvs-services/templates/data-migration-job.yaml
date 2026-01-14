@@ -21,6 +21,11 @@ spec:
         - name: migration
           image: "ghcr.io/opencrvs/ocrvs-migration:{{ .Values.image.tag }}"
           env:
+            - name: SUPER_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: SUPER_USER_PASSWORD
+                  name: opencrvs-superuser
           {{- if eq .Values.elasticsearch.auth_mode "disabled" }}
             - name: ES_HOST
               value: "{{ .Values.elasticsearch.host }}:{{ .Values.elasticsearch.port }}"

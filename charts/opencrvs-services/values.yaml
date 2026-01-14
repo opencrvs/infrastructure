@@ -386,9 +386,7 @@ scheduler: {}
 # One time jobs:
 
 # data_migration: Job to migrate datastores while deployment
-data_migration:
-  env:
-    SUPER_USER_PASSWORD: "password"
+data_migration: {}
 
 
 # data_cleanup: Wipe all persistent data from datastores including users
@@ -402,8 +400,6 @@ data_cleanup:
 data_seed:
   enabled: true
   env:
-    # Default password for admin user for initial data seed
-    SUPER_USER_PASSWORD: "password"
     # When users are seeded, are they immediately active using a test password and
     # six zeros as a 2-Factor auth code. Always set to false in production and staging.
     ACTIVATE_USERS: "true"
