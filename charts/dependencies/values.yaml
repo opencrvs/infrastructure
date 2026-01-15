@@ -12,6 +12,14 @@ ingress:
 # Kubernetes storage type, available options are `pvc` or `host_path`
 storage_type: pvc
 
+
+# timezone: You can specify a time zone for a CronJobs (backup/restore)
+# https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#time-zones
+# For CronJobs with no time zone specified, the kube-controller-manager interprets schedules relative to its local time zone.
+# Example:
+# timezone: "Etc/UTC"
+
+
 # FIXME: Tiltfile deploys helm chart as template. There is no way to track existing secrets on the cluster.
 # This flag was introduced to avoid secrets update (mutation) on every file change within chart directory.
 # For OpenCRVS developers there is no need to deploy dependencies helm chart as template.
