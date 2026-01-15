@@ -15,7 +15,7 @@ spec:
     - web
   {{- end }}
   routes:
-  - match: 'Host(`metabase.{{ .Values.hostname }}`)'
+  - match: 'Host(`{{ include "render-external-subdomain" (dict "service_name" "metabase" "Values" .Values) }}`)'
     kind: Rule
     services:
     - name: dashboards

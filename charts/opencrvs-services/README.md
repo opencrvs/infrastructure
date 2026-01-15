@@ -268,6 +268,11 @@ helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
             <td>Hostname for OpenCRVS application, without wildcard or subdomain. Example: hostname: opencrvs.localhost</td>
         </tr>
         <tr>
+            <td>subdomain_separator</td>
+            <td><code>.</code></td>
+            <td>Separator between <code>hostname</code> and subdomains. See values.yaml for more information.</td>
+        </tr>
+        <tr>
             <td>ingress.ssl_enabled</td>
             <td>true</td>
             <td>Enable or disable https endpoint, by default all http traffic is routed to https</td>

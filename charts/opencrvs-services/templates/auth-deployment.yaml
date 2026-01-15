@@ -12,7 +12,7 @@ spec:
     - web
   {{- end }}
   routes:
-  - match: 'Host(`auth.{{ .Values.hostname }}`)'
+  - match: 'Host(`{{ include "render-external-subdomain" (dict "service_name" "auth" "Values" .Values) }}`)'
     kind: Rule
     services:
     - name: auth

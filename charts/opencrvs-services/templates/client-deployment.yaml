@@ -12,7 +12,7 @@ spec:
     - web
   {{- end }}
   routes:
-  - match: 'Host(`register.{{ .Values.hostname }}`) || Host(`{{ .Values.hostname }}`)'
+  - match: 'Host(`{{ include "render-external-subdomain" (dict "service_name" "register" "Values" .Values) }}`) || Host(`{{ .Values.hostname }}`)'
     kind: Rule
     services:
     - name: client

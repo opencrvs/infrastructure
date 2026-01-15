@@ -12,7 +12,7 @@ spec:
     - web
   {{- end }}
   routes:
-  - match: 'Host(`webhooks.{{ .Values.hostname }}`)'
+  - match: 'Host(`{{ include "render-external-subdomain" (dict "service_name" "webhooks" "Values" .Values) }}`)'
     kind: Rule
     services:
     - name: webhooks

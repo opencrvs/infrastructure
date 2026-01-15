@@ -169,6 +169,17 @@ postgres:
 # All OpenCRVS services will be available under domain:
 hostname: opencrvs.localhost
 
+# subdomain_separator: separator between hostname and subdomains
+# generic form: <subdomain><subdomain_separator><hostname>
+# OpenCRVS can be deployed in different ways:
+# - as set of subdomains to hostname, examples:
+#            - auth.opencrvs.localhost
+#            - register.opencrvs.localhost
+# - as set of variations to main domain, 
+#   in this variant wildcard certificate is needed only to one domain, examples:
+#            - auth-opencrvs.localhost
+#            - register-opencrvs.localhost
+subdomain_separator: "."
 
 ingress:
   # Access OpenCRVS services at https://<hostname>/
