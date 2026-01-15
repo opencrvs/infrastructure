@@ -293,6 +293,11 @@ helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
             <td>Global environment variables, each variable defined here is available to all workloads (service) deployed by helm chart. See example at <a href="values.yaml">values.yaml</a></td>
         </tr>
         <tr>
+            <td>timezone</td>
+            <td></td>
+            <td>Time zone for a backup and restore CronJobs, by default local time zone is used from server. See example at <a href="values.yaml">values.yaml</a></td>
+        </tr>
+        <tr>
             <td>probes</td>
             <td>See values.yaml</td>
             <td>Kubernetes http probes configuration, See defaults at <a href="values.yaml">values.yaml</a>. Each service may have own probes section. Make sure you are familiar with official documentation before changing this sections, see <a href="https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/">Configure Liveness, Readiness and Startup Probes</a>. <b>NOTE: Only httpGet probes are supported.</b></td>

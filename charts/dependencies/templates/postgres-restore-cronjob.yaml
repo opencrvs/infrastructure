@@ -14,6 +14,9 @@ metadata:
 spec:
   {{ if .Values.restore.cronjob }}
   schedule: {{ .Values.postgres.restore_schedule | default .Values.restore.schedule }}
+  {{- if .Values.timezone }}
+  timeZone: {{ .Values.timezone }}
+  {{- end }}
   jobTemplate:
     spec:
   {{- end }}

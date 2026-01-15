@@ -25,6 +25,9 @@ metadata:
   name: elasticsearch-reindex
 spec:
   schedule: "{{ .Values.elasticsearch.cronjob.schedule }}"
+{{- if .Values.timezone }}
+  timeZone: {{ .Values.timezone }}
+{{- end }}
   jobTemplate:
     spec:
 {{ include "elasticsearch-reindex.podSpec" . | indent 6 }}

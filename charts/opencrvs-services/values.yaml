@@ -181,6 +181,13 @@ ingress:
 # https://kubernetes.io/docs/concepts/services-networking/service/
 service_type: ClusterIP
 
+
+# timezone: You can specify a time zone for a CronJobs
+# https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#time-zones
+# For CronJobs with no time zone specified, the kube-controller-manager interprets schedules relative to its local time zone.
+# Example:
+# timezone: "Etc/UTC"
+
 # Kubernetes HTTP Probes configuration
 probes:
   liveness:
