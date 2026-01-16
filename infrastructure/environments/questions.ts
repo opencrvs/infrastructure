@@ -185,7 +185,7 @@ export const backupQuestions = [
     type: 'text' as const,
     message:
       `Please enter backup server host/IP address, (default: no backup):`,
-    valueType: 'VARIABLE' as const,
+    valueType: 'SECRET' as const,
     // validate: notEmpty,
     valueLabel: 'BACKUP_HOST',
     initial: process.env.BACKUP_HOST || '',

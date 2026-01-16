@@ -439,7 +439,7 @@ ALL_QUESTIONS.push(
     log('\n', kleur.bold().underline('Backup configuration'))
     let backupHostExists = findExistingValue(
       'BACKUP_HOST',
-      'VARIABLE',
+      'SECRET',
       'ENVIRONMENT',
       existingValues
     )
