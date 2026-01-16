@@ -33,7 +33,7 @@ spec:
     spec:
       containers:
       - name: logstash
-        image: {{ .Values.logstash.image | default "docker.elastic.co/logstash/logstash:8.19.0" }}
+        image: {{ .Values.logstash.image }}
         command: ["logstash", "-f", "/etc/logstash/logstash.conf", "--verbose"]
         ports:
         - containerPort: 12201

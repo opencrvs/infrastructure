@@ -112,7 +112,7 @@ spec:
               name: elasticsearch-scripts
       containers:
         - name: kibana
-          image: {{ .Values.kibana.image | default "docker.elastic.co/kibana/kibana:8.16.4" }}
+          image: {{ .Values.kibana.image }}
           env:
             - name: PUBLIC_BASE_URL
               value: {{ include "render-external-url" (dict "service_name" "kibana" "Values" .Values) }}
