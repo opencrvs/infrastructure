@@ -60,16 +60,31 @@ jobs:
             --create-namespace \
             -f environments/${ENV}/traefik/values.yaml
           kubectl scale deployment traefik --replicas=1 --namespace traefik
+      - name: Install stern
+        run: |
+          curl -L https://github.com/stern/stern/releases/download/v1.28.0/stern_1.28.0_linux_amd64.tar.gz | tar xz
+          sudo mv stern /usr/local/bin/
       - name: Install OpenCRVS dependencies
         id: deploy
         run: |
+          stern -n "opencrvs-deps-${ENV}" \
+            --since 1s \
+            --tail 0 \
+            --exclude 'kube-probe' \
+            --exclude '"level":(30|info)' \
+            --template '{{.PodName}}/{{.ContainerName}} | {{.Message}}{{"\n"}}' \
+            . &
+          STERN_PID=$!
           helm upgrade --install opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart \
             --namespace "opencrvs-deps-${ENV}" \
             -f environments/${ENV}/dependencies/values.yaml \
             --create-namespace \
             --timeout 15m \
             --set hostname=${{ vars.DOMAIN }} \
-            --atomic
+            --atomic; STATUS=$?;
+
+          kill $STERN_PID 2>/dev/null || true
+          exit $STATUS
       - name: Send email
         if: always()
         run: |
