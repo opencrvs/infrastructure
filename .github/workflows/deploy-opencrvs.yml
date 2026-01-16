@@ -113,23 +113,36 @@ jobs:
             | kubectl apply -n opencrvs-${ENV} -f - \
             || echo "Secret $secret doesn't exist in opencrvs-deps-${ENV} namespace"
           done
+      - name: Install stern
+        run: |
+          curl -L https://github.com/stern/stern/releases/download/v1.28.0/stern_1.28.0_linux_amd64.tar.gz | tar xz
+          sudo mv stern /usr/local/bin/
       - name: Deploy with Helm
         id: deploy
         run: |
+          stern -n "opencrvs-${ENV}" \
+            --since 1s \
+            --tail 0 \
+            --exclude 'kube-probe' \
+            --exclude '"level":(30|info)' \
+            --template '{{.PodName}}/{{.ContainerName}} | {{.Message}}{{"\n"}}' \
+            . &
+          STERN_PID=$!
           helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services:0.1.27 \
             --timeout 15m \
             --namespace "opencrvs-${ENV}" \
             -f environments/${ENV}/opencrvs-services/values.yaml \
             --create-namespace \
             --atomic \
-            --debug \
             --wait \
             --wait-for-jobs \
             --set image.tag="$CORE_IMAGE_TAG" \
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set countryconfig.image.name="$COUNTRYCONFIG_IMAGE_NAME" \
             --set data_seed.env.ACTIVATE_USERS="${{ vars.ACTIVATE_USERS || 'false' }}" \
-            --set hostname=${{ vars.DOMAIN }} 2>&1 | sed '/USER-SUPPLIED VALUES:/,$d'; exit ${PIPESTATUS[0]};
+            --set hostname=${{ vars.DOMAIN }} 2>&1 | sed '/USER-SUPPLIED VALUES:/,$d'; STATUS=${PIPESTATUS[0]};
+            kill $STERN_PID 2>/dev/null || true
+            exit $STATUS
       - name: Cleanup Helm Locks
         if: failure() || cancelled()
         run: |
