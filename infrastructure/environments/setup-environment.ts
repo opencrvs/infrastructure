@@ -306,6 +306,7 @@ ALL_QUESTIONS.push(
   ...dockerhubQuestions,
   ...diskQuestions,
   ...infrastructureQuestions,
+  ...backupQuestions,
   ...countryQuestions,
   ...databaseAndMonitoringQuestions,
   ...notificationTransportQuestions,
@@ -977,13 +978,6 @@ ALL_QUESTIONS.push(
     }
 
     if (configureBackup) {
-      applicationServerUpdates.push({
-        name: 'BACKUP_HOST',
-        type: 'VARIABLE' as const,
-        didExist: undefined,
-        value: backupHost,
-        scope: 'ENVIRONMENT' as const
-      })
       applicationServerUpdates.push({
         name: 'BACKUP_HOST_PRIVATE_KEY',
         type: 'SECRET' as const,
