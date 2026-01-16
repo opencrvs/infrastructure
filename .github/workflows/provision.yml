@@ -9,7 +9,8 @@ on:
         default: 'dev'
         type: choice
         options:
-          - ""
+          - stg
+          - prod
       tags:
         description: 'Tags to apply to the provisioned resources'
         required: true
