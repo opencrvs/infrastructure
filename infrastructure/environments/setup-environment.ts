@@ -1265,7 +1265,7 @@ ALL_QUESTIONS.push(
       environment,
       {
         worker_nodes: workerNodes,
-        backup_host: backupHost,
+        backup_host: backupHost || '',
         kube_api_host: infrastructure.kubeAPIHost || ''
       }
     )
