@@ -436,14 +436,14 @@ ALL_QUESTIONS.push(
       : []
 
     log('\n', kleur.bold().underline('Backup configuration'))
-    const backupHost = findExistingValue(
+    let backupHostExists = findExistingValue(
       'BACKUP_HOST',
       'VARIABLE',
       'ENVIRONMENT',
       existingValues
     )
-    let configureBackup = backupHost ? true : false
-    if (!backupHost) {
+    let configureBackup = backupHostExists ? true : false
+    if (!configureBackup) {
       configureBackup = (await prompts(
         [
           {
@@ -456,22 +456,22 @@ ALL_QUESTIONS.push(
         ].map(questionToPrompt)
       )).configureBackup
     }
+
     let backupHostPrivateKeyExists = findExistingValue(
       'BACKUP_HOST_PRIVATE_KEY',
       'SECRET',
       'ENVIRONMENT',
       existingValues
     )
+    let backupHost = ''
     let backupHostPrivateKey = ''
     let backupHostPublicKey = ''
-
     if (configureBackup) {
-    const { backupHost } = await promptAndStoreAnswer(
+      backupHost = (await promptAndStoreAnswer(
       environment,
       backupQuestions,
       existingValues
-    )
-
+    )).backupHost
     if (backupHost && !backupHostPrivateKeyExists) {
       const { publicKey, privateKey } = generateSSHKeyPair();
       backupHostPublicKey = publicKey;
@@ -978,6 +978,13 @@ ALL_QUESTIONS.push(
 
     if (configureBackup) {
       applicationServerUpdates.push({
+        name: 'BACKUP_HOST',
+        type: 'VARIABLE' as const,
+        didExist: undefined,
+        value: backupHost,
+        scope: 'ENVIRONMENT' as const
+      })
+      applicationServerUpdates.push({
         name: 'BACKUP_HOST_PRIVATE_KEY',
         type: 'SECRET' as const,
         didExist: undefined,
@@ -1295,7 +1302,7 @@ ALL_QUESTIONS.push(
 curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\
 bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}` : ''
 
-  const backup_message = backupHost && backupHost.name !== "" ? 
+  const backup_message = configureBackup ? 
 `
 -----------------------
 ➡️ ${kleur.bold().yellow('COPY the SSH public key from the master VM to your clipboard')}
