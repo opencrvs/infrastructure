@@ -8,7 +8,7 @@ metadata:
   labels:
     app: kibana
   name: kibana-on-deploy-script
-{{- if not .Values.kibana.custom_config_configmap }}
+
 ---
 apiVersion: v1
 data:
@@ -19,5 +19,4 @@ metadata:
   labels:
     app: kibana
   name: kibana-on-deploy-config
-{{- end }}
 {{- end }}
