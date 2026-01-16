@@ -109,7 +109,7 @@ spec:
           {{- if or .Values.elasticsearch.secrets .Values.elasticsearch.env .Values.env }}
           {{- include "render-env-vars" (dict "service_name" "elasticsearch" "Values" .Values) }}
           {{- end }}
-          image: {{ .Values.elasticsearch.image | default "docker.elastic.co/elasticsearch/elasticsearch:8.16.4" }}
+          image: {{ .Values.elasticsearch.image }}
           name: elasticsearch
           {{ include "resources-helper" (dict "service_name" "elasticsearch" "Values" .Values) | indent 10 }}
           ports:

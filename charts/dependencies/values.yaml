@@ -53,6 +53,7 @@ postgres:
 
 # Elasticsearch Configuration
 elasticsearch:
+  image: docker.elastic.co/elasticsearch/elasticsearch:8.16.4
   # Enable Elasticsearch deployment.
   enabled: true
   # By default Elasticsearch is deployed without authentication enabled.
@@ -82,7 +83,11 @@ elasticsearch:
 monitoring:
   enabled: false
 
+apm_server:
+  image: docker.elastic.co/apm/apm-server:8.16.4
+
 kibana:
+  image: docker.elastic.co/kibana/kibana:8.16.4
   users_secret: kibana-users-secret
   # Configmap for custom configuration file
   # custom_config_configmap: kibana-custom-config
@@ -95,12 +100,14 @@ metricbeat:
   # custom_ilm_configmap: metricbeat-ilm-policy
 
 filebeat:
+  image: docker.elastic.co/beats/filebeat:8.16.4
   # Configmap for custom configuration file
   # custom_config_configmap: filebeat-config
   # Configmap for custom index lifecycle management policy
   # custom_ilm_configmap: filebeat-ilm-policy
 
-logstash: {}
+logstash:
+  image: docker.elastic.co/logstash/logstash:8.19.0
 
 elastalert:
   # Create configmap with custom rules for elastalert
