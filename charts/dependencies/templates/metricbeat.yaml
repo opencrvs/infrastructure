@@ -31,7 +31,7 @@ spec:
               exit 1
       containers:
         - name: metricbeat
-          image: {{ .Values.metricbeat.image | default "docker.elastic.co/beats/metricbeat:8.19.0" }}
+          image: {{ .Values.metricbeat.image }}
           securityContext:
             runAsUser: 0
             privileged: true
