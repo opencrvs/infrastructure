@@ -77,6 +77,7 @@ jobs:
           smtp_from: "team@opencrvs.org"
           smtp_password: ${{ secrets.SMTP_PASSWORD }}
           alert_email: ${{ secrets.ALERT_EMAIL }}
+          backup_host_public_key: ${{ secrets.BACKUP_HOST_PUBLIC_KEY }}
       - name: checkout repository
         uses: actions/checkout@v6
       - name: Run Ansible Playbook
