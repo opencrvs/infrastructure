@@ -79,6 +79,7 @@ jobs:
           smtp_password: ${{ secrets.SMTP_PASSWORD }}
           alert_email: ${{ secrets.ALERT_EMAIL }}
           backup_host_public_key: ${{ secrets.BACKUP_HOST_PUBLIC_KEY }}
+          amount_of_backups_to_keep: ${{ vars.AMOUNT_OF_BACKUPS_TO_KEEP || '7' }}
       - name: checkout repository
         uses: actions/checkout@v6
       - name: Run Ansible Playbook
