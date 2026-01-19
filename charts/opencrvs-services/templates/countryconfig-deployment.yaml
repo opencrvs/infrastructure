@@ -75,6 +75,10 @@ spec:
         app: countryconfig
         service_name: opencrvs_countryconfig
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: countryconfig
           image: "{{ .Values.countryconfig.image.name }}:{{ .Values.countryconfig.image.tag }}"
@@ -137,10 +141,6 @@ spec:
               name: public-key
               subPath: public-key.pem
       restartPolicy: Always
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       volumes:
         - configMap:
             items:

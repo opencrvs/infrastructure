@@ -21,6 +21,10 @@ spec:
       labels:
         app: postgres-on-update-analytics
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       initContainers:
         - name: copy-assets
           image: "{{ .Values.countryconfig.image.name }}:{{ .Values.countryconfig.image.tag }}-assets"
