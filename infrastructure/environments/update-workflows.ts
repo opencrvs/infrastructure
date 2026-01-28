@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, statSync, existsSync } from 'fs';
 import { basename, join } from 'path';
 import * as glob from 'glob';
 import * as yaml from 'js-yaml';
-
+import { error, info, log, success, warn } from './logger'
 interface WorkflowConfig {
   workflows: string[];
   path: string;
@@ -18,9 +18,7 @@ async function extractInfrastructureNames(): Promise<string[]> {
     console.log('⚠️  Warning: No environment directories found in infrastructure/server-setup/inventory/');
     return [];
   }
-  console.log('List of existing infrastructure configurations:');
-  console.log(infraEnvironments.join(', '));
-  
+  log('🔍 Found infrastructure configurations:', infraEnvironments.join(', '));  
   return infraEnvironments;
 }
 
@@ -37,9 +35,7 @@ async function extractEnvironmentNames(): Promise<string[]> {
     return [];
   }
 
-  console.log('\nList of existing environment configurations:');
-  console.log(environments.join(', '));
-  
+  log('🔍 Found OpenCRVS configurations:', environments.join(', '));  
   return environments;
 }
 
@@ -72,8 +68,6 @@ async function updateWorkflows(
   const { workflows } = config;
   
   for (const workflowPath of workflows) {
-    console.log(`\nUpdating ${workflowPath} with: [${envList.join(', ')}]`);
-    
     try {
       const fileContents = readFileSync(workflowPath, 'utf8');
       
@@ -87,8 +81,9 @@ async function updateWorkflows(
       const updatedContent = updateOptionsInYaml(fileContents, envList);
       
       writeFileSync(workflowPath, updatedContent, 'utf8');
-      console.log(`✓ Successfully updated ${workflowPath}`);
+      log(`  ✓ Successfully updated ${workflowPath}`);
     } catch (error) {
+      console.error(`\n⚠️  Error updating ${workflowPath} with environments: [${envList.join(', ')}]`);
       console.error(`✗ Failed to update ${workflowPath}:`, error);
       throw error;
     }
@@ -96,16 +91,12 @@ async function updateWorkflows(
 }
 
 export async function updateWorkflowEnvironments(): Promise<void> {
-  try {
-    console.log('🔄 Updating workflow environments...\n');
-    
+  try {    
     // Extract infrastructure names
     const infraEnvironments = await extractInfrastructureNames();
     
-    // Extract environment names (only directories)
-    const environments = await extractEnvironmentNames();
-    
     // Update workflows with infrastructure configurations
+    console.log('🔄 Updating infrastructure workflows:');
     await updateWorkflows(infraEnvironments, {
       workflows: [
         '.github/workflows/provision.yml',
@@ -114,7 +105,9 @@ export async function updateWorkflowEnvironments(): Promise<void> {
       path: 'on.workflow_dispatch.inputs.environment.options'
     });
 
-    console.log(`\n📋 Updating workflows...`);
+    // Extract environment names (only directories)
+    const environments = await extractEnvironmentNames();
+
     const workflows = [
       '.github/workflows/deploy-dependencies.yml',
       '.github/workflows/deploy-opencrvs.yml',
@@ -123,16 +116,14 @@ export async function updateWorkflowEnvironments(): Promise<void> {
       '.github/workflows/k8s-reindex.yml',
       '.github/workflows/github-to-k8s-sync-env.yml'
     ];
-      
+    log("📋 Updating OpenCRVS application workflows:");
     await updateWorkflows(environments, {
       workflows,
       path: 'on.workflow_dispatch.inputs.environment.options'
     });
     
     
-    console.log('\n✅ All workflows updated successfully!');
-    console.log('\n💡 Review the changes and commit them when ready.');
-    
+    success('✅ All workflows updated successfully!');    
   } catch (error) {
     console.error('\n❌ Error updating workflows:', error);
     process.exit(1);
