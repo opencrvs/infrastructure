@@ -13,7 +13,11 @@ on:
         default: 
         required: true
         options:
-          - ""
+          - swarm-to-k8s
+          - staging
+          - qa
+          - production
+          - development
 
 jobs:
   approve:

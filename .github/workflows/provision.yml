@@ -9,7 +9,11 @@ on:
         default: 'dev'
         type: choice
         options:
-          - ""
+          - swarm-to-k8s
+          - staging
+          - qa
+          - production
+          - development
       tags:
         description: 'Tags to apply to the provisioned resources'
         required: true

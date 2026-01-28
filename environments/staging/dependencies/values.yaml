@@ -1,0 +1,41 @@
+storage_type: host_path
+
+environment_type: production
+
+minio:
+  use_default_credentials: false
+
+elasticsearch:
+  use_default_credentials: false
+
+mongodb:
+  use_default_credentials: false
+
+postgres:
+  use_default_credentials: false
+
+redis:
+  auth_mode: acl
+
+monitoring:
+  enabled: true
+
+elastalert:
+  env:
+    HTTP_POST2_ALERT_URL: http://countryconfig.opencrvs-staging.svc.cluster.local:3040/email
+
+# Backup configuration
+backup:
+  enabled: false
+  schedule: "0 1 * * *"
+  backup_server_secret: backup-server-ssh-credentials
+  backup_server_dir: /home/backup/staging
+
+
+# Restore configuration
+restore:
+  enabled: true
+  schedule: "0 0 * * *"
+  backup_server_secret: backup-server-ssh-credentials
+  backup_server_dir: /home/backup/production
+  backup_encryption_secret: restore-encryption-secret

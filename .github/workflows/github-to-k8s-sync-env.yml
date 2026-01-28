@@ -11,6 +11,10 @@ on:
         type: choice
         options:
           - development
+          - production
+          - qa
+          - staging
+          - swarm-to-k8s
       namespace_template:
         description: "Secrets mapping template"
         default: "opencrvs"

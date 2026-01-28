@@ -32,7 +32,11 @@ on:
         default: "dev"
         type: choice
         options:
-          - ""
+          - development
+          - production
+          - qa
+          - staging
+          - swarm-to-k8s
 
 jobs:
   approve:
