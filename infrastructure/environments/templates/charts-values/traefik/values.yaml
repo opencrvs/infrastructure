@@ -35,21 +35,22 @@ ports:
     hostPort: 80
     protocol: TCP
     nodePort: 30080
-    redirections:
-      entryPoint:
-        to: websecure
-        scheme: https
-        permanent: true
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
 
   websecure:
     port: 8443
     hostPort: 443
     protocol: TCP
     nodePort: 30443
-    # 👇 Adjust this section at websecure entrypoint
-    tls:
-      enabled: true
-      certResolver: letsencrypt
+    http:
+      tls:
+        enabled: true
+        certResolver: letsencrypt
 
 # 👇 Adjust this section if needed
 certificatesResolvers:
