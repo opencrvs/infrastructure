@@ -193,6 +193,12 @@ async function promptAndStoreAnswer(
         questionWithVariableLabel.scope,
         existingValues
       )
+      console.log(process.env.SKIP_EXISTING_VALUES);
+      if (existingVariable && process.env.SKIP_EXISTING_VALUES === 'true') {
+        // Skip asking for this secret, keep existing value
+        console.log("Skipping existing variable:", existingVariable.name);
+        return [existingVariable]
+      } else
       if (existingVariable) {
         return [
           {
@@ -222,7 +228,11 @@ async function promptAndStoreAnswer(
         questionWithVariableLabel.scope,
         existingValues
       )
-
+      if (existingSecret && process.env.SKIP_EXISTING_VALUES === 'true') {
+        // Skip asking for this secret, keep existing value
+        console.log("Skipping existing secret:", existingSecret.name);
+        return [questionWithVariableLabel]
+      } else
       if (existingSecret) {
         return [
           {
