@@ -57,11 +57,11 @@ spec:
           {{- end }}
           volumeMounts:
             - mountPath: /on-deploy.sh
-              name: mongo-on-update-script
+              name: mongo-on-deploy-script
               subPath: on-deploy.sh
       volumes:
-        - name: mongo-on-update-script
+        - name: mongo-on-deploy-script
           configMap:
-            name: mongo-on-update-script
+            name: mongo-on-deploy-script
       restartPolicy: "OnFailure"
   {{- end }}

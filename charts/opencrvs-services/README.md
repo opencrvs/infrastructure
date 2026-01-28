@@ -800,3 +800,19 @@ In this example:
 - `KIBANA_SYSTEM`, `METRICBEAT`, and `APM` will use the specified usernames (`kibana_system`, `beats_system`, `apm_system`) with random passwords.
 
 The generated credentials can be accessed from the `elasticsearch-opencrvs-users` secret.
+
+# Additional information
+
+## Helm chart hooks
+
+Helm chart has following pre-install/upgrade hooks:
+- elasticsearch-on-deploy: create elasticsearch users and configure permissions, see `elasticsearch` configuration options for more details how to configure users and permissions
+- influxdb-on-deploy: create database
+- mongo-on-deploy: create databases and users with correct permissions, see `mongodb` configuration options for more details how to configure users and permissions
+- postgres-on-deploy: create database, schemas and users with correct permissions 
+
+Helm chart has following post-install/upgrade hooks:
+- data-migration: apply data migrations to postgres, mongodb, influxdb
+- data-migration-analytics: apply data migrations to postgres, this hook use Countryconfig assets docker image, see documentation on how to create own analytics dashboards.
+- data-seed: initial data seed, runs only on post-install
+- elasticsearch-reindex: reindex data after deployment

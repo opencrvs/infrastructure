@@ -3,8 +3,6 @@ apiVersion: v1
 data:
   on-deploy.sh: |
     {{- .Files.Get "files/postgres-on-deploy.sh" | indent 8 }}
-  setup-analytics.sh: |
-    {{- .Files.Get "files/setup-analytics.sh" | indent 8 }}
 kind: ConfigMap
 metadata:
   labels:
@@ -12,4 +10,4 @@ metadata:
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "0"
-  name: postgres-on-update-script
+  name: postgres-on-deploy-script
