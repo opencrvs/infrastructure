@@ -21,7 +21,7 @@ import {
 } from './github'
 
 import { derivedVariables } from './derived-variables'
-import { generateLongPassword } from './utils'
+import { generateLongPassword, findExistingValue } from './utils'
 
 import { readFileSync, writeFileSync } from 'fs'
 import { error, info, log, success, warn } from './logger'
@@ -35,6 +35,7 @@ import {
   githubTokenQuestion,
   githubOtherQuestions,
   infrastructureQuestions,
+  staticSSLCertQuestions,
   countryQuestions,
   databaseAndMonitoringQuestions,
   diskQuestions,
@@ -46,43 +47,18 @@ import {
   backupQuestions,
 } from './questions';
 
+import {
+  Question,
+  QuestionDescriptor,
+  SecretAnswer,
+  VariableAnswer,
+  Answer,
+  Answers,
+  AnswerWithNullValue
+} from './custom-types'
 
-type Question<T extends string> = PromptObject<T> & {
-  name: T
-  valueType?: 'SECRET' | 'VARIABLE'
-  scope: 'ENVIRONMENT' | 'REPOSITORY'
-  valueLabel?: string
-}
+import { askQuestionWithEditor } from './editor-questions'
 
-type QuestionDescriptor<T extends string> = Omit<Question<T>, 'type'> & {
-  type: 'disabled' | PromptObject<T>['type']
-}
-
-type SecretAnswer = {
-  type: 'SECRET'
-  scope: 'ENVIRONMENT' | 'REPOSITORY'
-  name: string
-  value: string
-  didExist: Secret | undefined
-}
-
-type VariableAnswer = {
-  type: 'VARIABLE'
-  name: string
-  didExist: Variable | undefined
-  value: string
-  scope: 'ENVIRONMENT' | 'REPOSITORY'
-}
-
-type Answer = SecretAnswer | VariableAnswer
-type Answers = Answer[]
-type AnswerWithNullValue =
-  | (Omit<SecretAnswer, 'value'> & {
-    value: SecretAnswer['value'] | null
-  })
-  | (Omit<VariableAnswer, 'value'> & {
-    value: VariableAnswer['value'] | null
-  })
 
 function questionToPrompt<T extends string>({
   // eslint-disable-next-line no-unused-vars
@@ -155,20 +131,6 @@ function getAnswers(existingValues: (Secret | Variable)[]): Answers {
       }
     })
   })
-}
-
-function findExistingValue<T extends string>(
-  name: string,
-  type: T,
-  scope: 'ENVIRONMENT' | 'REPOSITORY',
-  existingValues: Array<Secret | Variable>
-) {
-  return existingValues.find(
-    (value) =>
-      value.name === name && value.type === type && value.scope === scope
-  ) as
-    | (T extends 'SECRET' ? Secret : T extends 'VARIABLE' ? Variable : never)
-    | undefined
 }
 
 async function promptAndStoreAnswer(
@@ -317,7 +279,6 @@ ALL_QUESTIONS.push(
   ...metabaseAdminQuestions
 )
 
-
   ; (async () => {
 
     const { environment_type, environment } = await prompts(environmentQuestions.map(questionToPrompt), {
@@ -431,10 +392,73 @@ ALL_QUESTIONS.push(
       infrastructureQuestions,
       existingValues
     )
-    // FIXME: Review
     const workerNodes = infrastructure.workerNodes
-      ? infrastructure.workerNodes.split(',').map((ip: string) => ip.trim())
-      : []
+      ? infrastructure.workerNodes.split(',').map((ip: string) => ip.trim()) : []
+
+    log('\n', kleur.bold().underline('Traefik SSL Configuration'))
+    const sslCertExists = findExistingValue(
+      'SSL_CRT',
+      'SECRET',
+      'ENVIRONMENT',
+      existingValues
+    )
+    let ssl_answers: AnswerWithNullValue[] = [];
+    let traefikConfOption: string = '';
+    if (!sslCertExists) {
+        traefikConfOption = (await prompts(
+        [
+          {
+            name: 'traefikConfOption',
+            type: 'select' as const,
+            message: 'Choose option to configure Traefik SSL Certificate',
+            scope: 'ENVIRONMENT' as const,
+            choices: [
+              {title: "Let's Encrypt certificate", value: 'lets_encrypt'},
+              {title: "Static SSL certificate", value: 'static_ssl'},
+              {title: "Custom configuration", value: 'custom'}
+            ],
+            initial: sslCertExists ? 2 : 1
+          }
+        ].map(questionToPrompt))
+      ).traefikConfOption
+    }
+    if (sslCertExists || traefikConfOption === "static_ssl") {
+      ssl_answers = await askQuestionWithEditor(staticSSLCertQuestions, existingEnvironmentSecrets)
+    }
+    
+    log('\n', kleur.bold().underline('Databases & monitoring'))
+
+    let enableEncryption = true
+    const encryption_key_defined = findExistingValue(
+      'ENCRYPTION_KEY',
+      'SECRET',
+      'ENVIRONMENT',
+      existingValues
+    )
+
+    if (!encryption_key_defined) {
+      const answers_enable_encryption = await prompts(
+        [
+          {
+            name: 'enableEncryption',
+            type: 'confirm' as const,
+            message: 'Do you want to enable disk encryption?',
+            scope: 'ENVIRONMENT' as const,
+            initial: Boolean(process.env.ENABLE_ENCRYPTION)
+          }
+        ].map(questionToPrompt)
+      )
+      enableEncryption = answers_enable_encryption.enableEncryption
+    }
+    if (enableEncryption) {
+      console.log('\n', kleur.bold().green('✔'), kleur.bold().yellow(' Disk encryption is enabled'))
+      await promptAndStoreAnswer(environment, diskQuestions, existingValues)
+    }
+    await promptAndStoreAnswer(
+      environment,
+      databaseAndMonitoringQuestions,
+      existingValues
+    )
 
     log('\n', kleur.bold().underline('Backup configuration'))
     let backupHostExists = findExistingValue(
@@ -527,39 +551,6 @@ ALL_QUESTIONS.push(
       log('\n', kleur.bold().green('✔'), kleur.bold().yellow('Restore environment is already set to'), kleur.bold().blue(restoreEnvironmentName))
     }
 
-    log('\n', kleur.bold().underline('Databases & monitoring'))
-
-    let enableEncryption = true
-    const encryption_key_defined = findExistingValue(
-      'ENCRYPTION_KEY',
-      'SECRET',
-      'ENVIRONMENT',
-      existingValues
-    )
-
-    if (!encryption_key_defined) {
-      const answers_enable_encryption = await prompts(
-        [
-          {
-            name: 'enableEncryption',
-            type: 'confirm' as const,
-            message: 'Do you want to enable disk encryption?',
-            scope: 'ENVIRONMENT' as const,
-            initial: Boolean(process.env.ENABLE_ENCRYPTION)
-          }
-        ].map(questionToPrompt)
-      )
-      enableEncryption = answers_enable_encryption.enableEncryption
-    }
-    if (enableEncryption) {
-      console.log('\n', kleur.bold().green('✔'), kleur.bold().yellow(' Disk encryption is enabled'))
-      await promptAndStoreAnswer(environment, diskQuestions, existingValues)
-    }
-    await promptAndStoreAnswer(
-      environment,
-      databaseAndMonitoringQuestions,
-      existingValues
-    )
     log('\n', kleur.bold().underline('Sentry'))
     const sentryDSNExists = findExistingValue(
       'SENTRY_DSN',
@@ -655,7 +646,7 @@ ALL_QUESTIONS.push(
         scope: 'REPOSITORY' as const
       },
     ]
-
+    derivedUpdates.push(...ssl_answers)
     if ('production' === environment_type) {
       derivedUpdates.push({
         name: 'BACKUP_ENCRYPTION_PASSPHRASE',
