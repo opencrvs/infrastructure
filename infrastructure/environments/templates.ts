@@ -68,7 +68,8 @@ export function copyChartsValues(env: string, values: Record<string, string>) {
   const srcDir = path.resolve(__dirname, "templates", "charts-values");
   const destDir = path.resolve(__dirname, "..", "..", "environments", env);
   fs.mkdirSync(destDir, { recursive: true });
-
+  values['lets_encrypt'] = values['traefik_mode'] === "lets_encrypt" ? "true" : "false"
+  values['static_ssl'] = values['traefik_mode'] === "static_ssl" ? "true" : "false"
   function copyRecursive(src: string, dest: string) {
     const stat = fs.statSync(src);
 

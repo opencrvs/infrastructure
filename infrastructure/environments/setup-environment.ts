@@ -21,9 +21,13 @@ import {
 } from './github'
 
 import { derivedVariables } from './derived-variables'
-import { generateLongPassword, findExistingValue } from './utils'
+import { 
+  generateLongPassword,
+  findExistingValue,
+  storeSecrets
+} from './utils'
 
-import { readFileSync, writeFileSync } from 'fs'
+
 import { error, info, log, success, warn } from './logger'
 import { generateInventory, copyChartsValues } from './templates'
 import { updateWorkflowEnvironments } from './update-workflows';
@@ -239,27 +243,7 @@ async function promptAndStoreAnswer(
   return { ...Object.fromEntries(existingValuesForQuestions), ...result }
 }
 
-function storeSecrets(environment: string, answers: Answers) {
-  let envConfig: Record<string, string> = {}
-  try {
-    envConfig = dotenv.parse(
-      readFileSync(`${process.cwd()}/.env.${environment}`)
-    )
-  } catch (error) {
-    envConfig = {}
-  }
 
-  const linesFromAnswers = answers.map(
-    (update) => `${update.name}="${update.value}"`
-  )
-  const linesFromEnvConfig = Object.entries(envConfig)
-    .filter(([name]) => !answers.find((update) => update.name === name))
-    .map(([name, value]) => `${name}="${value}"`)
-
-  const allLines = [...linesFromEnvConfig, ...linesFromAnswers].sort()
-
-  writeFileSync(`.env.${environment}`, allLines.join('\n'))
-}
 
 ALL_QUESTIONS.push(
   ...environmentQuestions,
@@ -279,7 +263,7 @@ ALL_QUESTIONS.push(
   ...metabaseAdminQuestions
 )
 
-  ; (async () => {
+; (async () => {
 
     const { environment_type, environment } = await prompts(environmentQuestions.map(questionToPrompt), {
       onCancel: () => {
@@ -395,38 +379,35 @@ ALL_QUESTIONS.push(
     const workerNodes = infrastructure.workerNodes
       ? infrastructure.workerNodes.split(',').map((ip: string) => ip.trim()) : []
 
-    log('\n', kleur.bold().underline('Traefik SSL Configuration'))
+    log('\n', kleur.bold().underline('Traefik SSL Certificate'))
     const sslCertExists = findExistingValue(
       'SSL_CRT',
       'SECRET',
       'ENVIRONMENT',
       existingValues
     )
+
     let ssl_answers: AnswerWithNullValue[] = [];
-    let traefikConfOption: string = '';
-    if (!sslCertExists) {
-        traefikConfOption = (await prompts(
+    const traefikConfOption = (await prompts(
         [
           {
             name: 'traefikConfOption',
             type: 'select' as const,
             message: 'Choose option to configure Traefik SSL Certificate',
-            scope: 'ENVIRONMENT' as const,
             choices: [
               {title: "Let's Encrypt certificate", value: 'lets_encrypt'},
               {title: "Static SSL certificate", value: 'static_ssl'},
               {title: "Custom configuration", value: 'custom'}
             ],
-            initial: sslCertExists ? 2 : 1
+            initial: sslCertExists ? 1 : 0
           }
-        ].map(questionToPrompt))
+        ])
       ).traefikConfOption
-    }
     if (sslCertExists || traefikConfOption === "static_ssl") {
       ssl_answers = await askQuestionWithEditor(staticSSLCertQuestions, existingEnvironmentSecrets)
     }
     
-    log('\n', kleur.bold().underline('Databases & monitoring'))
+    log('\n', kleur.bold().underline('Storage'))
 
     let enableEncryption = true
     const encryption_key_defined = findExistingValue(
@@ -454,13 +435,8 @@ ALL_QUESTIONS.push(
       console.log('\n', kleur.bold().green('✔'), kleur.bold().yellow(' Disk encryption is enabled'))
       await promptAndStoreAnswer(environment, diskQuestions, existingValues)
     }
-    await promptAndStoreAnswer(
-      environment,
-      databaseAndMonitoringQuestions,
-      existingValues
-    )
 
-    log('\n', kleur.bold().underline('Backup configuration'))
+    log('\n', kleur.bold().underline('Backup'))
     let backupHostExists = findExistingValue(
       'BACKUP_HOST',
       'SECRET',
@@ -505,7 +481,7 @@ ALL_QUESTIONS.push(
     }
     }
 
-    log('\n', kleur.bold().underline('Restore configuration'))
+    log('\n', kleur.bold().underline('Restore'))
     let restoreEnvironmentName = findExistingValue(
       'RESTORE_ENVIRONMENT_NAME',
       'VARIABLE',
@@ -535,6 +511,7 @@ ALL_QUESTIONS.push(
               type: 'autocomplete' as const,
               message: 'What is the name of your environment to restore?',
               scope: 'ENVIRONMENT' as const,
+              valueLabel: 'RESTORE_ENVIRONMENT_NAME',
               choices: env_list_filtered.map(env => ({
                 title: env,
                 value: env
@@ -551,7 +528,12 @@ ALL_QUESTIONS.push(
       log('\n', kleur.bold().green('✔'), kleur.bold().yellow('Restore environment is already set to'), kleur.bold().blue(restoreEnvironmentName))
     }
 
-    log('\n', kleur.bold().underline('Sentry'))
+    log('\n', kleur.bold().underline('Monitoring'))
+    await promptAndStoreAnswer(
+      environment,
+      databaseAndMonitoringQuestions,
+      existingValues
+    )
     const sentryDSNExists = findExistingValue(
       'SENTRY_DSN',
       'SECRET',
@@ -559,6 +541,7 @@ ALL_QUESTIONS.push(
       existingValues
     )
 
+    log('\n', kleur.bold().underline('Sentry'))
     if (sentryDSNExists) {
       await promptAndStoreAnswer(environment, sentryQuestions, existingValues)
     } else {
@@ -568,10 +551,9 @@ ALL_QUESTIONS.push(
             name: 'useSentry',
             type: 'confirm' as const,
             message: 'Do you want to use Sentry?',
-            scope: 'ENVIRONMENT' as const,
             initial: Boolean(process.env.SENTRY_DNS)
           }
-        ].map(questionToPrompt)
+        ]
       )
 
       if (useSentry) {
@@ -1272,30 +1254,26 @@ ALL_QUESTIONS.push(
         is_qa_env: environment !== 'production' ? "true" : "false",
         backup_enabled: configureBackup ? "true" : "false",
         restore_enabled: restoreEnvironmentName ? "true" : "false",
-        restore_environment_name: restoreEnvironmentName || ""
+        restore_environment_name: restoreEnvironmentName || "",
+        traefik_mode: traefikConfOption
       }
     )
     await updateWorkflowEnvironments();
 
-    const worker_message = workerNodes.length > 0 ?
-      `
------------------------
-➡️ ${kleur.bold().yellow('COPY the SSH public key from the master VM to your clipboard')}
------------------------
-➡️ ${kleur.bold().yellow('Run following command on Kubernetes worker VM to create provision user and setup SSH key:')}
+    let addon_message = workerNodes.length > 0 || configureBackup ? 
+      "--------------------------------------------------------------------------------------------\n" +
+      `\n➡️ ${kleur.bold().yellow('COPY the SSH public key from the master VM to your clipboard')}\n` +
+      "--------------------------------------------------------------------------------------------\n" : ""
+    addon_message += workerNodes.length > 0 ?
+      `➡️ ${kleur.bold().yellow('Run following command on Kubernetes worker VM to create provision user and setup SSH key:')}\n` +
+      "\n" +
+      "curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\ \n" +
+      `bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}\n` : ""
 
-curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\
-bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}` : ''
-
-  const backup_message = configureBackup ? 
-`
------------------------
-➡️ ${kleur.bold().yellow('COPY the SSH public key from the master VM to your clipboard')}
------------------------
-➡️ ${kleur.bold().yellow('Run following command on backup server to create provision user and setup SSH key:')}
-
-curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\
-bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}` : ''
+    addon_message += configureBackup ? 
+      `\n➡️ ${kleur.bold().yellow('Run following command on backup server to create provision user and setup SSH key:')}\n` +
+      "curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\ \n" +
+      `bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}` : ""
 
   log(`
 ${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
@@ -1309,11 +1287,11 @@ bash opencrvs-bootstrap.sh --owner ${githubOrganisation} \\
             --env ${environment} \\
             --token ${githubToken} \\
             --enable-runner
-${worker_message}
 
-${backup_message}
+${addon_message}
 
 ${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
+${kleur.yellow('Please KINDLY read hints above')}
     `)
     log('\nAll variables stored in', kleur.cyan(`.env.${environment}`))
     log(kleur.bold().yellow('DO NOT COMMIT THIS FILE TO GIT!'))
