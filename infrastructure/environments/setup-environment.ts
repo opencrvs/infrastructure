@@ -62,7 +62,7 @@ import {
 } from './custom-types'
 
 import { askQuestionWithEditor } from './editor-questions'
-
+import { collectUsersConfiguration } from './add-users'
 
 function questionToPrompt<T extends string>({
   // eslint-disable-next-line no-unused-vars
@@ -270,7 +270,6 @@ ALL_QUESTIONS.push(
         process.exit(1)
       }
     })
-
     // Read users .env file based on the environment name they gave above, e.g. .env.production
     dotenv.config({
       path: `${process.cwd()}/.env.${environment}`
@@ -379,6 +378,9 @@ ALL_QUESTIONS.push(
     const workerNodes = infrastructure.workerNodes
       ? infrastructure.workerNodes.split(',').map((ip: string) => ip.trim()) : []
 
+    log('\n', kleur.bold().underline('SSH Users'))
+    const users = await collectUsersConfiguration()
+
     log('\n', kleur.bold().underline('Traefik SSL Certificate'))
     const sslCertExists = findExistingValue(
       'SSL_CRT',
@@ -432,7 +434,7 @@ ALL_QUESTIONS.push(
       enableEncryption = answers_enable_encryption.enableEncryption
     }
     if (enableEncryption) {
-      console.log('\n', kleur.bold().green('✔'), kleur.bold().yellow(' Disk encryption is enabled'))
+      log('\n', kleur.bold().green('✔'), kleur.bold().yellow(' Disk encryption is enabled'))
       await promptAndStoreAnswer(environment, diskQuestions, existingValues)
     }
 
@@ -1240,7 +1242,8 @@ ALL_QUESTIONS.push(
       {
         worker_nodes: workerNodes,
         backup_host: backupHost || '',
-        kube_api_host: infrastructure.kubeAPIHost || ''
+        kube_api_host: infrastructure.kubeAPIHost || '',
+        users: users
       }
     )
     copyChartsValues(

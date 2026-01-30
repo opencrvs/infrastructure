@@ -37,6 +37,7 @@
     "@types/node": "^24.0.0",
     "dotenv": "^16.4.5",
     "prompts": "^2.4.2",
+    "@inquirer/prompts": "^8.2.0",
     "ssh2": "^1.17.0"
   }
 }
