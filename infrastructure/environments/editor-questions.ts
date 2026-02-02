@@ -1,4 +1,4 @@
-import editor from '@inquirer/editor'
+import { editor } from '@inquirer/prompts';
 import { findExistingValue } from './utils';
 import { Secret, Variable } from './github';
 import { AnswerWithNullValue, Answers, QuestionDescriptor } from './custom-types';
