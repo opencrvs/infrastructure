@@ -7,8 +7,6 @@ on:
         type: string
       countryconfig-image-tag:
         type: string
-      data-seed-enabled:
-        type: boolean
       environment:
         type: string
   workflow_dispatch:
@@ -21,11 +19,6 @@ on:
         description: "Tag of the countryconfig image"
         required: true
         default: "v1.9.6"
-      data-seed-enabled:
-        description: "Enable data seeding during deployment"
-        required: false
-        default: "true"
-        type: boolean
       environment:
         description: "Target environment"
         required: true
@@ -147,7 +140,6 @@ jobs:
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set countryconfig.image.name="$COUNTRYCONFIG_IMAGE_NAME" \
             --set data_seed.env.ACTIVATE_USERS="${{ vars.ACTIVATE_USERS || 'false' }}" \
-            --set data_seed.enabled="${{ inputs.data-seed-enabled }}" \
             --set hostname=${{ vars.DOMAIN }} 2>&1 ; STATUS=$?;
             kill $STERN_PID 2>/dev/null || true
             exit $STATUS

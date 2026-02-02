@@ -179,31 +179,6 @@ export const infrastructureQuestions = [
   },
 ]
 
-export const staticSSLCertQuestions = [
-  {
-    name: 'sslCrt',
-    type: 'text' as const,
-    message:
-      'Provide SSL Certificate or Certificate chain:',
-    valueType: 'SECRET' as const,
-    validate: notEmpty,
-    valueLabel: 'SSL_CRT',
-    initial: process.env.SSL_CRT,
-    scope: 'ENVIRONMENT' as const
-  },
-  {
-    name: 'sslKey',
-    type: 'text' as const,
-    message:
-      'Provide SSL Certificate key',
-    valueType: 'SECRET' as const,
-    validate: notEmpty,
-    valueLabel: 'SSL_KEY',
-    initial: process.env.SSL_KEY,
-    scope: 'ENVIRONMENT' as const
-  },
-]
-
 export const backupQuestions = [
   {
     name: 'backupHost',
