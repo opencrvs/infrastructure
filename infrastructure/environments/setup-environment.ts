@@ -21,9 +21,13 @@ import {
 } from './github'
 
 import { derivedVariables } from './derived-variables'
-import { generateLongPassword } from './utils'
+import { 
+  generateLongPassword,
+  findExistingValue,
+  storeSecrets
+} from './utils'
 
-import { readFileSync, writeFileSync } from 'fs'
+
 import { error, info, log, success, warn } from './logger'
 import { generateInventory, copyChartsValues } from './templates'
 import { updateWorkflowEnvironments } from './update-workflows';
@@ -35,6 +39,7 @@ import {
   githubTokenQuestion,
   githubOtherQuestions,
   infrastructureQuestions,
+  staticSSLCertQuestions,
   countryQuestions,
   databaseAndMonitoringQuestions,
   diskQuestions,
@@ -46,43 +51,18 @@ import {
   backupQuestions,
 } from './questions';
 
+import {
+  Question,
+  QuestionDescriptor,
+  SecretAnswer,
+  VariableAnswer,
+  Answer,
+  Answers,
+  AnswerWithNullValue
+} from './custom-types'
 
-type Question<T extends string> = PromptObject<T> & {
-  name: T
-  valueType?: 'SECRET' | 'VARIABLE'
-  scope: 'ENVIRONMENT' | 'REPOSITORY'
-  valueLabel?: string
-}
+import { askQuestionWithEditor } from './editor-questions'
 
-type QuestionDescriptor<T extends string> = Omit<Question<T>, 'type'> & {
-  type: 'disabled' | PromptObject<T>['type']
-}
-
-type SecretAnswer = {
-  type: 'SECRET'
-  scope: 'ENVIRONMENT' | 'REPOSITORY'
-  name: string
-  value: string
-  didExist: Secret | undefined
-}
-
-type VariableAnswer = {
-  type: 'VARIABLE'
-  name: string
-  didExist: Variable | undefined
-  value: string
-  scope: 'ENVIRONMENT' | 'REPOSITORY'
-}
-
-type Answer = SecretAnswer | VariableAnswer
-type Answers = Answer[]
-type AnswerWithNullValue =
-  | (Omit<SecretAnswer, 'value'> & {
-    value: SecretAnswer['value'] | null
-  })
-  | (Omit<VariableAnswer, 'value'> & {
-    value: VariableAnswer['value'] | null
-  })
 
 function questionToPrompt<T extends string>({
   // eslint-disable-next-line no-unused-vars
@@ -155,20 +135,6 @@ function getAnswers(existingValues: (Secret | Variable)[]): Answers {
       }
     })
   })
-}
-
-function findExistingValue<T extends string>(
-  name: string,
-  type: T,
-  scope: 'ENVIRONMENT' | 'REPOSITORY',
-  existingValues: Array<Secret | Variable>
-) {
-  return existingValues.find(
-    (value) =>
-      value.name === name && value.type === type && value.scope === scope
-  ) as
-    | (T extends 'SECRET' ? Secret : T extends 'VARIABLE' ? Variable : never)
-    | undefined
 }
 
 async function promptAndStoreAnswer(
@@ -277,27 +243,7 @@ async function promptAndStoreAnswer(
   return { ...Object.fromEntries(existingValuesForQuestions), ...result }
 }
 
-function storeSecrets(environment: string, answers: Answers) {
-  let envConfig: Record<string, string> = {}
-  try {
-    envConfig = dotenv.parse(
-      readFileSync(`${process.cwd()}/.env.${environment}`)
-    )
-  } catch (error) {
-    envConfig = {}
-  }
 
-  const linesFromAnswers = answers.map(
-    (update) => `${update.name}="${update.value}"`
-  )
-  const linesFromEnvConfig = Object.entries(envConfig)
-    .filter(([name]) => !answers.find((update) => update.name === name))
-    .map(([name, value]) => `${name}="${value}"`)
-
-  const allLines = [...linesFromEnvConfig, ...linesFromAnswers].sort()
-
-  writeFileSync(`.env.${environment}`, allLines.join('\n'))
-}
 
 ALL_QUESTIONS.push(
   ...environmentQuestions,
@@ -317,8 +263,7 @@ ALL_QUESTIONS.push(
   ...metabaseAdminQuestions
 )
 
-
-  ; (async () => {
+; (async () => {
 
     const { environment_type, environment } = await prompts(environmentQuestions.map(questionToPrompt), {
       onCancel: () => {
@@ -431,12 +376,67 @@ ALL_QUESTIONS.push(
       infrastructureQuestions,
       existingValues
     )
-    // FIXME: Review
     const workerNodes = infrastructure.workerNodes
-      ? infrastructure.workerNodes.split(',').map((ip: string) => ip.trim())
-      : []
+      ? infrastructure.workerNodes.split(',').map((ip: string) => ip.trim()) : []
 
-    log('\n', kleur.bold().underline('Backup configuration'))
+    log('\n', kleur.bold().underline('Traefik SSL Certificate'))
+    const sslCertExists = findExistingValue(
+      'SSL_CRT',
+      'SECRET',
+      'ENVIRONMENT',
+      existingValues
+    )
+
+    let ssl_answers: AnswerWithNullValue[] = [];
+    const traefikConfOption = (await prompts(
+        [
+          {
+            name: 'traefikConfOption',
+            type: 'select' as const,
+            message: 'Choose option to configure Traefik SSL Certificate',
+            choices: [
+              {title: "Let's Encrypt certificate", value: 'lets_encrypt'},
+              {title: "Static SSL certificate", value: 'static_ssl'},
+              {title: "Custom configuration", value: 'custom'}
+            ],
+            initial: sslCertExists ? 1 : 0
+          }
+        ])
+      ).traefikConfOption
+    if (sslCertExists || traefikConfOption === "static_ssl") {
+      ssl_answers = await askQuestionWithEditor(staticSSLCertQuestions, existingEnvironmentSecrets)
+    }
+    
+    log('\n', kleur.bold().underline('Storage'))
+
+    let enableEncryption = true
+    const encryption_key_defined = findExistingValue(
+      'ENCRYPTION_KEY',
+      'SECRET',
+      'ENVIRONMENT',
+      existingValues
+    )
+
+    if (!encryption_key_defined) {
+      const answers_enable_encryption = await prompts(
+        [
+          {
+            name: 'enableEncryption',
+            type: 'confirm' as const,
+            message: 'Do you want to enable disk encryption?',
+            scope: 'ENVIRONMENT' as const,
+            initial: Boolean(process.env.ENABLE_ENCRYPTION)
+          }
+        ].map(questionToPrompt)
+      )
+      enableEncryption = answers_enable_encryption.enableEncryption
+    }
+    if (enableEncryption) {
+      console.log('\n', kleur.bold().green('✔'), kleur.bold().yellow(' Disk encryption is enabled'))
+      await promptAndStoreAnswer(environment, diskQuestions, existingValues)
+    }
+
+    log('\n', kleur.bold().underline('Backup'))
     let backupHostExists = findExistingValue(
       'BACKUP_HOST',
       'SECRET',
@@ -481,7 +481,7 @@ ALL_QUESTIONS.push(
     }
     }
 
-    log('\n', kleur.bold().underline('Restore configuration'))
+    log('\n', kleur.bold().underline('Restore'))
     let restoreEnvironmentName = findExistingValue(
       'RESTORE_ENVIRONMENT_NAME',
       'VARIABLE',
@@ -511,6 +511,7 @@ ALL_QUESTIONS.push(
               type: 'autocomplete' as const,
               message: 'What is the name of your environment to restore?',
               scope: 'ENVIRONMENT' as const,
+              valueLabel: 'RESTORE_ENVIRONMENT_NAME',
               choices: env_list_filtered.map(env => ({
                 title: env,
                 value: env
@@ -527,40 +528,12 @@ ALL_QUESTIONS.push(
       log('\n', kleur.bold().green('✔'), kleur.bold().yellow('Restore environment is already set to'), kleur.bold().blue(restoreEnvironmentName))
     }
 
-    log('\n', kleur.bold().underline('Databases & monitoring'))
-
-    let enableEncryption = true
-    const encryption_key_defined = findExistingValue(
-      'ENCRYPTION_KEY',
-      'SECRET',
-      'ENVIRONMENT',
-      existingValues
-    )
-
-    if (!encryption_key_defined) {
-      const answers_enable_encryption = await prompts(
-        [
-          {
-            name: 'enableEncryption',
-            type: 'confirm' as const,
-            message: 'Do you want to enable disk encryption?',
-            scope: 'ENVIRONMENT' as const,
-            initial: Boolean(process.env.ENABLE_ENCRYPTION)
-          }
-        ].map(questionToPrompt)
-      )
-      enableEncryption = answers_enable_encryption.enableEncryption
-    }
-    if (enableEncryption) {
-      console.log('\n', kleur.bold().green('✔'), kleur.bold().yellow(' Disk encryption is enabled'))
-      await promptAndStoreAnswer(environment, diskQuestions, existingValues)
-    }
+    log('\n', kleur.bold().underline('Monitoring'))
     await promptAndStoreAnswer(
       environment,
       databaseAndMonitoringQuestions,
       existingValues
     )
-    log('\n', kleur.bold().underline('Sentry'))
     const sentryDSNExists = findExistingValue(
       'SENTRY_DSN',
       'SECRET',
@@ -568,6 +541,7 @@ ALL_QUESTIONS.push(
       existingValues
     )
 
+    log('\n', kleur.bold().underline('Sentry'))
     if (sentryDSNExists) {
       await promptAndStoreAnswer(environment, sentryQuestions, existingValues)
     } else {
@@ -577,10 +551,9 @@ ALL_QUESTIONS.push(
             name: 'useSentry',
             type: 'confirm' as const,
             message: 'Do you want to use Sentry?',
-            scope: 'ENVIRONMENT' as const,
             initial: Boolean(process.env.SENTRY_DNS)
           }
-        ].map(questionToPrompt)
+        ]
       )
 
       if (useSentry) {
@@ -655,7 +628,7 @@ ALL_QUESTIONS.push(
         scope: 'REPOSITORY' as const
       },
     ]
-
+    derivedUpdates.push(...ssl_answers)
     if ('production' === environment_type) {
       derivedUpdates.push({
         name: 'BACKUP_ENCRYPTION_PASSPHRASE',
@@ -1281,30 +1254,26 @@ ALL_QUESTIONS.push(
         is_qa_env: environment !== 'production' ? "true" : "false",
         backup_enabled: configureBackup ? "true" : "false",
         restore_enabled: restoreEnvironmentName ? "true" : "false",
-        restore_environment_name: restoreEnvironmentName || ""
+        restore_environment_name: restoreEnvironmentName || "",
+        traefik_mode: traefikConfOption
       }
     )
     await updateWorkflowEnvironments();
 
-    const worker_message = workerNodes.length > 0 ?
-      `
------------------------
-➡️ ${kleur.bold().yellow('COPY the SSH public key from the master VM to your clipboard')}
------------------------
-➡️ ${kleur.bold().yellow('Run following command on Kubernetes worker VM to create provision user and setup SSH key:')}
+    let addon_message = workerNodes.length > 0 || configureBackup ? 
+      "--------------------------------------------------------------------------------------------\n" +
+      `\n➡️ ${kleur.bold().yellow('COPY the SSH public key from the master VM to your clipboard')}\n` +
+      "--------------------------------------------------------------------------------------------\n" : ""
+    addon_message += workerNodes.length > 0 ?
+      `➡️ ${kleur.bold().yellow('Run following command on Kubernetes worker VM to create provision user and setup SSH key:')}\n` +
+      "\n" +
+      "curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\ \n" +
+      `bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}\n` : ""
 
-curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\
-bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}` : ''
-
-  const backup_message = configureBackup ? 
-`
------------------------
-➡️ ${kleur.bold().yellow('COPY the SSH public key from the master VM to your clipboard')}
------------------------
-➡️ ${kleur.bold().yellow('Run following command on backup server to create provision user and setup SSH key:')}
-
-curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\
-bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}` : ''
+    addon_message += configureBackup ? 
+      `\n➡️ ${kleur.bold().yellow('Run following command on backup server to create provision user and setup SSH key:')}\n` +
+      "curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\ \n" +
+      `bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}` : ""
 
   log(`
 ${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
@@ -1318,11 +1287,11 @@ bash opencrvs-bootstrap.sh --owner ${githubOrganisation} \\
             --env ${environment} \\
             --token ${githubToken} \\
             --enable-runner
-${worker_message}
 
-${backup_message}
+${addon_message}
 
 ${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
+${kleur.yellow('Please KINDLY read hints above')}
     `)
     log('\nAll variables stored in', kleur.cyan(`.env.${environment}`))
     log(kleur.bold().yellow('DO NOT COMMIT THIS FILE TO GIT!'))

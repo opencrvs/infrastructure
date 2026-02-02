@@ -1,18 +1,59 @@
 import fs from "fs";
 import path from "path";
-import { log } from './logger'
-/**
- * Replace placeholders in file content.
- * Customize the replacements map to your needs.
- */
-function replacePlaceholders(content: string, replacements: Record<string, string>): string {
-  let updated = content;
-  for (const [key, value] of Object.entries(replacements)) {
-    const regex = new RegExp(`\\{\\{${key}\\}\\}`, "g"); // matches ${KEY}
-    let clear_value = String(value).replace(/[\x00-\x1F\x7F]/g, ""); // remove control characters
-    updated = updated.replace(regex, clear_value);
+import { log, success, warn } from './logger'
+import * as yaml from 'js-yaml';
+import Handlebars from 'handlebars';
+
+// Register a helper to increment numbers
+Handlebars.registerHelper('data_label_idx', function(value) {
+  return parseInt(value) + 2;
+});
+
+export function readYamlFile(filePath: any): any {
+  const fileContent = fs.readFileSync(filePath, "utf8");
+  return yaml.load(fileContent);
+}
+
+
+// Extract users from the old inventory
+export function extractAndModifyUsers(data: any): any {
+  if (!data?.all?.vars?.users) {
+    return { users: [] };
   }
-  return updated;
+  return data.all.vars.users;
+}
+
+export function dockerManagerFirst(data: any): string {
+  if (!data?.['docker-manager-first']?.hosts) {
+    throw new Error('Invalid YAML structure: missing docker-manager-first.hosts');
+  }
+  const hosts = data['docker-manager-first'].hosts;
+  const dockerManagerFirst = Object.values(hosts)
+    .filter((host: any) => host.ansible_host)
+    .map((host: any) => host.ansible_host);
+  return dockerManagerFirst.length === 1 ? dockerManagerFirst[0] : '';
+}
+
+export function extractBackupNode(data: any): string {
+  if (!data?.['backups']?.hosts) {
+    return '';
+  }
+  const hosts = data['backups'].hosts;
+  const backupHostEntry = Object.values(hosts)
+    .filter((host: any) => host.ansible_host)
+    .map((host: any) => host.ansible_host);
+  return backupHostEntry.length === 1 ? backupHostEntry[0] : '';
+}
+
+export function extractWorkerNodes(data: any): string[] {
+  if (!data?.['docker-workers']?.hosts) {
+    return [];
+  }
+  const hosts = data['docker-workers'].hosts;
+  const worker_hosts = Object.values(hosts)
+    .filter((host: any) => host.ansible_host)
+    .map((host: any) => host.ansible_host);
+  return worker_hosts;
 }
 
 /**
@@ -23,11 +64,12 @@ function replacePlaceholders(content: string, replacements: Record<string, strin
 /**
  * Recursively copy a directory and replace placeholders in text files.
  */
-export function copyChartsValues(env: string, replacements: Record<string, string>) {
+export function copyChartsValues(env: string, values: Record<string, string>) {
   const srcDir = path.resolve(__dirname, "templates", "charts-values");
   const destDir = path.resolve(__dirname, "..", "..", "environments", env);
   fs.mkdirSync(destDir, { recursive: true });
-
+  values['lets_encrypt'] = values['traefik_mode'] === "lets_encrypt" ? "true" : "false"
+  values['static_ssl'] = values['traefik_mode'] === "static_ssl" ? "true" : "false"
   function copyRecursive(src: string, dest: string) {
     const stat = fs.statSync(src);
 
@@ -38,22 +80,23 @@ export function copyChartsValues(env: string, replacements: Record<string, strin
       }
     } else {
       if (fs.existsSync(dest)) {
-        log(`⚠️ Skipping existing file: ${dest}`);
+        warn(`  ⚠️ Skipping existing file: ${dest}`);
         return;
       }
       // read file
       const content = fs.readFileSync(src, "utf8");
 
       // replace placeholders
-      const updated = replacePlaceholders(content, replacements);
-
+      const template = Handlebars.compile(content);
+      const updated = template(values);
       // write updated file
       fs.writeFileSync(dest, updated, "utf8");
-      log(`✅ Created: ${dest}`);
+      log(`  ✓ Created: ${dest}`);
     }
   }
-
+  console.log(`\n📋 Copying charts-values templates to ${destDir}:`);
   copyRecursive(srcDir, destDir);
+  success(`✅ Completed copying charts-values.\n`);
 }
 
 /**
@@ -74,63 +117,16 @@ export function generateInventory(env: string, values: Record<string, any>){
 
   // Check if output file already exists
   if (fs.existsSync(outputPath)) {
-    log(`⚠️ Skipping ${templatePath}, file already exists at ${outputPath}`);
+    warn(`  ⚠️ Skipping ${templatePath}, file already exists at ${outputPath}`);
     return;
   }
-  let template = fs.readFileSync(templatePath, "utf-8");
+  const templateFile = fs.readFileSync(templatePath, "utf-8");
+  const template = Handlebars.compile(templateFile);
+  values['single_node'] = (values['worker_nodes'].length > 0 || values['backup_host']) ? "false" : "true";
 
-  // Extract worker nodes and backup host from values
-  let worker_nodes = values['worker_nodes'].map((e: string) => String(e)
-    .replace(/[\x00-\x1F\x7F]/g, ""))
-    .filter((e: string) => e.length > 0);
+  const updated = template(values);
 
-  // Generate workers block
-  if (worker_nodes && worker_nodes.length > 0) {
-    let workersBlock = `
-    # Workers section is optional, for single node cluster feel free to remove this section
-    # section can be added later
-    # more workers can be added later as well
-    workers:
-      hosts:`;
-
-    worker_nodes.forEach((host: string, index: number) => {
-      const isFirstWorker = index === 0;
-      workersBlock += `
-        worker${index}:
-          ansible_host: ${host}${isFirstWorker ? `
-          labels:
-            # By default all datastores are deployed to worker node with role data1
-            role: data1` : ''}
-`;
-    });
-  
-  template = template.replace('{{WORKERS_BLOCK}}', workersBlock);
-  } else {
-    // No worker nodes, remove the placeholder
-    template = template.replace('{{WORKERS_BLOCK}}', '');
-  }
-
-
-  // Generate backup block if backup_host is provided
-  const backupHost = String(values['backup_host']).replace(/[\x00-\x1F\x7F]/g, "");
-  let backupBlock = '';
-  if (backupHost.length > 0) {
-    backupBlock = `
-    # backup section is optional, feel free to remove if backups are not enabled
-    # section can be added later
-    backup:
-      hosts:
-        backup1:
-          ansible_host: ${backupHost}
-`;
-  }
-  template = template.replace('{{BACKUP_BLOCK}}', backupBlock);
-
-  // Determine if single-node or multi-node
-  values['single_node'] = (worker_nodes.length > 0 || backupHost) ? "false" : "true";
-  const updated = replacePlaceholders(template, values);
-  values
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, updated);
-  log(`✅ Generated inventory file at ${outputPath}`);
+  log(`\n✅ Generated inventory file at ${outputPath}\n`);
 }
