@@ -2,6 +2,7 @@ import { Octokit } from '@octokit/core'
 import dotenv from 'dotenv'
 import kleur from 'kleur'
 import prompts, { PromptObject } from 'prompts'
+
 import {
   Secret,
   Variable,
@@ -379,7 +380,7 @@ ALL_QUESTIONS.push(
       ? infrastructure.workerNodes.split(',').map((ip: string) => ip.trim()) : []
 
     log('\n', kleur.bold().underline('SSH Users'))
-    const users = await collectUsersConfiguration()
+    const users = (await collectUsersConfiguration())
 
     log('\n', kleur.bold().underline('Traefik SSL Certificate'))
     const sslCertExists = findExistingValue(
@@ -405,7 +406,7 @@ ALL_QUESTIONS.push(
           }
         ])
       ).traefikConfOption
-    if (sslCertExists || traefikConfOption === "static_ssl") {
+    if (traefikConfOption === "static_ssl") {
       ssl_answers = await askQuestionWithEditor(staticSSLCertQuestions, existingEnvironmentSecrets)
     }
     
@@ -1237,6 +1238,7 @@ ALL_QUESTIONS.push(
     )
 
     log('\n', kleur.bold().underline('Running configuration files updates'))
+    console.log(users)
     generateInventory(
       environment,
       {

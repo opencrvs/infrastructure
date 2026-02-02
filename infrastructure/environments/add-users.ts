@@ -10,10 +10,6 @@ interface User {
   role: 'admin' | 'operator';
 }
 
-interface TemplateData {
-  users: User[];
-}
-
 /**
  * Gets the current system username
  * 
@@ -106,9 +102,9 @@ async function askToAddCurrentUser(): Promise<User | null> {
 /**
  * Collects user configuration through interactive prompts
  * 
- * @returns {Promise<TemplateData>} JSON data ready for Handlebars template
+ * @returns {Promise<User[]>} JSON data ready for Handlebars template
  */
-export async function collectUsersConfiguration(): Promise<TemplateData> {
+export async function collectUsersConfiguration(): Promise<User[]> {
   const users: User[] = [];
   
   const shouldConfigure = await confirm({
@@ -117,7 +113,7 @@ export async function collectUsersConfiguration(): Promise<TemplateData> {
   });
   
   if (!shouldConfigure) {
-    return { users: [] };
+    return [];
   }
   
   // Try to add current user first
@@ -134,7 +130,7 @@ export async function collectUsersConfiguration(): Promise<TemplateData> {
   });
   
   if (!addMoreUsers) {
-    return { users };
+    return users;
   }
   
   // Main loop for additional users
@@ -202,5 +198,5 @@ export async function collectUsersConfiguration(): Promise<TemplateData> {
   
   console.log('-'.repeat(50) + '\n');
   
-  return { users };
+  return users;
 }

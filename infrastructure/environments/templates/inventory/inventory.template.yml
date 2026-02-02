@@ -36,7 +36,21 @@ all:
     # Allowed states:
     # - present: user is allowed to login
     # - absent: user account is disabled
+    # users: []
+    {{#if users}}
+    users:
+    {{#each users as |user|}}
+      - name: {{user.name}}
+        ssh_keys:
+        {{#each user.ssh_keys as |key| }}
+          - {{key}}
+        {{/each}}
+        state: {{user.state}}
+        role: {{user.role}}
+    {{/each}}
+    {{else}}
     users: []
+    {{/if}}
 
   children:
     master:
@@ -50,8 +64,27 @@ all:
           labels:
             # traefik-role label is used to identify where to deploy traefik
             traefik-role: ingress
-
-{{WORKERS_BLOCK}}
-
-
-{{BACKUP_BLOCK}}
+            # By default all datastores are deployed to node with role data1
+            role: data1
+  {{#if worker_nodes}}
+    # Workers section is optional, for single node cluster feel free to remove this section
+    # section can be added later
+    # more workers can be added later as well
+    workers:
+      hosts:
+    {{#each worker_nodes as |host idx|}}
+        worker{{idx}}:
+          ansible_host: {{host}}
+          labels:
+            # Labels have index + 2 for backward compatibility with existing swarm setup
+            role: data{{data_label_idx idx}}
+    {{/each}}
+  {{/if}}
+  {{#if backup_host}}
+    # backup section is optional, feel free to remove if backups are not enabled
+    # section can be added later
+    backup:
+      hosts:
+        backup0:
+          ansible_host: {{backup_host}}
+  {{/if}}
