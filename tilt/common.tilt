@@ -62,7 +62,7 @@ dependencies = [
   'influxdb', 
   'redis',
   'postgres',
-  # 'postgres-on-update-core',
+  # 'postgres-on-deploy',
   # FIXME: both resources are present only if security is enabled
   # 'elasticsearch-on-deploy',
   # 'mongo-on-deploy',
