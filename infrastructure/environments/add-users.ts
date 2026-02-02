@@ -20,8 +20,7 @@ interface TemplateData {
  * @returns {string} Current OS username
  */
 function getCurrentUsername(): string {
-//   return os.userInfo().username;
-return 'bob'
+  return os.userInfo().username;
 }
 
 /**
