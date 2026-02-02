@@ -47,15 +47,11 @@ ports:
     hostPort: 443
     protocol: TCP
     nodePort: 30443
-    {{#if lets_encrypt}}
     http:
       tls:
         enabled: true
         certResolver: letsencrypt
-    {{/if}}
 
-
-{{#if lets_encrypt}}
 # 👇 Adjust this section if needed
 certificatesResolvers:
   letsencrypt:
@@ -74,30 +70,16 @@ certificatesResolvers:
       # Production server
       caServer: https://acme-v02.api.letsencrypt.org/directory
 
-additionalVolumeMounts:
-    - name: acme
-      mountPath: /certificates
-{{/if}}
-{{#if static_ssl}}
-certificatesResolvers: {}
-
-# 👇 Custom TLS configuration
-tlsStore:
-  default:
-    defaultCertificate:
-      # Check documentation how to create secret with static SSL certificate
-      secretName: traefik-cert
-{{/if}}
-
 deployment:
   hostNetwork: true
-  {{#if lets_encrypt}}
   additionalVolumes:
     - name: acme
       hostPath:
         path: /data/traefik
-  {{/if}}
 
+additionalVolumeMounts:
+    - name: acme
+      mountPath: /certificates
 
 nodeSelector:
   traefik-role: ingress
