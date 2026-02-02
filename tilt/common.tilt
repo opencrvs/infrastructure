@@ -62,7 +62,7 @@ dependencies = [
   'influxdb', 
   'redis',
   'postgres',
-  # 'postgres-on-update-core',
+  # 'postgres-on-deploy',
   # FIXME: both resources are present only if security is enabled
   # 'elasticsearch-on-deploy',
   # 'mongo-on-deploy',
@@ -97,12 +97,12 @@ for workload in opensrvs_services:
   k8s_resource(workload, labels=[tilt_label])
 
 opensrvs_jobs = [
-  'postgres-on-update-core',
-  'postgres-data-migration',
-  'postgres-on-update-analytics',
+  'postgres-on-deploy',
   'data-migration',
+  'data-migration-analytics',
   'elasticsearch-reindex',
 ]
+
 job_label = '3.Jobs'
 for workload in opensrvs_jobs:
   k8s_resource(workload, labels=[job_label])
