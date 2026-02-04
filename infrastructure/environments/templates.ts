@@ -130,7 +130,6 @@ export function generateInventory(env: string, values: Record<string, any>){
   }
   const templateFile = fs.readFileSync(templatePath, "utf-8");
   const template = Handlebars.compile(templateFile);
-  console.log(values['users'])
   values['single_node'] = (values['worker_nodes'].length > 0 || values['backup_host']) ? "false" : "true";
 
   const updated = template(values);
