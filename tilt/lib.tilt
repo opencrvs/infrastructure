@@ -161,9 +161,9 @@ def reindex_environment(
             kubectl delete job -n {0} elasticsearch-reindex || true
             helm template -f {1} \
                 --namespace {0} \
-                -s templates/elasticsearch-reindex.yaml \
+                -s templates/elasticsearch-reindex-job.yaml \
                 {2} | kubectl apply -n {0} -f -
-            sleep 30;
+            kubectl wait --for=condition=running job/elasticsearch-reindex -n {0} --timeout=600s;
             kubectl logs job/elasticsearch-reindex -f -n {0} || true
             kubectl wait --for=condition=complete job/elasticsearch-reindex -n {0} --timeout=600s;
           """.format(opencrvs_namespace, opencrvs_configuration_file, opencrvs_tools_chart_path),
