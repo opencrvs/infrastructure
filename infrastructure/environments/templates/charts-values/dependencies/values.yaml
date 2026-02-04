@@ -1,4 +1,6 @@
 storage_type: host_path
+node_selector:
+  role: data1
 
 environment_type: {{environment_type}}
 
