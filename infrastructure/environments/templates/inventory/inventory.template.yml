@@ -43,7 +43,7 @@ all:
       - name: {{user.name}}
         ssh_keys:
         {{#each user.ssh_keys as |key| }}
-          - {{key}}
+          - {{{key}}}
         {{/each}}
         state: {{user.state}}
         role: {{user.role}}
