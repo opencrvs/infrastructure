@@ -13,7 +13,7 @@ import { manageUsers } from './manage-users'
  * 
  * * @returns {string} Inventory file
  */
-export async function selectInventoryFile(
+async function selectInventoryFile(
   dirPath: string = './infrastructure/server-setup/inventory/'
 ): Promise<string> {
   // Check if directory exists
