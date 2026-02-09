@@ -155,7 +155,7 @@ async function askToAddCurrentUser(existingUsers: User[]): Promise<User | null> 
 /**
  * Add a new user
  */
-export async function addNewUser(existingUsers: User[]): Promise<User | null> {
+async function addNewUser(existingUsers: User[]): Promise<User | null> {
   const name = await input({
     message: 'Enter username:',
     validate: (value) => {
