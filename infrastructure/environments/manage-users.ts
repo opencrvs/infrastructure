@@ -59,7 +59,7 @@ function getCurrentUsername(): string {
  * 
  * @returns {string[]} Array of SSH public keys found
  */
-export function getCurrentUserSSHKeys(): string[] {
+function getCurrentUserSSHKeys(): string[] {
   const homeDir = os.homedir();
   const sshDir = path.join(homeDir, '.ssh');
   const keys: string[] = [];
