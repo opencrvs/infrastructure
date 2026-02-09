@@ -36,7 +36,7 @@ function updateInventoryFile(filePath: string, users: User[]) {
  * @param {string} filePath - Path to the inventory file
  * @returns {User[]} Array of existing users
  */
-export function parseInventoryFile(filePath: string): User[] {
+function parseInventoryFile(filePath: string): User[] {
   try {
   const data = readYamlFile(filePath)
   return getUsers(data)
