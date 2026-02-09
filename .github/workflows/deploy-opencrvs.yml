@@ -135,7 +135,7 @@ jobs:
             --template '{{.PodName}}/{{.ContainerName}} | {{.Message}}{{"\n"}}' \
             . &
           STERN_PID=$!
-          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services:0.1.27 \
+          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services:0.1.28 \
             --timeout 15m \
             --namespace "opencrvs-${ENV}" \
             -f environments/${ENV}/opencrvs-services/values.yaml \

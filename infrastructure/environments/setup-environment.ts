@@ -2,6 +2,7 @@ import { Octokit } from '@octokit/core'
 import dotenv from 'dotenv'
 import kleur from 'kleur'
 import prompts, { PromptObject } from 'prompts'
+import { confirm } from '@inquirer/prompts';
 
 import {
   Secret,
@@ -63,7 +64,7 @@ import {
 } from './custom-types'
 
 import { askQuestionWithEditor } from './editor-questions'
-import { collectUsersConfiguration } from './add-users'
+import { User, manageUsers } from './manage-users'
 
 function questionToPrompt<T extends string>({
   // eslint-disable-next-line no-unused-vars
@@ -276,7 +277,7 @@ ALL_QUESTIONS.push(
       path: `${process.cwd()}/.env.${environment}`
     })
 
-    log('\n', kleur.bold().underline('Github'))
+    log('\n', kleur.bold().underline('Github'), '\n')
 
     const { githubOrganisation, githubRepository } = await prompts(
       githubQuestions.map(questionToPrompt),
@@ -379,10 +380,18 @@ ALL_QUESTIONS.push(
     const workerNodes = infrastructure.workerNodes
       ? infrastructure.workerNodes.split(',').map((ip: string) => ip.trim()) : []
 
-    log('\n', kleur.bold().underline('SSH Users'))
-    const users = (await collectUsersConfiguration())
+    log('\n', kleur.bold().underline('SSH Users'), '\n')
+    const shouldConfigure = await confirm({
+      message: 'Would you like to configure users with remote access?',
+      default: true
+    });
+    let users: User[] = []
+    if (shouldConfigure) {
+      users = await manageUsers(`infrastructure/server-setup/inventory/${environment}.yml`)
+    }
 
-    log('\n', kleur.bold().underline('Traefik SSL Certificate'))
+
+    log('\n', kleur.bold().underline('Traefik SSL Certificate'), '\n')
     const sslCertExists = findExistingValue(
       'SSL_CRT',
       'SECRET',
@@ -1126,16 +1135,12 @@ ALL_QUESTIONS.push(
       process.exit(0)
     }
 
-    const { confirm } = await prompts([
-      {
-        name: 'confirm',
-        type: 'confirm' as const,
+    const saveChanges = await confirm({
         message: 'Do you want to continue?',
-        initial: true
-      }
-    ])
+        default: true
+      })
 
-    if (!confirm) {
+    if (!saveChanges) {
       process.exit(0)
     }
 
@@ -1238,7 +1243,6 @@ ALL_QUESTIONS.push(
     )
 
     log('\n', kleur.bold().underline('Running configuration files updates'))
-    console.log(users)
     generateInventory(
       environment,
       {
