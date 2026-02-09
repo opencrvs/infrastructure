@@ -22,7 +22,7 @@ export interface User {
  * @param {string} filePath - Path to the inventory file
  * @param {User[]} users - Users array
  */
-export function updateInventoryFile(filePath: string, users: User[]) {
+function updateInventoryFile(filePath: string, users: User[]) {
   const data = readYamlFile(filePath)
   if (!data?.all?.vars?.users) {
     throw Error(`'users' section not found within inventory file: ${filePath}`)
