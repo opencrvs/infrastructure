@@ -9,7 +9,7 @@ on:
         default: "dev"
         type: choice
         options:
-          - ""
+          - stg
   workflow_call:
     inputs:
       environment:
