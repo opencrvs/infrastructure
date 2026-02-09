@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { log, success, warn } from './logger'
-import * as yaml from 'js-yaml';
+
 import Handlebars from 'handlebars';
 
 // Register a helper to increment numbers
@@ -9,12 +9,13 @@ Handlebars.registerHelper('data_label_idx', function(value) {
   return parseInt(value) + 2;
 });
 
-export function readYamlFile(filePath: any): any {
-  const fileContent = fs.readFileSync(filePath, "utf8");
-  return yaml.load(fileContent);
+export function getUsers(data: any): any {
+  if (!data?.all?.vars?.users) {
+    return { users: [] };
+  }
+  return data.all.vars.users;
 }
-
-
+// START: TEMPORAL SECTION FOR TRANSITION FROM DOCKER SWARM TO K8s
 // Extract users from the old inventory
 // Docker swarm format to new
 export function extractAndModifyUsers(data: any): any {
@@ -63,6 +64,7 @@ export function extractWorkerNodes(data: any): string[] {
     .map((host: any) => host.ansible_host);
   return worker_hosts;
 }
+// END: TEMPORAL SECTION FOR TRANSITION FROM DOCKER SWARM TO K8s
 
 /**
  * Copy charts-values directory into environments/<env>
@@ -87,10 +89,6 @@ export function copyChartsValues(env: string, values: Record<string, string | bo
         copyRecursive(path.join(src, item), path.join(dest, item));
       }
     } else {
-      if (fs.existsSync(dest)) {
-        warn(`  ⚠️ Skipping existing file: ${dest}`);
-        return;
-      }
       // read file
       const content = fs.readFileSync(src, "utf8");
 
@@ -102,7 +100,7 @@ export function copyChartsValues(env: string, values: Record<string, string | bo
       log(`  ✓ Created: ${dest}`);
     }
   }
-  console.log(`\n📋 Copying charts-values templates to ${destDir}:`);
+  log(`\n📋 Copying charts-values templates to ${destDir}:`);
   copyRecursive(srcDir, destDir);
   success(`✅ Completed copying charts-values.\n`);
 }
@@ -123,11 +121,6 @@ export function generateInventory(env: string, values: Record<string, any>){
   const templatePath = path.join(__dirname, "templates", "inventory", "inventory.template.yml");
   const outputPath = path.join(__dirname, "..", "server-setup", "inventory", `${env}.yml`);
 
-  // Check if output file already exists
-  if (fs.existsSync(outputPath)) {
-    warn(`  ⚠️ Skipping ${templatePath}, file already exists at ${outputPath}`);
-    return;
-  }
   const templateFile = fs.readFileSync(templatePath, "utf-8");
   const template = Handlebars.compile(templateFile);
   values['single_node'] = (values['worker_nodes'].length > 0 || values['backup_host']) ? "false" : "true";

@@ -1,4 +1,6 @@
-import { readFileSync, writeFileSync } from 'fs'
+import fs, { readFileSync, writeFileSync } from 'fs'
+import * as yaml from 'js-yaml';
+
 import dotenv from 'dotenv'
 import {
   Secret,
@@ -61,4 +63,25 @@ export function storeSecrets(environment: string, answers: Answers) {
   const allLines = [...linesFromEnvConfig, ...linesFromAnswers].sort()
 
   writeFileSync(`.env.${environment}`, allLines.join('\n'))
+}
+
+export function readYamlFile(filePath: any): any {
+  const fileContent = fs.readFileSync(filePath, "utf8");
+  return yaml.load(fileContent);
+}
+
+export function writeYamlFile(filePath: string, data: any) {
+  try {
+    const yamlContent = yaml.dump(data, {
+      indent: 2,
+      lineWidth: -1,
+      flowLevel: -1,  // Prevent flow style for arrays/objects
+      noRefs: true,
+      sortKeys: false
+    });
+    
+    fs.writeFileSync(filePath, yamlContent, 'utf8');
+  } catch (error) {
+    throw new Error(`Failed to write inventory file: ${error}`);
+  }
 }

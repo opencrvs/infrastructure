@@ -2,7 +2,15 @@ import * as path from 'path';
 import kleur from 'kleur'
 import { error, info, log, success, warn } from './logger'
 import { updateWorkflowEnvironments } from './update-workflows';
-import { generateInventory, copyChartsValues, extractAndModifyUsers, extractWorkerNodes, extractBackupNode, dockerManagerFirst, readYamlFile } from './templates'
+import { readYamlFile } from './utils';
+import {
+    generateInventory,
+    copyChartsValues,
+    extractAndModifyUsers,
+    extractWorkerNodes,
+    extractBackupNode,
+    dockerManagerFirst
+} from './templates'
 
 
 
