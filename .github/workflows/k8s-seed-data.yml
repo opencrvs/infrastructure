@@ -98,7 +98,7 @@ jobs:
                 --set data_seed.env.ACTIVATE_USERS=${{ vars.ACTIVATE_USERS || 'false' }} \
                 --namespace ${namespace} \
                 -s templates/${{ matrix.job-name }}-job.yaml \
-                oci://ghcr.io/opencrvs/opencrvs-services:0.1.27 | kubectl apply -n ${namespace} --wait=true -f -
+                oci://ghcr.io/opencrvs/opencrvs-services:0.1.28 | kubectl apply -n ${namespace} --wait=true -f -
         - name: Checking ${{ matrix.job-name }} job status
           run: |
             while true; do
