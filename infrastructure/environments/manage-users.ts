@@ -228,7 +228,7 @@ function displayUserSummary(users: User[]): void {
 /**
  * Edit an existing user with screen clearing for better UX
  */
-export async function editUser(user: User): Promise<User> {
+async function editUser(user: User): Promise<User> {
   const updatedUser = { ...user };
   let continueEditing = true;
   
