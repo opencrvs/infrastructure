@@ -24,6 +24,24 @@ jobs:
       - k8s
       - ${{ inputs.environment }}
     steps:
+      - name: Get deployed Helm chart version
+        id: helm-version
+        run: |
+          if ! helm list -n ${namespace} | grep -q opencrvs; then
+            echo "❌ Error: No OpenCRVS Helm release found in namespace"
+            echo "or there is in-progress deployment"
+            exit 1
+          fi
+          
+          DEPLOYED_VERSION=$(helm list -n ${namespace} -o json | jq -r '.[] | select(.name=="opencrvs") | .chart' | sed 's/opencrvs-services-//')
+          
+          if [ -z "$DEPLOYED_VERSION" ]; then
+            echo "❌ Error: Could not determine deployed version"
+            exit 1
+          fi
+          
+          echo "version=$DEPLOYED_VERSION" >> $GITHUB_OUTPUT
+          echo "📊 Using deployed Helm chart version: $DEPLOYED_VERSION"
       - name: Get helm release values and Quote specific fields that are commonly numeric
         run: |
           helm get values opencrvs -n ${namespace} -ojson | \
@@ -41,10 +59,15 @@ jobs:
       - name: Create job elasticsearch-reindex from helm template and apply it
         run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true elasticsearch-reindex
-            helm template -f ${namespace}.json \
-                --namespace ${namespace} \
-                -s templates/elasticsearch-reindex-job.yaml \
-                oci://ghcr.io/opencrvs/opencrvs-services:0.1.28 | kubectl apply --wait -n ${namespace} -f -
+            echo "Templating with version: ${{ steps.helm-version.outputs.version }}"
+            helm template \
+              --version ${{ steps.helm-version.outputs.version }} \
+              --values ${namespace}.json \
+              --namespace ${namespace} \
+              --show-only templates/elasticsearch-reindex-job.yaml \
+              oci://ghcr.io/opencrvs/opencrvs-services \
+              | kubectl apply --wait -n ${namespace} -f -
+            echo "✅ Elasticsearch reindex job created successfully"
       - name: Checking elasticsearch-reindex job status
         run: |
           while true; do
