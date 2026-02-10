@@ -10,7 +10,8 @@ on:
         default: "development"
         type: choice
         options:
-          - development
+          - production
+          - stg
       namespace_template:
         description: "Secrets mapping template"
         default: "opencrvs"
@@ -70,18 +71,17 @@ jobs:
       gh_token: ${{ secrets.GH_TOKEN }}
       encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
       BACKUP_HOST_PRIVATE_KEY: ${{ secrets.BACKUP_HOST_PRIVATE_KEY }}
+
   get-restore-host:
     needs: get-restore-env-name
     if: needs.get-restore-env-name.outputs.restore_env_name
     name: Get backup host
-    uses: ./.github/workflows/get-secret-from-environment.yml
-    with:
-      secret_name: 'BACKUP_HOST'
-      env_name: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
-    secrets:
-      gh_token: ${{ secrets.GH_TOKEN }}
-      encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
-      BACKUP_HOST: ${{ secrets.BACKUP_HOST }}
+    environment: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
+    runs-on: ubuntu-24.04
+    outputs:
+      host: ${{ vars.BACKUP_HOST }}
+    steps:
+      - run: echo ${{ vars.BACKUP_HOST }}
   get-restore-ssh-user:
     needs: get-restore-env-name
     if: needs.get-restore-env-name.outputs.restore_env_name
@@ -134,9 +134,7 @@ jobs:
           openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
           echo "::add-mask::$RESTORE_ENCRYPTION_PASSPHRASE"
 
-          BACKUP_HOST=$(echo "${{ needs.get-restore-host.outputs.secret_value }}" | base64 --decode | \
-          openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
-          echo "::add-mask::$BACKUP_HOST"
+          BACKUP_HOST=$(echo ${{ needs.get-restore-host.outputs.host }} | base64)
 
           BACKUP_HOST_PRIVATE_KEY=$(echo "${{ needs.get-restore-ssh-key.outputs.secret_value }}" | base64 --decode | \
           openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64 | tr -d ' \n')
