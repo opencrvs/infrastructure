@@ -80,7 +80,8 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       host: ${{ vars.BACKUP_HOST }}
-
+    steps:
+      - run: echo ${{ vars.BACKUP_HOST }}
   get-restore-ssh-user:
     needs: get-restore-env-name
     if: needs.get-restore-env-name.outputs.restore_env_name
