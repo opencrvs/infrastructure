@@ -10,6 +10,7 @@ on:
         default: "development"
         type: choice
         options:
+          - production
           - stg
       namespace_template:
         description: "Secrets mapping template"

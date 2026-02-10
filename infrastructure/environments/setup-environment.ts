@@ -481,10 +481,10 @@ ALL_QUESTIONS.push(
     let backupHostPublicKey = ''
     if (configureBackup) {
       backupHost = (await promptAndStoreAnswer(
-      environment,
-      backupQuestions,
-      existingValues
-    )).backupHost
+        environment,
+        backupQuestions,
+        existingValues
+      )).backupHost
     if (backupHost && !backupHostPrivateKeyExists) {
       const { publicKey, privateKey } = generateSSHKeyPair();
       backupHostPublicKey = publicKey;
