@@ -51,6 +51,66 @@ postgres:
   # postgres databases and users to create, if `use_default_credentials` is set to `false`.
   admin_user_secret_name: postgres-admin-user
 
+  backup:
+    # Enable/Disable backup
+    enabled: false
+
+    # Run backup jobs as cronjob
+    # Default: true
+    # If you need to run manual backup, then set this property to false
+    # and run helm template ... instead
+    cronjob: true
+
+    # Backup implementation:
+    # - dump: logical full backup using pg_dump (protocol-based, cross-version).
+    # - pgbackrest: physical backup using pgBackRest (full/diff/incr/PITR).
+    type: dump
+
+    # Secret that holds connection info for the backup server (SSH).
+    # Expected keys in the Secret (example):
+    # - host:   backup server hostname / IP (e.g. "backup-vm")
+    # - user:   backup server username (e.g. "pgbackrest" or "backup")
+    # - ssh_key: private SSH key for passwordless connection
+    #
+    # Both dump and pgbackrest flows can reuse this Secret.
+    server_secret: backup-server-ssh-credentials
+
+    # Secret holding the pgBackRest repository encryption passphrase.
+    # Encryption is always enabled; cipher type is fixed in templates
+    # (e.g. repo1-cipher-type=aes-256-cbc).
+    #
+    # Expected key in the Secret (example):
+    # - repo1-cipher-pass: passphrase used for repo1-cipher-pass
+    encryption_secret: backup-encryption-secret
+
+    # Common scheduling layer (Cron expressions). Interpretation depends on `type`.
+    schedule:
+      # For type=dump:
+      #   - dump: single schedule for full logical dump.
+      # For type=pgbackrest:
+      #   - full:        weekly full
+      #   - differential:daily
+      dump: "0 1 * * *"            # used only when type=dump
+
+      full: "0 1 * * 0"                 # Sunday 01:00, used when type=pgbackrest
+      differential: "0 1 * * 1-6"       # Mon–Sat 01:00, used when type=pgbackrest
+
+  restore:
+    # Enable/Disable restore
+    enabled: false
+
+    # Run backup jobs as cronjob
+    # Default: true
+    # If you need to run manual restore, then set this property to false
+    # and run helm template ... instead
+    cronjob: true
+    # Restore type should be the same as backup type
+    type: dump
+    # See description within backup section
+    # schedule: "0 3 * * *"   # daily at 03:00
+    # encryption_secret: restore-encryption-secret
+    # server_secret: backup-server-ssh-credentials
+
 # Elasticsearch Configuration
 elasticsearch:
   image: docker.elastic.co/elasticsearch/elasticsearch:8.16.4

@@ -32,20 +32,25 @@ jobs:
   get-restore-env-name:
     name: Get restore environment name
     outputs:
-      restore_env_name: ${{ steps.set-restore-env.outputs.restore-env-name }}
+      restore_env_name: ${{ vars.RESTORE_ENVIRONMENT_NAME }}
     runs-on: ubuntu-24.04
     environment: ${{ inputs.environment }}
     steps:
-      - name: Set restore environment name
-        id: set-restore-env
+      - name: "Env name: ${{ vars.RESTORE_ENVIRONMENT_NAME }}"
         run: |
-          if [ "${{ vars.RESTORE_ENVIRONMENT_NAME }}" != "false" ]; then
-          echo "restore-env-name=${{ vars.RESTORE_ENVIRONMENT_NAME }}"
-          echo "restore-env-name=${{ vars.RESTORE_ENVIRONMENT_NAME }}" >> $GITHUB_OUTPUT
-          fi
-      - name: "Env name: ${{ steps.set-restore-env.outputs.restore-env-name }}"
+          echo "Determined restore environment name: ${{ vars.RESTORE_ENVIRONMENT_NAME }}"
+  get-restore-env-mode:
+    needs: get-restore-env-name
+    if: needs.get-restore-env-name.outputs.restore_env_name
+    name: Get restore environment mode
+    outputs:
+      restore_mode: ${{ vars.BACKUP_ENVIRONMENT_MODE }}
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
+    steps:
+      - name: "Env name: ${{ needs.get-restore-env-name.outputs.restore_env_name }} and mode ${{ vars.BACKUP_ENVIRONMENT_MODE }}"
         run: |
-          echo "Determined restore environment name: ${{ steps.set-restore-env.outputs.restore-env-name }}"
+          echo "Determined restore environment mode: ${{ vars.BACKUP_ENVIRONMENT_MODE }}"
 
   get-restore-encryption-key:
     needs: get-restore-env-name
@@ -71,7 +76,34 @@ jobs:
       gh_token: ${{ secrets.GH_TOKEN }}
       encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
       BACKUP_HOST_PRIVATE_KEY: ${{ secrets.BACKUP_HOST_PRIVATE_KEY }}
-
+  get-restore-postgres-admin-user:
+    needs:
+      - get-restore-env-name
+      - get-restore-env-mode
+    if: needs.get-restore-env-name.outputs.restore_env_name && needs.get-restore-env-mode.outputs.restore_mode == 'differential'
+    name: Get postgres admin user
+    uses: ./.github/workflows/get-secret-from-environment.yml
+    with:
+      secret_name: 'POSTGRES_USER'
+      env_name: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
+    secrets:
+      gh_token: ${{ secrets.GH_TOKEN }}
+      encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+  get-restore-postgres-admin-password:
+    needs:
+      - get-restore-env-name
+      - get-restore-env-mode
+    if: needs.get-restore-env-name.outputs.restore_env_name && needs.get-restore-env-mode.outputs.restore_mode == 'differential'
+    name: Get postgres admin password
+    uses: ./.github/workflows/get-secret-from-environment.yml
+    with:
+      secret_name: 'POSTGRES_PASSWORD'
+      env_name: ${{ needs.get-restore-env-name.outputs.restore_env_name }}
+    secrets:
+      gh_token: ${{ secrets.GH_TOKEN }}
+      encryption_key: ${{ secrets.GH_ENCRYPTION_PASSWORD }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
   get-restore-host:
     needs: get-restore-env-name
     if: needs.get-restore-env-name.outputs.restore_env_name
@@ -101,6 +133,8 @@ jobs:
       - get-restore-host
       - get-restore-ssh-user
       - get-restore-encryption-key
+      - get-restore-postgres-admin-user
+      - get-restore-postgres-admin-password
     if: always()
     name: Sync GitHub env to Kubernetes
     environment: ${{ inputs.environment }}
@@ -144,10 +178,20 @@ jobs:
           openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
           echo "::add-mask::$BACKUP_SERVER_USER"
 
+          POSTGRES_USER=$(echo "${{ needs.get-restore-postgres-admin-user.outputs.secret_value }}" | base64 --decode | \
+          openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
+          echo "::add-mask::$POSTGRES_USER"
+
+          POSTGRES_PASSWORD=$(echo "${{ needs.get-restore-postgres-admin-password.outputs.secret_value }}" | base64 --decode | \
+          openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
+          echo "::add-mask::$POSTGRES_PASSWORD"
+
           echo RESTORE_ENCRYPTION_PASSPHRASE=$RESTORE_ENCRYPTION_PASSPHRASE >> $env_file
           echo BACKUP_HOST=$BACKUP_HOST >> $env_file
           echo BACKUP_HOST_PRIVATE_KEY=$BACKUP_HOST_PRIVATE_KEY >> $env_file
           echo BACKUP_SERVER_USER=$BACKUP_SERVER_USER >> $env_file
+          echo POSTGRES_USER=$POSTGRES_USER >> $env_file
+          echo POSTGRES_PASSWORD=$POSTGRES_PASSWORD >> $env_file
           grep BACKUP_HOST_PRIVATE_KEY $env_file || echo "No restore encryption passphrase to add"
 
       - name: Preprocess mapping into Secret YAMLs
@@ -185,7 +229,7 @@ jobs:
                 k8s_var="$key"
               fi
 
-              value=$(grep "^$github_var=" "$env_file" | cut -d= -f2- || true)
+              value=$(grep "^$github_var=" "$env_file" | cut -d= -f2- | tail -1 || true)
 
               if [ -n "$value" ]; then
                 echo "  $k8s_var: $value"

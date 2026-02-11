@@ -15,7 +15,8 @@ mongodb:
 
 postgres:
   use_default_credentials: false
-
+  backup:
+    type: {{backup_type}}
 redis:
   auth_mode: acl
 

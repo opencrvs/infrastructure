@@ -1,12 +1,14 @@
 {{ if .Values.postgres.enabled }}
 {{- $storageType := default .Values.storage_type .Values.postgres.storage_type | default "pvc" }}
+
 {{- if eq $storageType "pvc" }}
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   labels:
     app: postgres
-  name: postgres
+  name: postgres-data
 spec:
   accessModes:
     - ReadWriteOnce
@@ -62,19 +64,18 @@ spec:
                 values:
                 - {{ $v }}
             {{- end }}
-      {{- end }}
+    {{- end }}
       containers: 
-        - image: postgres:17
-          name: postgres
+        - name: postgres
+          image: postgres:17
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              /docker-entrypoint-initdb.d/postgres-backup-config.sh && \
+              exec docker-entrypoint.sh postgres
           env:
-          {{- if .Values.postgres.use_default_credentials }}
-            - name: POSTGRES_USER
-              value: postgres
-            - name: POSTGRES_PASSWORD
-              value: postgres
             - name: POSTGRES_DB
               value: postgres
-          {{- else }}
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
@@ -85,6 +86,58 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.postgres.admin_user_secret_name }}
                   key: POSTGRES_PASSWORD
+          {{- if (eq (include "postgres.use_pgBackRest" .) "true") }}
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.admin_user_secret_name }}
+                  key: POSTGRES_USER
+            - name: DB_TYPE
+          {{- if (eq (include "postgres.backup_enabled" .) "true") }}
+              value: backup
+          {{- else if eq (include "postgres.restore_enabled" .) "true"}}
+              value: restore
+          {{- else }}
+              value: standalone
+          {{- end }}
+            - name: PGBACKREST_CONFIG
+              value: /etc/pgbackrest/pgbackrest.conf
+            - name: PGBACKREST_REPO1_PATH
+          {{- if (eq (include "postgres.backup_enabled" .) "true") }}
+              value: "{{ default .Values.postgres.backup.server_dir .Values.backup.backup_server_dir }}/postgres"
+          {{- else }}
+              value: "{{ default .Values.postgres.restore.server_dir .Values.restore.backup_server_dir }}/postgres"
+          {{- end }}
+            - name: PGBACKREST_REPO1_RETENTION_FULL
+              value: "1"
+            - name: PGBACKREST_REPO1_RETENTION_DIFF
+              value: "7"
+            - name: PGBACKREST_STANZA
+              # FIXME: Hardcoded main
+              value: "main"
+            - name: PGBACKREST_REPO1_HOST_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default .Values.postgres.backup.server_secret .Values.backup.backup_server_secret }}
+                  key: user
+            - name: PGBACKREST_REPO1_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default .Values.postgres.backup.server_secret .Values.backup.backup_server_secret }}
+                  key: host
+            - name: PGBACKREST_REPO1_TYPE
+              value: posix
+            - name: PGBACKREST_REPO1_CIPHER_TYPE
+              value: aes-256-cbc
+            - name: PGBACKREST_REPO1_CIPHER_PASS
+              valueFrom:
+                secretKeyRef:
+                {{- if (eq (include "postgres.backup_enabled" .) "true") }}
+                  name: {{ default .Values.postgres.backup.encryption_secret .Values.backup.backup_encryption_secret }}
+                {{- else }}
+                  name: {{ default .Values.postgres.restore.encryption_secret .Values.restore.backup_encryption_secret }}
+                {{- end }}
+                  key: backup_encryption_key
           {{- end }}
           {{- include "render-env-vars" (dict "service_name" "postgres" "Values" .Values) }}
           {{ include "resources-helper" (dict "service_name" "postgres" "Values" .Values) | indent 10 }}
@@ -93,16 +146,49 @@ spec:
               protocol: TCP
           volumeMounts:
             - mountPath: /var/lib/postgresql/data
-              name: postgres
+              name: data
+            - name: postgres-run
+              mountPath: /run/postgresql
+          {{- if (eq (include "postgres.use_pgBackRest" .) "true") }}
+            - name: init-script
+              mountPath: /docker-entrypoint-initdb.d
+            - name: pgbackrest-config
+              mountPath: /etc/pgbackrest
+            - name: pgbackrest-ssh
+              mountPath: /root/.ssh
+              readOnly: true
+          {{- end }}
       restartPolicy: Always
       volumes:
-        - name: postgres
+        - name: init-script
+          configMap:
+            name: postgres-scripts
+            defaultMode: 0755
+        - name: postgres-run
+          emptyDir: {}
+        - name: data
       {{- if eq $storageType "pvc" }}
           persistentVolumeClaim:
-            claimName: postgres
+            claimName: postgres-data
       {{- else if eq $storageType "host_path" }}
           hostPath:
             path: {{ .Values.postgres.host_data_path | default "/data/postgres" }}
             type: DirectoryOrCreate
+      {{- end }}
+      {{- if (eq (include "postgres.use_pgBackRest" .) "true") }}
+        - name: pgbackrest-config
+          configMap:
+            name: postgres-pgbackrest-config
+        - name: pgbackrest-ssh
+          secret:
+          {{- if (eq (include "postgres.backup_enabled" .) "true") }}
+            secretName: {{ default .Values.postgres.backup.server_secret .Values.backup.backup_server_secret }}
+          {{- else }}
+            secretName: {{ default .Values.postgres.restore.server_secret .Values.restore.backup_server_secret }}
+          {{- end }}
+            defaultMode: 0400
+            items:
+              - key: ssh_key
+                path: id_rsa
       {{- end }}
 {{- end }}

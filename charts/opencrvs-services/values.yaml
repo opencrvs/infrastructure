@@ -161,7 +161,9 @@ postgres:
   events_migrator: events_migrator
   events_app: events_app
   events_analytics: analytics
-
+  on_restore_cronjob:
+    enabled: false
+    schedule: "0 2 * * *"
 ###############################################################################
 # Application configuration
 ###############################################################################
