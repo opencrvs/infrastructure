@@ -1,3 +1,13 @@
+- name: Ensure backup user is present
+  user:
+    name: '{{ backup_server_user }}'
+    state: present
+    create_home: true
+    home: '{{ backup_server_user_home }}'
+    shell: /bin/bash
+    groups: postgres
+    append: true 
+
 - name: Ensure .ssh directory exists
   file:
     path: "{{ backup_server_user_home }}/.ssh"

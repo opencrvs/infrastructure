@@ -16,9 +16,6 @@
 elasticsearch:
   host: elasticsearch.opencrvs-deps-dev.svc.cluster.local
   port: 9200
-  cronjob:
-    enabled: false
-    schedule: "0 2 * * *"
   # auth_mode:
   # - disabled: No authentication enabled for MongoDB, password-less access to databases
   # - auto: Users are managed by OpenCRVS helm chart, this mode requires secret to be created with MongoDB admin user
@@ -160,7 +157,9 @@ postgres:
   events_migrator: events_migrator
   events_app: events_app
   events_analytics: analytics
-
+  on_restore_cronjob:
+    enabled: false
+    schedule: "0 2 * * *"
 ###############################################################################
 # Application configuration
 ###############################################################################

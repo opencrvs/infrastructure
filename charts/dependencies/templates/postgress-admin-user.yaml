@@ -1,15 +1,14 @@
 {{/*
 Create postgres Admin user (superuser)
 */}}
-{{- if not .Values.postgres.use_default_credentials }}
-
 {{/* Prevent secret mutation between helm upgrades */}}
 {{- $secret := lookup "v1" "Secret" .Release.Namespace .Values.postgres.admin_user_secret_name }}
 {{- if not $secret }}
   {{- $admin_user := "postgres" }}
   {{- $admin_password := randAlphaNum 16 }}
-  {{- if $.Values.chart_dev_mode }}
-    {{- $admin_password = "password" }}
+  {{- if .Values.postgres.use_default_credentials }}
+    {{- $admin_user = "postgres" }}
+    {{- $admin_password = "postgres" }}
   {{- end }}
 ---
 apiVersion: v1
@@ -24,5 +23,4 @@ type: Opaque
 data:
   POSTGRES_USER: {{ $admin_user | b64enc }}
   POSTGRES_PASSWORD: {{ $admin_password | b64enc }}
-{{- end }}
 {{- end }}
