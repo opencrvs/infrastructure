@@ -1,4 +1,5 @@
-{{ if and .Values.minio.enabled .Values.backup.enabled }}
+{{ if and .Values.minio.enabled (eq (include "minio.backup_enabled" .) "true") }}
+{{- if eq .Values.minio.backup.type "dump" }}
 ---
 apiVersion: batch/v1
 {{ if .Values.backup.cronjob }}
@@ -32,8 +33,6 @@ spec:
               command: ["/scripts/backup.sh"]
               image: "bash"
               env:
-                - name: BACKUP_MODE
-                  value: "mirror"
               {{- if not .Values.minio.use_default_credentials }}
                 - name: MINIO_ROOT_USER
                   valueFrom:
@@ -82,4 +81,38 @@ spec:
               configMap:
                 name: minio-scripts
                 defaultMode: 0755
+{{- end }}
+{{- if eq .Values.minio.backup.type "mirror" }}
+---
+apiVersion: batch/v1
+{{ if .Values.backup.cronjob }}
+kind: CronJob
+{{- else }}
+kind: Job
+{{- end }}
+metadata:
+  name: minio-backup
+spec:
+  {{ if .Values.backup.cronjob }}
+  schedule: {{ default .Values.backup.schedule .Values.minio.backup.schedule }}
+  {{- if .Values.timezone }}
+  timeZone: {{ .Values.timezone }}
+  {{- end }}
+  jobTemplate:
+    spec:
+  {{- end }}
+      template:
+        spec:
+          serviceAccountName: backup-runner
+          containers:
+            - name: runner
+              image: bitnami/kubectl:latest
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  kubectl exec minio-0 -c rsync -- \
+                    /bin/sh -c "rsync -avz --exclude='.minio.sys/config/iam/' -e 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' /data/ \$BACKUP_USER@\$BACKUP_HOST:\$BACKUP_REMOTE_DIR/minio"
+          restartPolicy: OnFailure
+{{- end }}
 {{- end }}

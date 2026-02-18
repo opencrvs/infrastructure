@@ -114,7 +114,7 @@ spec:
   {{- end }}
       template:
         spec:
-          serviceAccountName: postgres-backup-runner
+          serviceAccountName: backup-runner
           containers:
             - name: runner
               image: bitnami/kubectl:latest
@@ -158,7 +158,7 @@ spec:
   {{- end }}
       template:
         spec:
-          serviceAccountName: postgres-backup-runner
+          serviceAccountName: backup-runner
           containers:
             - name: runner
               image: bitnami/kubectl:latest
