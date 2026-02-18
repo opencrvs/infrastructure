@@ -175,20 +175,55 @@ elastalert:
   env: {}
 
 minio:
-  # Enable MinIO deployment.
+  # Enable or disable MinIO deployment.
   enabled: true
-  # minio defaults to minioadmin and minioadmin as the access key and secret key respectively.
-  # MinIO strongly discourages use of the default credentials regardless of deployment environment.
-  # Check official documentation for more details:
+
+  # Use default credentials (username: minioadmin, password: minioadmin).
+  # Highly discouraged for production environments—see official docs:
   # https://min.io/docs/minio/linux/administration/identity-access-management/minio-user-management.html
   use_default_credentials: true
-  # If set to `false`, then MinIO will be deployed with authentication enabled.
-  # Secret with random credentials will be created with name `minio-opencrvs-users`.
-  # Secret will contain following variables:
-  # - MINIO_ACCESS_KEY
-  # - MINIO_SECRET_KEY
-  # - MINIO_ROOT_USER, same as MINIO_ACCESS_KEY
-  # - MINIO_ROOT_PASSWORD, same as MINIO_SECRET_KEY
+
+  # storage_type: host_path
+
+  # Path to persistent data on the VM (when storage_type is host_path).
+  host_data_path: /data/minio
+
+  # Node selector for MinIO pods, usually used to keep data persistent on specified nodes.
+  node_selector: {}
+
+  backup:
+    # Enable or disable backup functionality for MinIO.
+    enabled: false
+
+    # Backup type:
+    # "dump" - creates a full filesystem dump;
+    # "mirror" - mirrors the filesystem to a remote backup server.
+    type: dump
+
+    # Name of the Kubernetes secret containing backup server SSH credentials.
+    # server_secret: backup-server-ssh-credentials
+
+    # Cron schedule to run backup job (format: "MIN HOUR DAY MONTH WEEKDAY").
+    # schedule: "0 1 * * *"
+
+    # Directory on backup server where encrypted backups are stored.
+    # If not set, use global backup_server_dir.
+    # server_dir: "n/a"
+
+  restore:
+    # Enable or disable restore functionality for MinIO.
+    enabled: false
+
+    # Restore type:
+    # "dump" - restore from encrypted archive;
+    # "mirror" - mirror filesystem from remote backup server.
+    type: dump
+
+    # Name of the Kubernetes secret containing backup server SSH credentials.
+    # server_secret: backup-server-ssh-credentials
+
+    # Cron schedule for restore job.
+    # schedule: "0 3 * * *"
 
 redis:
   # Enable Redis deployment.
