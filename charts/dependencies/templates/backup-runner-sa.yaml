@@ -1,17 +1,17 @@
 {{/*
-Service account postgres-backup-runner is shared between backup and restore CronJobs
+Service account backup-runner is shared between backup and restore CronJobs
 */}}
 {{- if (eq (include "postgres.use_pgBackRest" .) "true") }}
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: postgres-backup-runner
+  name: backup-runner
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: postgres-backup-runner-role
+  name: backup-runner-role
 rules:
   - apiGroups: [""]
     resources: ["pods"]
@@ -31,13 +31,13 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: postgres-backup-runner-binding
+  name: backup-runner-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: postgres-backup-runner-role
+  name: backup-runner-role
 subjects:
   - kind: ServiceAccount
-    name: postgres-backup-runner
+    name: backup-runner
     namespace: {{ .Release.Namespace }}
 {{- end }}

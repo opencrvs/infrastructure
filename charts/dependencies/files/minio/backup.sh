@@ -24,7 +24,6 @@ REMOTE_DIR="${BACKUP_REMOTE_DIR:-"/home/$BACKUP_USER"}/$BACKUP_DATE"
 # Number of retries for backup creation
 MAX_RETRIES=10
 
-BACKUP_MODE=${BACKUP_MODE:-"fs"}
 # Install required tools
 apk add --no-cache bash curl openssl openssh jq rsync minio-client
 
@@ -33,9 +32,9 @@ if [ -z "$ENCRYPT_PASS" ]; then
   echo "[$(date +%F\ %H:%M:%S)] [ERROR] Must provide ENCRYPT_PASS environment variable"
   exit 1
 fi
+
 # Mirror data before backup
-# Works well on any minio installation but is slower and requires additional disk space
-backup_mirror(){
+backup_and_archive(){
   MINIO_ALIAS=local
   mcli alias set $MINIO_ALIAS http://minio:3535 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD
 
@@ -53,13 +52,6 @@ backup_mirror(){
 
   echo "Backup completed! Buckets saved at: $BACKUP_PATH"
   cd $BACKUP_PATH && tar -zcvf $ARCHIVE_PATH .
-}
-
-# Backup entire filesystem
-# Works well on single node installation and is fastest way to create backup
-backup_fs(){
-  echo "[$(date +%F\ %H:%M:%S)] Archive backup at $ARCHIVE_PATH"
-  cd /data && tar -zcvf $ARCHIVE_PATH .
 }
 
 create_encrypted_backup(){
@@ -88,11 +80,8 @@ echo "[$(date +%F\ %H:%M:%S)] Running backup container"
 echo "[$(date +%F\ %H:%M:%S)] Setup connection to container http://minio:3535"
 
 
-if [ $BACKUP_MODE == "fs" ]; then
-  backup_fs
-elif [ $BACKUP_MODE == "mirror" ]; then
-  backup_mirror
-fi
+backup_and_archive
+
 create_encrypted_backup
 
 transfer_to_backup_host

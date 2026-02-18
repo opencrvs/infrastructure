@@ -148,9 +148,9 @@ spec:
               name: data
             - name: postgres-run
               mountPath: /run/postgresql
-          {{- if (eq (include "postgres.use_pgBackRest" .) "true") }}
             - name: init-script
               mountPath: /docker-entrypoint-initdb.d
+          {{- if (eq (include "postgres.use_pgBackRest" .) "true") }}
             - name: pgbackrest-config
               mountPath: /etc/pgbackrest
             - name: pgbackrest-ssh
