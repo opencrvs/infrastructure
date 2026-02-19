@@ -90,11 +90,6 @@ helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
             <td>Enable elasticsearch reindex cronjob. Required if database restore is configured.</td>
         </tr>
         <tr>
-            <td>elasticsearch.cronjob.schedule</td>
-            <td><pre>0 2 * * *</pre></td>
-            <td>Schedule time for cronjob. Make sure reindex doesn't overlap with database restore job.</td>
-        </tr>
-        <tr>
             <td>elasticsearch.auth_mode</td>
             <td>disabled</td>
             <td>  Following values are allowed
@@ -401,6 +396,16 @@ helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services \
             <td>dashboards.admin_email</td>
             <td>user@opencrvs.org</td>
             <td>Use default OpenCRVS login/password or generate random values</td>
+        </tr>
+        <tr>
+            <td>on_restore_cronjob.enabled</td>
+            <td><pre>false</pre></td>
+            <td>Special cronjob for OpenCRVS maintenance after database restore. Job runs reindex and postgres passwords update.</td>
+        </tr>
+        <tr>
+            <td>on_restore_cronjob.schedule</td>
+            <td><pre>0 3 * * *</pre></td>
+            <td>Schedule time for cronjob. Make sure schedule doesn't overlap with database restore job.</td>
         </tr>
     </tbody>
 </table>

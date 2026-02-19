@@ -1,15 +1,15 @@
 
-{{- if .Values.postgres.on_restore_cronjob.enabled }}
+{{- if .Values.on_restore_cronjob.enabled }}
 ---
 apiVersion: batch/v1
 kind: CronJob
 metadata:
   labels:
-    app: postgres
+    app: common
     job-type: restore
-  name: postgres-on-db-restore
+  name: on-db-restore-cronjob
 spec:
-  schedule: "{{ .Values.postgres.on_restore_cronjob.schedule }}"
+  schedule: "{{ .Values.on_restore_cronjob.schedule }}"
 {{- if .Values.timezone }}
   timeZone: {{ .Values.timezone }}
 {{- end }}
@@ -18,7 +18,7 @@ spec:
       template:
         metadata:
           labels:
-            app: postgres
+            app: common
             job-type: restore
         spec:
           restartPolicy: OnFailure

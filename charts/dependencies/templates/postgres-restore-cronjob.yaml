@@ -92,7 +92,7 @@ spec:
                 name: postgres-scripts
                 defaultMode: 0755
 {{- end }}
-{{- if eq .Values.postgres.restore.type "pgbackrest" }}
+{{- if eq .Values.postgres.restore.type "differential" }}
 ---
 apiVersion: batch/v1
 {{- if $run_as_cronjob }}
@@ -117,6 +117,9 @@ spec:
           containers:
             - name: runner
               image: bitnami/kubectl:latest
+              env:
+                - name: PGBACKREST_STANZA
+                  value: main
               command:
                 - /bin/sh
                 - -c
@@ -140,7 +143,7 @@ spec:
                   kubectl exec postgres-restore-runner -- \
                     rm -rf /var/lib/postgresql/data/*
                   kubectl exec postgres-restore-runner -- \
-                    pgbackrest --stanza=main restore --delta --force || exit 1
+                    pgbackrest --stanza="$PGBACKREST_STANZA" restore --delta --force || exit 1
                   kubectl scale statefulset postgres --replicas=1
               volumeMounts:
                 - mountPath: /manifests

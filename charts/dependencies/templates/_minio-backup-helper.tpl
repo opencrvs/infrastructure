@@ -27,17 +27,17 @@ Check restore is enabled or not
 {{- end }}
 
 {{/*
-minio.use_mirror
+minio.use_rsync
 ---
 CAUTION: This helper returns string value (not boolean)
 
 Render differential backup properties
 */}}
-{{- define "minio.use_mirror" -}}
+{{- define "minio.use_rsync" -}}
   {{- if and
       (or
-        (eq .Values.minio.backup.type "mirror")
-        (eq .Values.minio.restore.type "mirror")
+        (eq .Values.minio.backup.type "differential")
+        (eq .Values.minio.restore.type "differential")
       )
       (or
         (eq (include "minio.backup_enabled" .) "true")
