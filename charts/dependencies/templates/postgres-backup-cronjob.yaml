@@ -93,7 +93,7 @@ spec:
                 defaultMode: 0755
 {{- end }}
 
-{{- if eq .Values.postgres.backup.type "pgbackrest" }}
+{{- if eq .Values.postgres.backup.type "differential" }}
 ---
 apiVersion: batch/v1
 {{ if $run_as_cronjob }}
@@ -136,7 +136,7 @@ spec:
                     echo "Stanza '$PGBACKREST_STANZA' already exists."
                   fi
                   kubectl exec -n {{ .Release.Namespace }} postgres-0 -- \
-                    pgbackrest --stanza=main backup --type=full
+                    pgbackrest --stanza="$PGBACKREST_STANZA" backup --type=full
           restartPolicy: OnFailure
 ---
 apiVersion: batch/v1
@@ -162,12 +162,15 @@ spec:
           containers:
             - name: runner
               image: bitnami/kubectl:latest
+              env:
+                - name: PGBACKREST_STANZA
+                  value: main
               command:
                 - /bin/sh
                 - -c
                 - |
                   kubectl exec -n {{ .Release.Namespace }} postgres-0 -- \
-                    pgbackrest --stanza=main backup --type=diff
+                    pgbackrest --stanza="$PGBACKREST_STANZA" backup --type=diff
           restartPolicy: OnFailure
 {{- end }}
 {{- end }}

@@ -82,7 +82,7 @@ spec:
                 name: minio-scripts
                 defaultMode: 0755
 {{- end }}
-{{- if eq .Values.minio.backup.type "mirror" }}
+{{- if eq .Values.minio.backup.type "differential" }}
 ---
 apiVersion: batch/v1
 {{ if .Values.backup.cronjob }}

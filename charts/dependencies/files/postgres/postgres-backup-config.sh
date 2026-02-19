@@ -78,10 +78,13 @@ fi
 
 ###########################################################
 # How it works?
-# 1. standalone: database without backup or restore configured
-# 2. backup: Production database is accessible for write while backup
+# 1. standalone: database without backup or restore configured and
+#            backup/restore.type=dump.
+# 2. backup: backup.type=differential.
+#            Production database is accessible for write while backup
 #            WAL is used to play transactions made while full/diff backup
-# 3. restore: After restore drop WAL section to avoid concurrent write 
+# 3. restore: restore.type=differential.
+#            After restore drop WAL section to avoid concurrent write 
 #            operations to production repository
 ###########################################################
 case "${DB_TYPE:-standalone}" in

@@ -6,6 +6,10 @@ environment_type: {{environment_type}}
 
 minio:
   use_default_credentials: false
+  restore:
+    type: {{backup_type}}
+  backup:
+    type: {{backup_type}}
 
 elasticsearch:
   use_default_credentials: false
@@ -15,8 +19,11 @@ mongodb:
 
 postgres:
   use_default_credentials: false
+  restore:
+    type: {{backup_type}}
   backup:
     type: {{backup_type}}
+
 redis:
   auth_mode: acl
 

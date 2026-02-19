@@ -138,7 +138,7 @@ spec:
           volumeMounts:
             - mountPath: /data
               name: minio
-      {{- if eq (include "minio.use_mirror" .) "true" }}
+      {{- if eq (include "minio.use_rsync" .) "true" }}
         - image: eeacms/rsync:3.0
           name: rsync
           command: ["sleep", "infinity"]
@@ -185,7 +185,7 @@ spec:
             path: {{ .Values.minio.host_data_path | default "/data/minio" }}
             type: DirectoryOrCreate
       {{- end }}
-      {{- if eq (include "minio.use_mirror" .) "true" }}
+      {{- if eq (include "minio.use_rsync" .) "true" }}
       # If backup or restore enabled -> Define key for backup
       {{- $ssh_secret := default .Values.backup.backup_server_secret .Values.minio.backup.server_secret }}
       # If restore enabled -> use key for restore
