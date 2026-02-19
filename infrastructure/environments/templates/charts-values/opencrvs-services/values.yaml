@@ -36,8 +36,6 @@ redis:
 postgres:
   auth_mode: auto
   host: postgres-0.postgres.opencrvs-deps-{{env}}.svc.cluster.local
-  on_restore_cronjob:
-    enabled: {{restore_enabled}}
 
 imagePullSecrets:
   # Default value for credentials created while yarn environment:init
@@ -53,3 +51,6 @@ countryconfig:
       - SMTP_PORT
       - SMTP_SECURE
       - SMTP_USERNAME
+
+on_restore_cronjob:
+  enabled: {{restore_enabled}}

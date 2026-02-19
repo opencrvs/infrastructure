@@ -36,8 +36,8 @@ Render differential backup properties
 {{- define "postgres.use_pgBackRest" -}}
   {{- if and
       (or
-        (eq .Values.postgres.backup.type "pgbackrest")
-        (eq .Values.postgres.restore.type "pgbackrest")
+        (eq .Values.postgres.backup.type "differential")
+        (eq .Values.postgres.restore.type "differential")
       )
       (or
         (eq (include "postgres.backup_enabled" .) "true")

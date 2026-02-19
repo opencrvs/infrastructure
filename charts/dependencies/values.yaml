@@ -63,16 +63,16 @@ postgres:
 
     # Backup implementation:
     # - dump: logical full backup using pg_dump (protocol-based, cross-version).
-    # - pgbackrest: physical backup using pgBackRest (full/diff/incr/PITR).
+    # - differential: physical backup using pgBackRest (full/diff/incr/PITR).
     type: dump
 
     # Secret that holds connection info for the backup server (SSH).
     # Expected keys in the Secret (example):
-    # - host:   backup server hostname / IP (e.g. "backup-vm")
-    # - user:   backup server username (e.g. "pgbackrest" or "backup")
+    # - host:   backup server hostname
+    # - user:   backup server username
     # - ssh_key: private SSH key for passwordless connection
     #
-    # Both dump and pgbackrest flows can reuse this Secret.
+    # Both dump and differential flows can reuse this Secret.
     server_secret: backup-server-ssh-credentials
 
     # Secret holding the pgBackRest repository encryption passphrase.
@@ -87,13 +87,13 @@ postgres:
     schedule:
       # For type=dump:
       #   - dump: single schedule for full logical dump.
-      # For type=pgbackrest:
+      # For type=differential:
       #   - full:        weekly full
       #   - differential:daily
       dump: "0 1 * * *"            # used only when type=dump
 
-      full: "0 1 * * 0"                 # Sunday 01:00, used when type=pgbackrest
-      differential: "0 1 * * 1-6"       # Mon–Sat 01:00, used when type=pgbackrest
+      full: "0 1 * * 0"                 # Sunday 01:00, used when type=differential
+      differential: "0 1 * * 1-6"       # Mon–Sat 01:00, used when type=differential
 
   restore:
     # Enable/Disable restore
@@ -197,7 +197,7 @@ minio:
 
     # Backup type:
     # "dump" - creates a full filesystem dump;
-    # "mirror" - mirrors the filesystem to a remote backup server.
+    # "differential" - rsync the filesystem to a remote backup server.
     type: dump
 
     # Name of the Kubernetes secret containing backup server SSH credentials.
@@ -216,7 +216,7 @@ minio:
 
     # Restore type:
     # "dump" - restore from encrypted archive;
-    # "mirror" - mirror filesystem from remote backup server.
+    # "differential" - rsync filesystem from remote backup server.
     type: dump
 
     # Name of the Kubernetes secret containing backup server SSH credentials.

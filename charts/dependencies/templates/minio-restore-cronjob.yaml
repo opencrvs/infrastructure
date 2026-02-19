@@ -33,8 +33,6 @@ spec:
               command: ["/scripts/restore.sh"]
               image: "bash"
               env:
-                - name: RESTORE_MODE
-                  value: "mirror"
               {{- if not .Values.minio.use_default_credentials }}
                 - name: MINIO_ROOT_USER
                   valueFrom:
@@ -84,7 +82,7 @@ spec:
                 name: minio-scripts
                 defaultMode: 0755
 {{- end }}
-{{- if eq .Values.minio.restore.type "mirror" }}
+{{- if eq .Values.minio.restore.type "differential" }}
 ---
 apiVersion: batch/v1
 {{ if .Values.restore.cronjob }}

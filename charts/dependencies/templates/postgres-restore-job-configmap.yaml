@@ -1,6 +1,6 @@
 {{- $storageType := default .Values.storage_type .Values.postgres.storage_type | default "pvc" }}
 {{- if and
-      (eq .Values.postgres.restore.type "pgbackrest")
+      (eq .Values.postgres.restore.type "differential")
       (eq (include "postgres.restore_enabled" .) "true")
 }}
 ---

@@ -75,13 +75,13 @@ This section allows you to configure the postgres deployment within your infrast
 | node_selector   | dict | `{}` | Label selector for datastore nodes, usually used to keep data persistent |
 | backup.{}       | dict | `{}` | Backup configuration section, for more information please check `values.yaml` and **Backup section** in this README |
 | backup.enabled  | string | `false` | Backup enabled or disabled, section has higher priority over global `backup` section |
-| backup.type     | string | `dump` | `dump` is a full logical database dump, `pgbackrest` is a physical backup using pgBackRest |
+| backup.type     | string | `dump` | `dump` is a full logical database dump, `differential` is a physical backup using pgBackRest |
 | backup.server_secret | string | `backup-server-ssh-credentials` | Name of the Kubernetes secret with backup server credentials       |
 | backup.encryption_secret | string | `backup-encryption-secret` | Name of the Kubernetes secret containing the backup encryption key |
 | backup.schedule | dict | `{}` | Backup cronjob schedule |
 | backup.schedule.dump | string | `0 1 * * *` | Used only when type=dump, if not defined then value from `backup.schedule` is used |
-| backup.schedule.full | string | `0 1 * * 0` | Full backup schedule. Used when type=pgbackrest, note that value from `backup.schedule` is ignored |
-| `backup.schedule.differential` | string | `0 1 * * 1-6` | Differential backup schedule. Used when type=pgbackrest, note that value from `backup.schedule` is ignored |
+| backup.schedule.full | string | `0 1 * * 0` | Full backup schedule. Used when type=differential, note that value from `backup.schedule` is ignored |
+| `backup.schedule.differential` | string | `0 1 * * 1-6` | Differential backup schedule. Used when type=differential, note that value from `backup.schedule` is ignored |
 | backup.server_dir | string | `n/a` | Directory to store encrypted backup on backup server, if not defined `backup.backup_server_dir` is used |
 | restore.{}       | dict | `{}` | Restore configuration section, for more information please check `values.yaml` and **Restore section** in this README |
 | restore.enabled  | string | `false` | Restore enabled or disabled, section has higher priority over global `restore` section |
@@ -118,13 +118,13 @@ This section allows you to configure the deployment and authentication settings 
 | node_selector   | dict | `{}` | Label selector for datastore nodes, usually used to keep data persistent |
 | backup.{}       | dict | `{}` | Backup configuration section, for more information please check `values.yaml` and **Backup section** in this README |
 | backup.enabled  | string | `false` | Backup enabled or disabled, section has higher priority over global `backup` section |
-| backup.type     | string | `dump` | `dump` is a full filesystem dump, `mirror` is a filesystem mirror on remote backup server |
+| backup.type     | string | `dump` | `dump` is a full filesystem dump, `differential` is rsync from MinIO filesystem on remote backup server |
 | backup.server_secret | string | `backup-server-ssh-credentials` | Name of the Kubernetes secret with backup server credentials       |
 | backup.schedule | string | `0 1 * * *` | Time to run backup job, if not defined then value from `backup.schedule` is used |
-| backup.server_dir | string | `n/a` | Directory on backup server for encrypted backups or filesystem mirror. Uses global value if not set |
+| backup.server_dir | string | `n/a` | Directory on backup server for encrypted archive backups or filesystem rsync. Uses global value if not set |
 | restore.{}       | dict | `{}` | Restore configuration section, for more information please check `values.yaml` and **Restore section** in this README |
 | restore.enabled  | string | `false` | Enables restore functionality; section overrides global `restore` settings. |
-| restore.type     | string | `dump` | Restore method: `dump` (from encrypted archive) or `mirror` (mirror from remote backup server) |
+| restore.type     | string | `dump` | Restore method: `dump` (from encrypted archive) or `differential` (same as for backup) |
 | restore.server_secret | string | `backup-server-ssh-credentials` | Name of the Kubernetes secret with backup server credentials, usually backup server is used for restore, thats why credentials are shared |
 | restore.schedule | string | `0 3 * * *` | Restore cronjob schedule, if not defined then value from `restore.schedule` is used |
 
