@@ -51,6 +51,66 @@ postgres:
   # postgres databases and users to create, if `use_default_credentials` is set to `false`.
   admin_user_secret_name: postgres-admin-user
 
+  backup:
+    # Enable/Disable backup
+    enabled: false
+
+    # Run backup jobs as cronjob
+    # Default: true
+    # If you need to run manual backup, then set this property to false
+    # and run helm template ... instead
+    cronjob: true
+
+    # Backup implementation:
+    # - dump: logical full backup using pg_dump (protocol-based, cross-version).
+    # - differential: physical backup using pgBackRest (full/diff/incr/PITR).
+    type: dump
+
+    # Secret that holds connection info for the backup server (SSH).
+    # Expected keys in the Secret (example):
+    # - host:   backup server hostname
+    # - user:   backup server username
+    # - ssh_key: private SSH key for passwordless connection
+    #
+    # Both dump and differential flows can reuse this Secret.
+    server_secret: backup-server-ssh-credentials
+
+    # Secret holding the pgBackRest repository encryption passphrase.
+    # Encryption is always enabled; cipher type is fixed in templates
+    # (e.g. repo1-cipher-type=aes-256-cbc).
+    #
+    # Expected key in the Secret (example):
+    # - repo1-cipher-pass: passphrase used for repo1-cipher-pass
+    encryption_secret: backup-encryption-secret
+
+    # Common scheduling layer (Cron expressions). Interpretation depends on `type`.
+    schedule:
+      # For type=dump:
+      #   - dump: single schedule for full logical dump.
+      # For type=differential:
+      #   - full:        weekly full
+      #   - differential:daily
+      dump: "0 1 * * *"            # used only when type=dump
+
+      full: "0 1 * * 0"                 # Sunday 01:00, used when type=differential
+      differential: "0 1 * * 1-6"       # Mon–Sat 01:00, used when type=differential
+
+  restore:
+    # Enable/Disable restore
+    enabled: false
+
+    # Run backup jobs as cronjob
+    # Default: true
+    # If you need to run manual restore, then set this property to false
+    # and run helm template ... instead
+    cronjob: true
+    # Restore type should be the same as backup type
+    type: dump
+    # See description within backup section
+    # schedule: "0 3 * * *"   # daily at 03:00
+    # encryption_secret: restore-encryption-secret
+    # server_secret: backup-server-ssh-credentials
+
 # Elasticsearch Configuration
 elasticsearch:
   image: docker.elastic.co/elasticsearch/elasticsearch:8.16.4
@@ -115,20 +175,55 @@ elastalert:
   env: {}
 
 minio:
-  # Enable MinIO deployment.
+  # Enable or disable MinIO deployment.
   enabled: true
-  # minio defaults to minioadmin and minioadmin as the access key and secret key respectively.
-  # MinIO strongly discourages use of the default credentials regardless of deployment environment.
-  # Check official documentation for more details:
+
+  # Use default credentials (username: minioadmin, password: minioadmin).
+  # Highly discouraged for production environments—see official docs:
   # https://min.io/docs/minio/linux/administration/identity-access-management/minio-user-management.html
   use_default_credentials: true
-  # If set to `false`, then MinIO will be deployed with authentication enabled.
-  # Secret with random credentials will be created with name `minio-opencrvs-users`.
-  # Secret will contain following variables:
-  # - MINIO_ACCESS_KEY
-  # - MINIO_SECRET_KEY
-  # - MINIO_ROOT_USER, same as MINIO_ACCESS_KEY
-  # - MINIO_ROOT_PASSWORD, same as MINIO_SECRET_KEY
+
+  # storage_type: host_path
+
+  # Path to persistent data on the VM (when storage_type is host_path).
+  host_data_path: /data/minio
+
+  # Node selector for MinIO pods, usually used to keep data persistent on specified nodes.
+  node_selector: {}
+
+  backup:
+    # Enable or disable backup functionality for MinIO.
+    enabled: false
+
+    # Backup type:
+    # "dump" - creates a full filesystem dump;
+    # "differential" - rsync the filesystem to a remote backup server.
+    type: dump
+
+    # Name of the Kubernetes secret containing backup server SSH credentials.
+    # server_secret: backup-server-ssh-credentials
+
+    # Cron schedule to run backup job (format: "MIN HOUR DAY MONTH WEEKDAY").
+    # schedule: "0 1 * * *"
+
+    # Directory on backup server where encrypted backups are stored.
+    # If not set, use global backup_server_dir.
+    # server_dir: "n/a"
+
+  restore:
+    # Enable or disable restore functionality for MinIO.
+    enabled: false
+
+    # Restore type:
+    # "dump" - restore from encrypted archive;
+    # "differential" - rsync filesystem from remote backup server.
+    type: dump
+
+    # Name of the Kubernetes secret containing backup server SSH credentials.
+    # server_secret: backup-server-ssh-credentials
+
+    # Cron schedule for restore job.
+    # schedule: "0 3 * * *"
 
 redis:
   # Enable Redis deployment.
