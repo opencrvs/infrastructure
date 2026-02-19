@@ -9,7 +9,7 @@ on:
         default: "dev"
         type: choice
         options:
-          - ""
+          - staging
 jobs:
   approve:
     environment: ${{ inputs.environment }}
