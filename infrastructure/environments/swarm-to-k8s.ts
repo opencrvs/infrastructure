@@ -57,7 +57,7 @@ import {
         {
             worker_nodes: worker_nodes,
             users: users,
-            backup_host: backup_host,
+            backup_host: environment === 'production' ? backup_host : '',
             kube_api_host: master
         }
     )
