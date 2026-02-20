@@ -73,7 +73,9 @@ import {
             is_qa_env: environment !== 'production' ? "true" : "false",
             backup_enabled: environment === 'production' ? "true" : "false",
             restore_enabled: environment === 'staging' ? "true" : "false",
-            restore_environment_name: environment === 'staging' ? "production" : ""
+            restore_environment_name: environment === 'staging' ? "production" : "",
+            traefik_mode: "static_ssl",
+            backup_type: "dump",
         }
     )
     await updateWorkflowEnvironments();
