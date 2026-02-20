@@ -61,6 +61,14 @@
             - kubernetes-installation
       tags:
           - kubernetes-installation
+- name: Setup Kubernetes Cluster UFW
+  hosts: master, workers
+  become: yes
+  gather_facts: yes
+  tasks:
+    - name: Run UFW
+      include_tasks: tasks/k8s/ufw.yml
+
 - name: Kubernetes Master
   hosts: master
   tags: k8s
