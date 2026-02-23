@@ -33,6 +33,7 @@ jobs:
             3 separate users must approve to reset data on production.
             
             > [!WARNING]
+            
             > **Are you sure what you are doing?**
             
             **You are clearing all CITIZENS data on production!!**
