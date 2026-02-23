@@ -456,12 +456,12 @@ ALL_QUESTIONS.push(
       log(kleur.bold().green('✔'), kleur.bold().yellow('Variable DISK_SPACE is read-only variable:'), DISK_SPACE?.value)
     }
     log('\n', kleur.bold().underline('Backup'))
-    let backupHostExists = findExistingValue(
+    let backupHost = findExistingValue(
       'BACKUP_HOST',
-      'SECRET',
+      'VARIABLE',
       'ENVIRONMENT',
       existingValues
-    )
+    )?.value || ''
     let restoreEnvironmentName = findExistingValue(
       'RESTORE_ENVIRONMENT_NAME',
       'VARIABLE',
@@ -469,7 +469,7 @@ ALL_QUESTIONS.push(
       existingValues
     )?.value
 
-    let configureBackup = backupHostExists ? true : false
+    let configureBackup = backupHost ? true : false
     // Ask question only if backup and restore are not configured
     if (!configureBackup && !restoreEnvironmentName) {
       configureBackup = await confirm({
@@ -484,7 +484,7 @@ ALL_QUESTIONS.push(
       'ENVIRONMENT',
       existingValues
     )
-    let backupHost = ''
+
     let backupType = ''
     let backupHostPrivateKey = ''
     let backupHostPublicKey = ''
