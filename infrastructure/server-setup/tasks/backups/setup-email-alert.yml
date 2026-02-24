@@ -14,8 +14,8 @@
   copy:
     src: ./files/login-alert.sh
     dest: "/usr/local/bin/login-alert.sh"
-    owner: "{{ ansible_user }}"
-    group: 'application'
+    owner: "root"
+    group: 'root'
     mode: '0755'
 
 - name: Setup cronjob for login monitoring
