@@ -29,6 +29,13 @@ jobs:
           minimum-approvals: 3
           issue-title: "Reset environment (${{ inputs.environment }})"
           issue-body: >
+            3 separate users must approve to reset data on production.
+            
+            > [!WARNING]
+            > **Are you sure what you are doing?**
+            
+            **You are clearing all CITIZENS data on production!!**
+
             Please approve or deny ${{ inputs.environment }} environment reset 
             initiated from GitHub Actions by @${{ github.actor }}.
 
