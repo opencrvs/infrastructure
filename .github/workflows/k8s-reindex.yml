@@ -9,7 +9,8 @@ on:
         default: "dev"
         type: choice
         options:
-          - ""
+          - prod
+          - stg
   workflow_call:
     inputs:
       environment:

@@ -32,7 +32,8 @@ on:
         default: "dev"
         type: choice
         options:
-          - ""
+          - prod
+          - stg
 
 jobs:
   approve:

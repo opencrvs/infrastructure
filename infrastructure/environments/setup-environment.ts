@@ -161,6 +161,12 @@ async function promptAndStoreAnswer(
         questionWithVariableLabel.scope,
         existingValues
       )
+      console.log(process.env.SKIP_EXISTING_VALUES);
+      if (existingVariable && process.env.SKIP_EXISTING_VALUES === 'true') {
+        // Skip asking for this secret, keep existing value
+        console.log("Skipping existing variable:", existingVariable.name);
+        return [existingVariable]
+      } else
       if (existingVariable) {
         return [
           {
@@ -190,7 +196,11 @@ async function promptAndStoreAnswer(
         questionWithVariableLabel.scope,
         existingValues
       )
-
+      if (existingSecret && process.env.SKIP_EXISTING_VALUES === 'true') {
+        // Skip asking for this secret, keep existing value
+        console.log("Skipping existing secret:", existingSecret.name);
+        return [questionWithVariableLabel]
+      } else
       if (existingSecret) {
         return [
           {
@@ -390,65 +400,7 @@ ALL_QUESTIONS.push(
       users = await manageUsers(`infrastructure/server-setup/inventory/${environment}.yml`)
     }
 
-
-    log('\n', kleur.bold().underline('Traefik SSL Certificate'), '\n')
-    const sslCertExists = findExistingValue(
-      'SSL_CRT',
-      'SECRET',
-      'ENVIRONMENT',
-      existingValues
-    )
-
-    let ssl_answers: AnswerWithNullValue[] = [];
-    const traefikConfOption = (await prompts(
-        [
-          {
-            name: 'traefikConfOption',
-            type: 'select' as const,
-            message: 'Choose option to configure Traefik SSL Certificate',
-            choices: [
-              {title: "Let's Encrypt certificate", value: 'lets_encrypt'},
-              {title: "Static SSL certificate", value: 'static_ssl'},
-              {title: "Custom configuration", value: 'custom'}
-            ],
-            initial: sslCertExists ? 1 : 0
-          }
-        ])
-      ).traefikConfOption
-    if (traefikConfOption === "static_ssl") {
-      ssl_answers = await askQuestionWithEditor(staticSSLCertQuestions, existingEnvironmentSecrets)
-    }
-    
-    log('\n', kleur.bold().underline('Storage'))
-
-    let enableEncryption = true
-    const encryption_key_defined = findExistingValue(
-      'ENCRYPTION_KEY',
-      'SECRET',
-      'ENVIRONMENT',
-      existingValues
-    )
-
-    if (!encryption_key_defined) {
-      const answers_enable_encryption = await prompts(
-        [
-          {
-            name: 'enableEncryption',
-            type: 'confirm' as const,
-            message: 'Do you want to enable disk encryption?',
-            scope: 'ENVIRONMENT' as const,
-            initial: Boolean(process.env.ENABLE_ENCRYPTION)
-          }
-        ].map(questionToPrompt)
-      )
-      enableEncryption = answers_enable_encryption.enableEncryption
-    }
-    if (enableEncryption) {
-      log('\n', kleur.bold().green('✔'), kleur.bold().yellow(' Disk encryption is enabled'))
-      await promptAndStoreAnswer(environment, diskQuestions, existingValues)
-    }
-
-    log('\n', kleur.bold().underline('Backup'))
+    log('\n', kleur.bold().underline('Backup configuration'))
     let backupHostExists = findExistingValue(
       'BACKUP_HOST',
       'SECRET',
@@ -1269,20 +1221,25 @@ ALL_QUESTIONS.push(
     )
     await updateWorkflowEnvironments();
 
-    let addon_message = workerNodes.length > 0 || configureBackup ? 
-      "--------------------------------------------------------------------------------------------\n" +
-      `\n➡️ ${kleur.bold().yellow('COPY the SSH public key from the master VM to your clipboard')}\n` +
-      "--------------------------------------------------------------------------------------------\n" : ""
-    addon_message += workerNodes.length > 0 ?
-      `➡️ ${kleur.bold().yellow('Run following command on Kubernetes worker VM to create provision user and setup SSH key:')}\n` +
-      "\n" +
-      "curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\ \n" +
-      `bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}\n` : ""
+    const worker_message = workerNodes.length > 0 ?
+      `
+-----------------------
+➡️ ${kleur.bold().yellow('COPY the SSH public key from the master VM to your clipboard')}
+-----------------------
+➡️ ${kleur.bold().yellow('Run following command on Kubernetes worker VM to create provision user and setup SSH key:')}
 
-    addon_message += configureBackup ? 
-      `\n➡️ ${kleur.bold().yellow('Run following command on backup server to create provision user and setup SSH key:')}\n` +
-      "curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\ \n" +
-      `bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}` : ""
+curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\
+bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}` : ''
+
+  const backup_message = configureBackup ? 
+`
+-----------------------
+➡️ ${kleur.bold().yellow('COPY the SSH public key from the master VM to your clipboard')}
+-----------------------
+➡️ ${kleur.bold().yellow('Run following command on backup server to create provision user and setup SSH key:')}
+
+curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\
+bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}` : ''
 
   log(`
 ${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}

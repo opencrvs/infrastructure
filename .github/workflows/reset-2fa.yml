@@ -13,7 +13,8 @@ on:
         default: 
         required: true
         options:
-          - ""
+          - stg
+          - prod
 
 jobs:
   approve:
