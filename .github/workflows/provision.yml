@@ -73,8 +73,7 @@ jobs:
           smtp_port: ${{ secrets.SMTP_PORT }}
           smtp_user: ${{ secrets.SMTP_USERNAME }}
           smtp_secure: ${{ secrets.SMTP_SECURE }}
-          # FIXME: Make this field configurable via secrets
-          smtp_from: "team@opencrvs.org"
+          smtp_from: ${{ secrets.SENDER_EMAIL_ADDRESS}}
           smtp_password: ${{ secrets.SMTP_PASSWORD }}
           alert_email: ${{ secrets.ALERT_EMAIL }}
           backup_host_public_key: ${{ secrets.BACKUP_HOST_PUBLIC_KEY }}
