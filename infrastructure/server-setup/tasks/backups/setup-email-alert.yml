@@ -1,4 +1,4 @@
-- name: Install msmtp
+- name: Install auditd
   apt:
     name: auditd
     state: present
