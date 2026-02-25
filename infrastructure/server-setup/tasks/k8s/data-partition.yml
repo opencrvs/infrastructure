@@ -5,6 +5,38 @@
   register: encryptedFileSystemPreCheck
   when: disk_encryption_key is defined
 
+- name: Get free disk space
+  ansible.builtin.shell: |
+    df --block-size=G --output=avail / | grep -oP '[0-9]+'
+  register: free_disk_size_result
+  when:
+    - disk_encryption_key is defined
+    - not encryptedFileSystemPreCheck.stat.exists
+
+- name: Normalize file size units (handles G, g, Gb, GB, etc.)
+  set_fact:
+    free_disk_size: "{{ free_disk_size_result.stdout | int  }}"
+    encrypted_file_size: "{{ encrypted_disk_size | regex_replace('[^0-9]', '') | int }}"
+    min_free_disk_size: "{{ min_free_disk_size | regex_replace('[^0-9]', '') | int }}"
+  when:
+    - disk_encryption_key is defined
+    - not encryptedFileSystemPreCheck.stat.exists
+
+- name: Calculate total required space (in GB)
+  set_fact:
+    required_size: "{{ encrypted_file_size + min_free_disk_size }}"
+  when:
+    - disk_encryption_key is defined
+    - not encryptedFileSystemPreCheck.stat.exists
+
+- name: Fail if not enough free space
+  fail:
+    msg: "Not enough free disk space! Required: {{ required_size }}G, Free: {{ free_disk_size }}G"
+  when:
+    - free_disk_size < required_size
+    - disk_encryption_key is defined
+    - not encryptedFileSystemPreCheck.stat.exists
+
 - name: 'Bootstrap encrypted data folder'
   script: ../cryptfs/bootstrap.sh -s {{ encrypted_disk_size }} -p {{ disk_encryption_key }}
   when:

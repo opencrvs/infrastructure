@@ -19,6 +19,8 @@ backup_server_user_home: '/home/backup'
 # Disk Encryption key location as an example (in production use a hardware security module)
 disk_encryption_key_path: /root/disk-encryption-key.txt
 
+# Minimum required disk space for successful kubernetes deployment
+min_free_disk_size: "30g"
 # Kubernetes components versions:
 # - kubeadm
 # - kubelet
