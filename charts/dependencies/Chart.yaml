@@ -3,4 +3,4 @@ name: opencrvs-dependencies-chart
 description: Dependencies required by OpenCRVS
 type: application
 version: 0.2.7
-appVersion: 1.9.5
+appVersion: v1.9.10
