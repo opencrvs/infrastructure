@@ -119,10 +119,24 @@
       tags:
         - users
         - k8s
-- name: Setup Kubernetes Cluster UFW
+- name: Common Kubernetes post configuration tasks
   hosts: master, workers
   become: yes
   gather_facts: yes
   tasks:
-    - name: Run UFW
-      include_tasks: tasks/k8s/ufw.yml
+    - name: Setup kubelet eviction policies
+      include_tasks:
+        file: tasks/k8s/eviction-policy.yml
+        apply:
+          tags:
+            - k8s
+      tags:
+        - k8s
+    - name: Configure UFW rules
+      include_tasks:
+        file: tasks/k8s/ufw.yml
+        apply:
+          tags:
+            - k8s
+      tags:
+        - k8s

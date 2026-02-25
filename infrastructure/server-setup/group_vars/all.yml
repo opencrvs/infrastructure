@@ -27,6 +27,29 @@ min_free_disk_size: "30g"
 # - kubectl
 kubernetes_version: "v1.34"
 
+# Kubernetes Eviction Policy Configuration
+#
+# By default, Kubernetes uses percentage thresholds to trigger disk evictions.
+# OpenCRVS servers often have large disk partitions, so specifying absolute disk
+# sizes is more effective and makes disk management predictable.
+#
+# OpenCRVS recommends:
+#   - Keeping at least 10GiB of free disk space for safe upgrades and stable operation.
+#   - Using absolute values for eviction thresholds to avoid unnecessary evictions or outages.
+#
+# The settings below define the minimum free disk space (in GiB) required before Kubernetes will start evicting pods.
+# NOTE: Even if root (/) and container images are located on the same partition both policies must be explicitly defined
+# --- Hard Eviction Thresholds ---
+# If free disk space drops below this value, Kubernetes immediately evicts pods to free up space.
+eviction_hard_nodefs: "10Gi"          # Minimum free space on root (/) filesystem
+eviction_hard_imagefs: "10Gi"         # Minimum free space for container images
+
+# --- Soft Eviction Thresholds ---
+# If free disk space stays below this value for a sustained period, Kubernetes will evict pods gradually.
+eviction_soft_nodefs: "20Gi"          # Minimum free space on root (/) filesystem over time
+eviction_soft_imagefs: "20Gi"         # Minimum free space for container images over time
+
+
 # Container Network Interface plugin: Calico version
 calico_version: "v3.26.1"
 # CNI configuration
