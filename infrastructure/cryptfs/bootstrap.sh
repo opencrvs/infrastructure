@@ -47,7 +47,7 @@ if test -f "$FS_FILE"; then
   echo "ERROR: $FS_FILE exists, cannot bootstrap as the file might already contain existing data. Try run mount.sh to mount the file."
   exit 1
 else
-  truncate -s $FS_SIZE $FS_FILE
+  fallocate -l $FS_SIZE $FS_FILE
 fi
 
 # create a loop device from the data file
