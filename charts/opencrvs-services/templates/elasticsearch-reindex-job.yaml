@@ -1,3 +1,4 @@
+{{- if .Values.elasticsearch.reindex_enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -31,4 +32,5 @@ spec:
   jobTemplate:
     spec:
 {{ include "elasticsearch-reindex.podSpec" . | indent 6 }}
+{{- end }}
 {{- end }}
