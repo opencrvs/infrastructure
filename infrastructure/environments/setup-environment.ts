@@ -381,14 +381,7 @@ ALL_QUESTIONS.push(
       ? infrastructure.workerNodes.split(',').map((ip: string) => ip.trim()) : []
 
     log('\n', kleur.bold().underline('SSH Users'), '\n')
-    const shouldConfigure = await confirm({
-        message: 'Would you like to configure users with remote access?',
-        default: true
-      });
-    let users: User[] = []
-    if (shouldConfigure) {
-      users = await manageUsers(`infrastructure/server-setup/inventory/${environment}.yml`)
-    }
+    const users = await manageUsers(`infrastructure/server-setup/inventory/${environment}.yml`)
 
 
     log('\n', kleur.bold().underline('Traefik SSL Certificate'), '\n')
