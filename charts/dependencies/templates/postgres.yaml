@@ -87,6 +87,7 @@ spec:
                   key: POSTGRES_PASSWORD
           {{- end }}
           {{- include "render-env-vars" (dict "service_name" "postgres" "Values" .Values) }}
+          {{ include "resources-helper" (dict "service_name" "postgres" "Values" .Values) | indent 10 }}
           ports:
             - containerPort: 5432
               protocol: TCP
