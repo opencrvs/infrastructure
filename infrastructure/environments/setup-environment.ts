@@ -382,9 +382,9 @@ ALL_QUESTIONS.push(
 
     log('\n', kleur.bold().underline('SSH Users'), '\n')
     const shouldConfigure = await confirm({
-      message: 'Would you like to configure users with remote access?',
-      default: true
-    });
+        message: 'Would you like to configure users with remote access?',
+        default: true
+      });
     let users: User[] = []
     if (shouldConfigure) {
       users = await manageUsers(`infrastructure/server-setup/inventory/${environment}.yml`)
@@ -443,31 +443,39 @@ ALL_QUESTIONS.push(
       )
       enableEncryption = answers_enable_encryption.enableEncryption
     }
-    if (enableEncryption) {
-      log('\n', kleur.bold().green('✔'), kleur.bold().yellow(' Disk encryption is enabled'))
+    if (enableEncryption && !encryption_key_defined) {
+      log(kleur.bold().green('✔'), kleur.bold().yellow(' Disk encryption is enabled'))
       await promptAndStoreAnswer(environment, diskQuestions, existingValues)
+    } else {
+      const DISK_SPACE = findExistingValue(
+        'DISK_SPACE',
+        'VARIABLE',
+        'ENVIRONMENT',
+        existingValues
+      )
+      log(kleur.bold().green('✔'), kleur.bold().yellow('Variable DISK_SPACE is read-only variable:'), DISK_SPACE?.value)
     }
-
     log('\n', kleur.bold().underline('Backup'))
-    let backupHostExists = findExistingValue(
+    let backupHost = findExistingValue(
       'BACKUP_HOST',
-      'SECRET',
+      'VARIABLE',
       'ENVIRONMENT',
       existingValues
-    )
-    let configureBackup = backupHostExists ? true : false
-    if (!configureBackup) {
-      configureBackup = (await prompts(
-        [
-          {
-            name: 'configureBackup',
-            type: 'confirm' as const,
-            message: 'Do you want to configure backup?',
-            scope: 'ENVIRONMENT' as const,
-            initial: Boolean(process.env.CONFIGURE_BACKUP)
-          }
-        ].map(questionToPrompt)
-      )).configureBackup
+    )?.value || ''
+    let restoreEnvironmentName = findExistingValue(
+      'RESTORE_ENVIRONMENT_NAME',
+      'VARIABLE',
+      'ENVIRONMENT',
+      existingValues
+    )?.value
+
+    let configureBackup = backupHost ? true : false
+    // Ask question only if backup and restore are not configured
+    if (!configureBackup && !restoreEnvironmentName) {
+      configureBackup = await confirm({
+          message: 'Do you want to configure backup?',
+          default: Boolean(process.env.CONFIGURE_BACKUP)
+        })
     }
 
     let backupHostPrivateKeyExists = findExistingValue(
@@ -476,43 +484,31 @@ ALL_QUESTIONS.push(
       'ENVIRONMENT',
       existingValues
     )
-    let backupHost = ''
+
+    let backupType = ''
     let backupHostPrivateKey = ''
     let backupHostPublicKey = ''
     if (configureBackup) {
-      backupHost = (await promptAndStoreAnswer(
-      environment,
-      backupQuestions,
-      existingValues
-    )).backupHost
-    if (backupHost && !backupHostPrivateKeyExists) {
-      const { publicKey, privateKey } = generateSSHKeyPair();
-      backupHostPublicKey = publicKey;
-      backupHostPrivateKey = privateKey;
-      log(kleur.bold().green('✔'), kleur.bold().yellow(`Generated SSH key pair for backup host: ${backupHost}`))
-    }
+      const backupAnswers = (await promptAndStoreAnswer(
+        environment,
+        backupQuestions,
+        existingValues
+      ))
+      backupType = backupAnswers.backupType
+      if (backupHost && !backupHostPrivateKeyExists) {
+        const { publicKey, privateKey } = generateSSHKeyPair();
+        backupHostPublicKey = publicKey;
+        backupHostPrivateKey = privateKey;
+        log(kleur.bold().green('✔'), kleur.bold().yellow(`Generated SSH key pair for backup host: ${backupHost}`))
+      }
     }
 
-    log('\n', kleur.bold().underline('Restore'))
-    let restoreEnvironmentName = findExistingValue(
-      'RESTORE_ENVIRONMENT_NAME',
-      'VARIABLE',
-      'ENVIRONMENT',
-      existingValues
-    )?.value
-
-    if (!restoreEnvironmentName) {
-      let configureRestore = (await prompts(
-        [
-          {
-            name: 'configureRestore',
-            type: 'confirm' as const,
-            message: 'Do you want to configure restore?',
-            scope: 'ENVIRONMENT' as const,
-            initial: Boolean(process.env.CONFIGURE_RESTORE)
-          }
-        ].map(questionToPrompt)
-      )).configureRestore
+    if (!restoreEnvironmentName && !configureBackup) {
+      log('\n', kleur.bold().underline('Restore'))
+      let configureRestore = await confirm({
+          message: 'Do you want to configure restore?',
+          default: Boolean(process.env.CONFIGURE_RESTORE)
+        })
       if (configureRestore) {
         const env_list_filtered = existingEnvironments.filter(env => env !== environment);
         restoreEnvironmentName = (await promptAndStoreAnswer(
@@ -536,7 +532,7 @@ ALL_QUESTIONS.push(
           existingValues
         )).restoreEnvironmentName
       }
-    } else {
+    if (restoreEnvironmentName)
       log('\n', kleur.bold().green('✔'), kleur.bold().yellow('Restore environment is already set to'), kleur.bold().blue(restoreEnvironmentName))
     }
 
@@ -1264,7 +1260,8 @@ ALL_QUESTIONS.push(
         backup_enabled: configureBackup ? "true" : "false",
         restore_enabled: restoreEnvironmentName ? "true" : "false",
         restore_environment_name: restoreEnvironmentName || "",
-        traefik_mode: traefikConfOption
+        traefik_mode: traefikConfOption,
+        backup_type: backupType
       }
     )
     await updateWorkflowEnvironments();

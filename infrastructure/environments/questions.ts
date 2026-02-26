@@ -1,6 +1,6 @@
 import kleur from 'kleur'
 import { generateLongPassword } from './utils'
-
+import { getRepoInfo } from './git'
 
 const notEmpty = (value: string | number) =>
   value.toString().trim().length > 0 ? true : 'Please enter a value'
@@ -75,7 +75,7 @@ export const githubQuestions = [
     type: 'text' as const,
     message: 'What is the name of your Github organisation?',
     validate: notEmpty,
-    initial: process.env.GITHUB_ORGANISATION,
+    initial: process.env.GITHUB_ORGANISATION || getRepoInfo().organization,
     scope: 'REPOSITORY' as const
   },
   {
@@ -83,7 +83,7 @@ export const githubQuestions = [
     type: 'text' as const,
     message: 'What is your Github infrastructure repository?',
     validate: notEmpty,
-    initial: process.env.GITHUB_REPOSITORY,
+    initial: process.env.GITHUB_REPOSITORY || getRepoInfo().repository,
     scope: 'REPOSITORY' as const
   },
 ]
@@ -225,6 +225,26 @@ export const backupQuestions = [
     validate: notEmpty,
     valueLabel: 'BACKUP_SERVER_USER',
     initial: process.env.BACKUP_SERVER_USER || 'backup',
+    scope: 'ENVIRONMENT' as const,
+  },
+  {
+    name: 'backupType',
+    type: 'select' as const,
+    message: 'Select environment backup mode',
+    choices: [
+      {
+        title: 'Differential (weekly full, daily diff backup)',
+        value: 'differential'
+      },
+      {
+        title: 'Full dump (daily full database backup)',
+        value: 'dump'
+      }
+    ],
+    valueType: 'VARIABLE' as const,
+    validate: notEmpty,
+    valueLabel: 'BACKUP_ENVIRONMENT_MODE',
+    initial: process.env.BACKUP_ENVIRONMENT_MODE,
     scope: 'ENVIRONMENT' as const,
   },
 ]

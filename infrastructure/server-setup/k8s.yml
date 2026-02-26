@@ -61,6 +61,7 @@
             - kubernetes-installation
       tags:
           - kubernetes-installation
+
 - name: Kubernetes Master
   hosts: master
   tags: k8s

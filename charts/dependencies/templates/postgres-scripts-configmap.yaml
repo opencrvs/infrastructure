@@ -1,3 +1,4 @@
+{{- if .Values.postgres.enabled }}
 apiVersion: v1
 data:
 {{- range $path, $file := .Files.Glob "files/postgres/*" }}
@@ -9,3 +10,16 @@ metadata:
   labels:
     app: postgres
   name: postgres-scripts
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-pgbackrest-config
+data:
+  pgbackrest.conf: |
+    [global]
+    log-level-console=info
+    [main]
+    pg1-path=/var/lib/postgresql/data
+{{- end }}

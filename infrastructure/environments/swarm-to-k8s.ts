@@ -11,6 +11,9 @@ import {
     extractBackupNode,
     dockerManagerFirst
 } from './templates'
+import { Octokit } from '@octokit/core';
+import { generateSSHKeyPair } from './ssh-keygen';
+import { createEnvironmentSecret, createEnvironmentVariable, getRepositoryId } from './github';
 
 
 
@@ -23,8 +26,24 @@ import {
     ));
     const environment_type = process.env.ENVIRONMENT_TYPE || 'production';
     const environment = process.env.ENVIRONMENT || '';
+    const githubToken = process.env.INFRA_TOKEN || '';
+    const githubOrganisation = process.env.INFRA_ORGANISATION || '';
+    const githubRepository = process.env.INFRA_REPOSITORY || '';
+
     if (!environment) {
         error('\n', 'Environment variable ENVIRONMENT is not set. Exiting.');
+        process.exit(1);
+    }
+    if (!githubToken) {
+        error('\n', 'Environment variable GITHUB_TOKEN is not set. Exiting.');
+        process.exit(1);
+    }
+    if (!githubOrganisation) {
+        error('\n', 'Environment variable INFRA_ORGANISATION is not set. Exiting.');
+        process.exit(1);
+    }
+    if (!githubRepository) {
+        error('\n', 'Environment variable INFRA_REPOSITORY is not set. Exiting.');
         process.exit(1);
     }
     if (["backup", "jumpbox"].includes(environment)) {
@@ -79,4 +98,80 @@ import {
         }
     )
     await updateWorkflowEnvironments();
+
+    if (environment === 'staging') {
+        const octokit = new Octokit({
+            auth: githubToken
+        })
+        const repositoryId = await getRepositoryId(
+            octokit,
+            githubOrganisation,
+            githubRepository
+        )
+        try {
+            await createEnvironmentVariable(
+                octokit,
+                repositoryId,
+                environment,
+                'RESTORE_ENVIRONMENT_NAME',
+                'production'
+            )
+        } catch (err) {
+            error(`Failed to create variable RESTORE_ENVIRONMENT_NAME for environment ${environment}:`, err);
+        }
+    }
+    if (environment === 'production') {
+        const octokit = new Octokit({
+            auth: githubToken
+        })
+        console.log("Fetching repository ID for:", githubOrganisation, githubRepository);
+        const repositoryId = await getRepositoryId(
+            octokit,
+            githubOrganisation,
+            githubRepository
+        )
+
+        console.log("Repository ID:", repositoryId);
+        const { publicKey, privateKey } = generateSSHKeyPair();
+        const secretsToCreate = {
+            BACKUP_HOST_PRIVATE_KEY: privateKey,
+            BACKUP_HOST_PUBLIC_KEY: publicKey,
+            BACKUP_SERVER_USER: "backup",
+        }
+        const variablesToCreate = {
+            BACKUP_HOST: backup_host,
+            WORKER_NODES: worker_nodes.join(','),
+        }
+        for (const [secretName, secretValue] of Object.entries(secretsToCreate)) {
+            try {
+                await createEnvironmentSecret(
+                    octokit,
+                    repositoryId,
+                    environment,
+                    secretName,
+                    secretValue,
+                    githubOrganisation,
+                    githubRepository
+                )
+                log(`  ✓ Created secret ${secretName} for environment ${environment}`);
+            } catch (err) {
+                error(`Failed to create secret ${secretName} for environment ${environment}:`, err);
+            }
+        }
+        for (const [variableName, variableValue] of Object.entries(variablesToCreate)) {
+            try {
+                await createEnvironmentVariable(
+                    octokit,
+                    repositoryId,
+                    environment,
+                    variableName,
+                    variableValue
+                )
+                log(`  ✓ Created variable ${variableName} for environment ${environment}`);
+            } catch (err) {
+                error(`Failed to create variable ${variableName} for environment ${environment}:`, err);
+            }
+        }
+    }
 })();
+ 

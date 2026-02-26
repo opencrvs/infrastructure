@@ -161,7 +161,9 @@ postgres:
   events_migrator: events_migrator
   events_app: events_app
   events_analytics: analytics
-
+  on_restore_cronjob:
+    enabled: false
+    schedule: "0 2 * * *"
 ###############################################################################
 # Application configuration
 ###############################################################################
@@ -411,3 +413,7 @@ data_seed:
     # When users are seeded, are they immediately active using a test password and
     # six zeros as a 2-Factor auth code. Always set to false in production and staging.
     ACTIVATE_USERS: "true"
+
+on_restore_cronjob:
+  enabled: false
+  schedule: "0 3 * * *"

@@ -27,8 +27,6 @@ ARCHIVE_PATH="/tmp/$ARCHIVE_NAME"
 
 # Remote directory on backup server
 REMOTE_DIR="${BACKUP_REMOTE_DIR:-"/home/$BACKUP_USER"}/$RESTORE_DATE"
-# Default is filesystem restore, can be "mirror"
-RESTORE_MODE=${RESTORE_MODE:-"fs"}
 
 if [ -z "$ENCRYPT_PASS" ]; then
   echo "[$(date +%F\ %H:%M:%S)] [ERROR] Must provide ENCRYPT_PASS environment variable"
@@ -44,15 +42,7 @@ decrypt_backup() {
   echo "[$(date +%F\ %H:%M:%S)] Decrypted archive at $ARCHIVE_PATH"
 }
 
-# Restore files from filesystem backup
-restore_fs() {
-  echo "[$(date +%F\ %H:%M:%S)] Restoring MinIO data using filesystem method"
-  rm -rf "${RESTORE_DIR:?}"/*  # Clean current contents!
-  tar -zxvf "$ARCHIVE_PATH" -C "$RESTORE_DIR"
-  echo "[$(date +%F\ %H:%M:%S)] Restore of $RESTORE_DIR complete"
-}
-
-# Step 2 (alternative). Restore using MinIO mirror (bucket by bucket)
+# Restore using MinIO mirror (bucket by bucket)
 restore_mirror() {
   MINIO_ALIAS=local-restore
   mcli alias set $MINIO_ALIAS http://minio:3535 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD
@@ -95,13 +85,6 @@ transfer_from_backup_host
 
 decrypt_backup
 
-if [ "$RESTORE_MODE" == "fs" ]; then
-  restore_fs
-elif [ "$RESTORE_MODE" == "mirror" ]; then
-  restore_mirror
-else
-  echo "[$(date +%F\ %H:%M:%S)] [ERROR] Unknown RESTORE_MODE: $RESTORE_MODE" >&2
-  exit 1
-fi
+restore_mirror
 
 echo "[$(date +%F\ %H:%M:%S)] MinIO restore process completed successfully"
