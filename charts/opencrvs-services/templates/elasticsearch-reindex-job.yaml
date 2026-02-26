@@ -14,23 +14,8 @@ spec:
       labels:
         app: elasticsearch-reindex
     spec:
-{{ include "elasticsearch-reindex.podSpec" . | indent 2 }}
-
-{{- if .Values.elasticsearch.cronjob.enabled }}
----
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  labels:
-    app: elasticsearch
-  name: elasticsearch-reindex
-spec:
-  schedule: "{{ .Values.elasticsearch.cronjob.schedule }}"
-{{- if .Values.timezone }}
-  timeZone: {{ .Values.timezone }}
-{{- end }}
-  jobTemplate:
-    spec:
-{{ include "elasticsearch-reindex.podSpec" . | indent 6 }}
-{{- end }}
+{{ include "elasticsearch-reindex.containerSpec" . | indent 8 }}
+    restartPolicy: "OnFailure"
+    volumes:
+      {{- include "postgres-on-deploy.volumes" . | nindent 8 }}
 {{- end }}
