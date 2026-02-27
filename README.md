@@ -11,8 +11,15 @@ This document provides guidance on running OpenCRVS both locally (on your PC or 
 
 # Repository content
 
-- [charts](charts), OpenCRVS helm charts
-- [examples](examples), pre-defined values for helm charts and additional documentation and deployment scenarios for OpenCRVS
+- [environments](environments): Template folder to store helm values configurations for different environments (e.g., development, staging, production).
+- [examples](examples): Pre-defined values for Helm charts and additional documentation or deployment scenarios for OpenCRVS.
+- [infrastructure](infrastructure): Infrastructure-as-code scripts (ansible) and resources for provisioning and managing foundational services (such as databases, networks, or storage).
+- [scripts](scripts): Utility scripts for OpenCRVS bootstrap and some one time maintenance tasks.
+- [tilt](tilt): Tilt library files and configuration to facilitate local development and live updates.
+- [Tiltfile](Tiltfile): The main configuration file used by Tilt to orchestrate your development workflow.
+
+> [!NOTE]
+> The OpenCRVS Core and Country config template repositories each have their own Tiltfile.
 
 # Demo / Quickstart system requirements
 
@@ -173,3 +180,4 @@ This task should run only once on fresh environment after environment installati
 - [OpenCRVS Helm Chart README](./charts/opencrvs-services/README.md)
 - [Dependencies Helm Chart README](./charts/dependencies/README.md)
 - [Cloud Infrastructure](https://github.com/opencrvs/cloud-infrastructure), Additional repository with terraform templates and other tools to deploy OpenCRVS on Cloud Providers.
+- [OpenCRVS Helm Charts](https://github.com/opencrvs/opencrvs-helm-charts), OpenCRVS helm charts for application deployment
