@@ -12,7 +12,6 @@ This document provides guidance on running OpenCRVS both locally (on your PC or 
 # Repository content
 
 - [charts](charts), OpenCRVS helm charts
-- [terraform-templates](terraform-templates), configuration templates to build cloud environments for OpenCRVS on different providers
 - [examples](examples), pre-defined values for helm charts and additional documentation and deployment scenarios for OpenCRVS
 
 # Demo / Quickstart system requirements
@@ -173,3 +172,4 @@ This task should run only once on fresh environment after environment installati
 - [Official documentation](https://documentation.opencrvs.org/)
 - [OpenCRVS Helm Chart README](./charts/opencrvs-services/README.md)
 - [Dependencies Helm Chart README](./charts/dependencies/README.md)
+- [Cloud Infrastructure](https://github.com/opencrvs/cloud-infrastructure), Additional repository with terraform templates and other tools to deploy OpenCRVS on Cloud Providers.
