@@ -25,15 +25,12 @@ spec:
           containers:
             - name: runner
               image: bitnami/kubectl:latest
-              env:
-                - name: PGBACKREST_STANZA
-                  value: main
               command:
                 - /bin/sh
                 - -c
                 - |
                   kubectl exec -n {{ .Release.Namespace }} postgres-0 -- \
-                    pgbackrest --stanza="$PGBACKREST_STANZA" backup --type=full
+                    pgbackrest --stanza="{{ .Values.postgres.backup.stanza }}" backup --type=full
           restartPolicy: OnFailure
 {{- end }}
 {{- end }}

@@ -117,9 +117,6 @@ spec:
           containers:
             - name: runner
               image: bitnami/kubectl:latest
-              env:
-                - name: PGBACKREST_STANZA
-                  value: main
               command:
                 - /bin/sh
                 - -c
@@ -143,7 +140,7 @@ spec:
                   kubectl exec postgres-restore-runner -- \
                     rm -rf /var/lib/postgresql/data/*
                   kubectl exec postgres-restore-runner -- \
-                    pgbackrest --stanza="$PGBACKREST_STANZA" restore --delta --force || exit 1
+                    pgbackrest --stanza="{{ .Values.postgres.backup.stanza }}" restore --delta --force || exit 1
                   kubectl scale statefulset postgres --replicas=1
               volumeMounts:
                 - mountPath: /manifests

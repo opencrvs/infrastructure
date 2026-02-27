@@ -65,7 +65,8 @@ postgres:
     # - dump: logical full backup using pg_dump (protocol-based, cross-version).
     # - differential: physical backup using pgBackRest (full/diff/incr/PITR).
     type: dump
-
+    # Stanza name for pgBackRest
+    stanza: main
     # Secret that holds connection info for the backup server (SSH).
     # Expected keys in the Secret (example):
     # - host:   backup server hostname

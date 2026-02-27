@@ -20,6 +20,6 @@ data:
   pgbackrest.conf: |
     [global]
     log-level-console=info
-    [main]
+    [{{ .Values.postgres.backup.stanza }}]
     pg1-path=/var/lib/postgresql/data
 {{- end }}
