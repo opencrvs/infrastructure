@@ -21,10 +21,6 @@ This document provides guidance on running OpenCRVS both locally (on your PC or 
 > [!NOTE]
 > The OpenCRVS Core and Country config template repositories each have their own Tiltfile.
 
-# Demo / Quickstart system requirements
-
-Check quickstart instructions how to deploy OpenCRVS to existing docker-desktop or minikube Kubernetes cluster running on your laptop at [charts/opencrvs-services](charts/opencrvs-services/README.md#-quickstart)
-
 
 # Development environment setup
 
@@ -163,7 +159,7 @@ This task should run only once on fresh environment after environment installati
 1. Navigate to [http://localhost:10350/](http://localhost:10350/)
 2. Scroll to section `2.Data-tasks` and find resource `Reset database`
 3. Run resource using reload button
-   ![](doc/images/seed-data.png)
+   ![](examples/images/seed-data.png)
 4. Once data seeding completed you will be able to login using default credentials, see [4.1.4 Log in to OpenCRVS locally](https://documentation.opencrvs.org/setup/3.-installation/3.1-set-up-a-development-environment/3.1.4-log-in-to-opencrvs-locally)
 
 ## Reset database and Seed data with tilt
@@ -171,13 +167,13 @@ This task should run only once on fresh environment after environment installati
 1. Navigate to [http://localhost:10350/](http://localhost:10350/)
 2. Scroll to section `2.Data-tasks` and find resource `Reset database`
 3. Run resource using reload button
-   ![](doc/images/reset-data.png)
+   ![](examples/images/reset-data.png)
 4. Once data reset completed you will be able to login using default credentials, see [4.1.4 Log in to OpenCRVS locally](https://documentation.opencrvs.org/setup/3.-installation/3.1-set-up-a-development-environment/3.1.4-log-in-to-opencrvs-locally).
 
-# Additional information
+# Additional resources
 
 - [Official documentation](https://documentation.opencrvs.org/)
-- [OpenCRVS Helm Chart README](./charts/opencrvs-services/README.md)
-- [Dependencies Helm Chart README](./charts/dependencies/README.md)
+- [OpenCRVS Helm Chart README](https://github.com/opencrvs/opencrvs-helm-charts/blob/develop/charts/opencrvs-services/README.md)
+- [Dependencies Helm Chart README](https://github.com/opencrvs/opencrvs-helm-charts/blob/develop/charts/dependencies/README.md)
 - [Cloud Infrastructure](https://github.com/opencrvs/cloud-infrastructure), Additional repository with terraform templates and other tools to deploy OpenCRVS on Cloud Providers.
 - [OpenCRVS Helm Charts](https://github.com/opencrvs/opencrvs-helm-charts), OpenCRVS helm charts for application deployment
