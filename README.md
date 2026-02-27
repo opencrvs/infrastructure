@@ -1,9 +1,7 @@
 
-> 🚧 NOTE: **Work in Progress**
->
-> Repository content is relevant to OpenCRVS version v1.9.0 or higher.
->
-> Please note that not all features from the Docker Swarm solution are supported yet and not all pipelines are implemented
+> [!NOTE]
+> Please keep your infrastructure repository up to date with OpenCRVS Core version.
+> Always update infrastructure to same version as OpenCRVS Core.
 
 ---
 
@@ -169,6 +167,8 @@ This task should run only once on fresh environment after environment installati
    ![](doc/images/reset-data.png)
 4. Once data reset completed you will be able to login using default credentials, see [4.1.4 Log in to OpenCRVS locally](https://documentation.opencrvs.org/setup/3.-installation/3.1-set-up-a-development-environment/3.1.4-log-in-to-opencrvs-locally).
 
-# Server setup
+# Additional information
 
-## [Single server deployment steps](./examples/dev/README.md)
+- [Official documentation](https://documentation.opencrvs.org/)
+- [OpenCRVS Helm Chart README](./charts/opencrvs-services/README.md)
+- [Dependencies Helm Chart README](./charts/dependencies/README.md)
