@@ -58,19 +58,9 @@ The OpenCRVS team uses [Tilt](https://tilt.dev/) to manage the local development
 
 ### Docker engine and Kubernetes cluster
 
-#### Docker Desktop (with Kubernetes enabled)
-
-Docker desktop with Kubernetes enabled is recommended for development environment on MacOS and Windows. Get more details how to install docker desktop on official website https://www.docker.com/products/docker-desktop/.
-
-Additional configuration for Docker desktop:
-  - Enable host networking to be able access http://opencrvs.localhost, otherwise you will need to configure additional tools like proxy.
-  - Enable Kubernetes and configure kubectl with correct context
-  - Ensure docker-desktop is configured to use at least 12G or more RAM
-  - Ensure Storage is set up at least 100G
-
 #### Minikube
 
-Minikube (with docker driver) is recommended way to run Kubernetes on linux. However docker engine is still required for Tilt. Please check official documentation on https://minikube.sigs.k8s.io/docs/.
+Minikube (with docker driver) is recommended way to run Kubernetes. However docker engine is still required for Tilt. Please check official documentation on https://minikube.sigs.k8s.io/docs/.
 
 **NOTE**: 
 - Docker support is still experimental for minikube, but it gives better performance in comparison to alternative solutions.
@@ -96,6 +86,18 @@ minikube start --cpus=8 --memory=max --ports=80:30080
 
 **NOTE:** Any other Kubernetes solution for desktop should work as well. Please check to LoadBalancer and kubernetes services setup if you are not able to access service.
 
+#### Docker Desktop (with Kubernetes enabled)
+
+> [!WARNING]
+> Docker Desktop with Kubernetes enabled has higher hardware requirements for RAM in comparison to Minikube
+
+Docker desktop with Kubernetes enabled is recommended for development environment on MacOS and Windows. Get more details how to install docker desktop on official website https://www.docker.com/products/docker-desktop/.
+
+Additional configuration for Docker desktop:
+  - Enable host networking to be able access http://opencrvs.localhost, otherwise you will need to configure additional tools like proxy.
+  - Enable Kubernetes and configure kubectl with correct context
+  - Ensure docker-desktop is configured to use at least 16G or more RAM
+  - Ensure Storage is set up at least 100G
 
 ## For OpenCRVS DevOps
 
