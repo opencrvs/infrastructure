@@ -49,7 +49,7 @@ data:
           - name: PGBACKREST_REPO1_PATH
             value: "{{ default .Values.postgres.restore.server_dir .Values.restore.backup_server_dir }}/postgres"
           - name: PGBACKREST_STANZA
-            value: main
+            value: {{ .Values.postgres.backup.stanza }}
           - name: PGBACKREST_REPO1_HOST_USER
             valueFrom:
               secretKeyRef:

@@ -113,8 +113,7 @@ spec:
             - name: PGBACKREST_REPO1_RETENTION_DIFF
               value: "7"
             - name: PGBACKREST_STANZA
-              # FIXME: Hardcoded main
-              value: "main"
+              value: {{ .Values.postgres.backup.stanza }}
             - name: PGBACKREST_REPO1_HOST_USER
               valueFrom:
                 secretKeyRef:

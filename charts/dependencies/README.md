@@ -76,6 +76,7 @@ This section allows you to configure the postgres deployment within your infrast
 | backup.{}       | dict | `{}` | Backup configuration section, for more information please check `values.yaml` and **Backup section** in this README |
 | backup.enabled  | string | `false` | Backup enabled or disabled, section has higher priority over global `backup` section |
 | backup.type     | string | `dump` | `dump` is a full logical database dump, `differential` is a physical backup using pgBackRest |
+| backup.stanza     | string | `main` | Stanza name for pgBackRest, use when backup type is `differential` |
 | backup.server_secret | string | `backup-server-ssh-credentials` | Name of the Kubernetes secret with backup server credentials       |
 | backup.encryption_secret | string | `backup-encryption-secret` | Name of the Kubernetes secret containing the backup encryption key |
 | backup.schedule | dict | `{}` | Backup cronjob schedule |
