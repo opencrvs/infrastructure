@@ -15,8 +15,8 @@ spec:
         app: elasticsearch-reindex
     spec:
       containers:
-      {{- include "postgres-on-deploy.containerSpec" . | nindent 8 }}
+      {{- include "elasticsearch-reindex.containerSpec" . | nindent 8 }}
       restartPolicy: "OnFailure"
       volumes:
-      {{- include "postgres-on-deploy.volumes" . | nindent 8 }}
+      {{- include "elasticsearch-reindex.volumes" . | nindent 8 }}
 {{- end }}

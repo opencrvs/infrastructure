@@ -2,6 +2,9 @@
 - name: postgres-on-deploy
   command: ["bash", "-c", "/scripts/on-deploy.sh"]
   image: postgres:17
+  volumeMounts:
+    - mountPath: /scripts
+      name: postgres-on-deploy-script
   env:
     - name: POSTGRES_HOST
       value: {{ .Values.postgres.host }}
@@ -54,9 +57,6 @@
         secretKeyRef:
           name: {{ .Values.postgres.users_secret }}
           key: EVENTS_ANALYTICS_POSTGRES_PASSWORD
-  volumeMounts:
-    - mountPath: /scripts
-      name: postgres-on-deploy-script
 {{- end }}
 {{- define "postgres-on-deploy.volumes" -}}
 - name: postgres-on-deploy-script
