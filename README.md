@@ -12,7 +12,6 @@ This document provides guidance on running OpenCRVS both locally (on your PC or 
 # Repository content
 
 - [charts](charts), OpenCRVS helm charts
-- [github-runner](github-runner), configuration files required to deploy self-hosted runner
 - [terraform-templates](terraform-templates), configuration templates to build cloud environments for OpenCRVS on different providers
 - [examples](examples), pre-defined values for helm charts and additional documentation and deployment scenarios for OpenCRVS
 

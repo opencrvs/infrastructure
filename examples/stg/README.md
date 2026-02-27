@@ -74,7 +74,7 @@ Make sure you have following values:
 
 Run following command on VM (master node):
 ```
-curl -s https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/github-runner/node-runner.sh -o runner.sh && bash runner.sh
+curl -sS https://raw.githubusercontent.com/opencrvs/infrastructure/develop/scripts/bootstrap/node-runner.sh -o /tmp/node-runner.sh && bash /tmp/node-runner.sh
 ```
 You should see a message:
 ```

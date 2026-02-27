@@ -89,7 +89,7 @@ echo "Downloading dependencies..."
 curl -sS https://raw.githubusercontent.com/opencrvs/infrastructure/develop/scripts/bootstrap/create-provision-user.sh -o /tmp/create-provision-user.sh
 chmod +x /tmp/create-provision-user.sh
 
-curl -sS https://raw.githubusercontent.com/opencrvs/infrastructure/develop/github-runner/node-runner.sh -o /tmp/node-runner.sh
+curl -sS https://raw.githubusercontent.com/opencrvs/infrastructure/develop/scripts/bootstrap/node-runner.sh -o /tmp/node-runner.sh
 chmod +x /tmp/node-runner.sh
 
 /tmp/create-provision-user.sh --ssh-public-key "$SSH_PUBLIC_KEY"
