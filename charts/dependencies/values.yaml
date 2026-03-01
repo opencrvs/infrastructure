@@ -154,7 +154,7 @@ kibana:
   # custom_config_configmap: kibana-custom-config
 
 metricbeat:
-  image: docker.elastic.co/beats/metricbeat:8.19.0
+  image: docker.elastic.co/beats/metricbeat:8.19.12
   # Configmap for custom configuration file
   # custom_config_configmap: metricbeat-config
   # Configmap for custom index lifecycle management policy
