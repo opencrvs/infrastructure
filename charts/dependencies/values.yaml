@@ -145,7 +145,7 @@ monitoring:
   enabled: false
 
 apm_server:
-  image: docker.elastic.co/apm/apm-server:8.16.4
+  image: docker.elastic.co/apm/apm-server:8.19.12
 
 kibana:
   image: docker.elastic.co/kibana/kibana:8.16.4
