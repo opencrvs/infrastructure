@@ -168,7 +168,7 @@ filebeat:
   # custom_ilm_configmap: filebeat-ilm-policy
 
 logstash:
-  image: docker.elastic.co/logstash/logstash:8.19.0
+  image: docker.elastic.co/logstash/logstash:8.19.12
 
 elastalert:
   # Create configmap with custom rules for elastalert
