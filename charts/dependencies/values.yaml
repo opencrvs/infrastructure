@@ -161,7 +161,7 @@ metricbeat:
   # custom_ilm_configmap: metricbeat-ilm-policy
 
 filebeat:
-  image: docker.elastic.co/beats/filebeat:8.16.4
+  image: docker.elastic.co/beats/filebeat:8.19.12
   # Configmap for custom configuration file
   # custom_config_configmap: filebeat-config
   # Configmap for custom index lifecycle management policy
