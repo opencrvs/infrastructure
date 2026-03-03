@@ -66,12 +66,6 @@
       tags:
         - fail2ban
 
-    # FIXME: Kubernetes has it's own log files
-    # - name: 'Copy logrotate script'
-    #   copy:
-    #     src: ../logrotate.conf
-    #     dest: /etc/
-
 # Backup server setup goes before k8s cluster
 - import_playbook: backup.yml
 

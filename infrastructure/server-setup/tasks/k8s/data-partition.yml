@@ -41,7 +41,7 @@
     - free_disk_size_gb | int < required_size_gb | int
 
 - name: 'Bootstrap encrypted data folder'
-  script: ../cryptfs/bootstrap.sh -s {{ encrypted_disk_size }} -p {{ disk_encryption_key }} -f {{ data_file_path }}
+  script: ./files/cryptfs/bootstrap.sh -s {{ encrypted_disk_size }} -p {{ disk_encryption_key }} -f {{ data_file_path }}
   when:
     - disk_encryption_key is defined
     - not encryptedFileSystemPreCheck.stat.exists
