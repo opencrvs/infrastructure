@@ -61,7 +61,7 @@ spec:
             - name: GATEWAY_URL_INTERNAL
               value: http://gateway.{{ .Release.Namespace }}.svc.cluster.local:7070
             - name: LOGIN_URL
-              value: http://login.{{ .Release.Namespace }}.svc.cluster.local:3020
+              value: https://login.{{ .Values.hostname }}
             - name: AUTH_URL_INTERNAL
               value: http://auth.{{ .Release.Namespace }}.svc.cluster.local:4040
             - name: CONFIG_API_URL_INTERNAL

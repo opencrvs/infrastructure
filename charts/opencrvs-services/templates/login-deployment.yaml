@@ -54,7 +54,7 @@ spec:
             - name: COUNTRY_CONFIG_URL_INTERNAL
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
             - name: CLIENT_APP_URL
-              value: http://register.{{ .Release.Namespace }}.svc.cluster.local:3000
+              value: https://register.{{ .Values.hostname }}
             - name: AUTH_URL_INTERNAL
               value: http://auth.{{ .Release.Namespace }}.svc.cluster.local:4040
             - name: CONFIG_API_URL_INTERNAL
