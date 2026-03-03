@@ -1,5 +1,5 @@
-name: Seed environment
-run-name: "Seed ${{ inputs.environment }} by ${{ github.actor }}"
+name: Clear all environment data
+run-name: "Clear all data on ${{ inputs.environment }} environment"
 on:
   workflow_dispatch:
     inputs:
@@ -26,11 +26,19 @@ jobs:
         with:
           secret: ${{ github.TOKEN }}
           approvers: ${{ vars.GH_APPROVERS }}
-          minimum-approvals: 1
-          issue-title: "Data seeding (${{ inputs.environment }})"
+          minimum-approvals: 3
+          issue-title: "Reset environment (${{ inputs.environment }})"
           issue-body: >
-            Please approve or deny ${{ inputs.environment }} environment seeding
+            3 separate users must approve to reset data on production.
+            
+            > [!WARNING]
+            > **Are you sure what you are doing?**
+            
+            **You are clearing all CITIZENS data on production!!**
+
+            Please approve or deny ${{ inputs.environment }} environment reset 
             initiated from GitHub Actions by @${{ github.actor }}.
+
           exclude-workflow-initiator-as-approver: false
   prepare:
     needs: approve
@@ -85,10 +93,9 @@ jobs:
           name: opencrvs-${{ inputs.environment }}-values-file
           path: /tmp/opencrvs-${{ inputs.environment }}.json
           retention-days: 1
-  seed:
+  reset:
     name: ${{ matrix.job-name }}
     needs: prepare
-    environment: ${{ inputs.environment }}
     env:
       namespace: opencrvs-${{ inputs.environment }}
     runs-on:
@@ -100,8 +107,10 @@ jobs:
       fail-fast: true  # Stop on first failure
       matrix:
         job-name:
-          - data-seed
-          - elasticsearch-reindex
+          - data-cleanup
+          - postgres-on-deploy
+          - data-migration
+          - data-migration-analytics
     steps:
         - name: Download helm release values file into /tmp/opencrvs-${{ inputs.environment }}.json
           uses: actions/download-artifact@v5
