@@ -1,4 +1,4 @@
-name: 03. Deploy OpenCRVS
+name: Deploy OpenCRVS
 run-name: "Deploy OpenCRVS on ${{ inputs.environment }} (core: ${{ inputs.core-image-tag }}, country: ${{ inputs.countryconfig-image-tag }})"
 on:
   workflow_call:
