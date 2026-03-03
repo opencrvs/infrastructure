@@ -1,4 +1,4 @@
-name: Seed environment
+name: 05. Seed environment
 run-name: "Seed ${{ inputs.environment }} by ${{ github.actor }}"
 on:
   workflow_dispatch:
