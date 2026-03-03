@@ -103,7 +103,7 @@ def reset_environment(
     countryconfig_image_name,
     countryconfig_image_tag
 ):
-    opencrvs_tools_chart_path = '../infrastructure/charts/opencrvs-services'
+    opencrvs_tools_chart_path = '../charts/charts/opencrvs-services'
 
     local_resource(
         'Reset database',
@@ -127,7 +127,7 @@ def seed_data(
     countryconfig_image_name,
     countryconfig_image_tag
 ):
-    opencrvs_tools_chart_path = '../infrastructure/charts/opencrvs-services'
+    opencrvs_tools_chart_path = '../charts/charts/opencrvs-services'
 
     local_resource(
         'Seed data',
@@ -151,7 +151,7 @@ def reindex_environment(
     countryconfig_image_name,
     countryconfig_image_tag
 ):
-    opencrvs_tools_chart_path = '../infrastructure/charts/opencrvs-services'
+    opencrvs_tools_chart_path = '../charts/charts/opencrvs-services'
     
     local_resource(
         'Reindex search',
