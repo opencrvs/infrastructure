@@ -36,3 +36,11 @@
   ansible.builtin.systemd:
     name: kubelet
     enabled: yes
+
+- name: 'Copy logrotate script'
+  ansible.builtin.copy:
+    src: ./files/logrotate-cryptfs.conf
+    dest: /etc/logrotate.d/opencrvs-cryptfs
+    mode: "0644"
+    owner: root
+    group: root
