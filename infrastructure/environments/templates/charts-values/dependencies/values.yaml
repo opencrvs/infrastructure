@@ -15,7 +15,7 @@ environment_type: {{environment_type}}
 minio:
   use_default_credentials: false
   restore:
-    type: {{backup_type}}
+    type: {{restore_type}}
   backup:
     type: {{backup_type}}
 
@@ -28,7 +28,7 @@ mongodb:
 postgres:
   use_default_credentials: false
   restore:
-    type: {{backup_type}}
+    type: {{restore_type}}
   backup:
     type: {{backup_type}}
 
