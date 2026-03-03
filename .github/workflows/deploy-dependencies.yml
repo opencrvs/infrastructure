@@ -54,11 +54,13 @@ jobs:
         uses: actions/checkout@v6
       - name: Install Traefik
         run: |
+          touch environments/${ENV}/traefik/values.override.yaml
           kubectl scale deployment traefik --replicas=0 --namespace traefik || true
           helm upgrade --install traefik oci://ghcr.io/traefik/helm/traefik:39.0.0 \
             --namespace traefik \
             --create-namespace \
-            -f environments/${ENV}/traefik/values.yaml
+            -f environments/${ENV}/traefik/values.yaml \
+            -f environments/${ENV}/traefik/values.override.yaml
           kubectl scale deployment traefik --replicas=1 --namespace traefik
       - name: Install stern
         run: |
@@ -75,9 +77,11 @@ jobs:
             --template '{{.PodName}}/{{.ContainerName}} | {{.Message}}{{"\n"}}' \
             . &
           STERN_PID=$!
+          touch environments/${ENV}/dependencies/values.override.yaml
           helm upgrade --install opencrvs-deps oci://ghcr.io/opencrvs/opencrvs-dependencies-chart \
             --namespace "opencrvs-deps-${ENV}" \
             -f environments/${ENV}/dependencies/values.yaml \
+            -f environments/${ENV}/dependencies/values.override.yaml \
             --create-namespace \
             --timeout 15m \
             --set hostname=${{ vars.DOMAIN }} \
