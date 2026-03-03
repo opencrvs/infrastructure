@@ -479,7 +479,7 @@ ALL_QUESTIONS.push(
     )
 
     let backupType = ''
-    let backupHostPrivateKey = ''
+    let backupHostPrivateKey = undefined
     let backupHostPublicKey = ''
     if (configureBackup) {
       const backupAnswers = (await promptAndStoreAnswer(
@@ -951,7 +951,7 @@ ALL_QUESTIONS.push(
       })
     }
 
-    if (configureBackup) {
+    if (configureBackup && backupHostPrivateKey && backupHostPublicKey) {
       applicationServerUpdates.push({
         name: 'BACKUP_HOST_PRIVATE_KEY',
         type: 'SECRET' as const,
