@@ -49,4 +49,4 @@ if [ ! -d "$BACKUP_DIR" ]; then
 fi
 
 # Delete subdirectories but keep latest according to AMOUNT_TO_KEEP
-find "$BACKUP_DIR" -mindepth 1 -type d -print | sort -r | tail -n +$(("$AMOUNT_TO_KEEP" + 1)) | xargs rm -rf --
+find "$BACKUP_DIR" -mindepth 1 -name '????-??-??' -type d -print | sort -r | tail -n +$(("$AMOUNT_TO_KEEP" + 1)) | xargs rm -rf --
