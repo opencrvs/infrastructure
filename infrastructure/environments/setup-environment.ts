@@ -448,7 +448,6 @@ ALL_QUESTIONS.push(
       )
       log(kleur.bold().green('✔'), kleur.bold().yellow('Variable DISK_SPACE is read-only variable:'), DISK_SPACE?.value)
     }
-    log('\n', kleur.bold().underline('Backup'))
     let backupHost = findExistingValue(
       'BACKUP_HOST',
       'VARIABLE',
@@ -462,6 +461,7 @@ ALL_QUESTIONS.push(
       existingValues
     )?.value
 
+    log('\n', kleur.bold().underline('Backup'))
     let configureBackup = backupHost ? true : false
     // Ask question only if backup and restore are not configured
     if (!configureBackup && !restoreEnvironmentName) {
@@ -494,17 +494,27 @@ ALL_QUESTIONS.push(
         backupHostPrivateKey = privateKey;
         log(kleur.bold().green('✔'), kleur.bold().yellow(`Generated SSH key pair for backup host: ${backupHost}`))
       }
+    } else {
+      log(kleur.bold().green('✔'), kleur.bold().yellow('Backup is disabled'))
     }
+    let restoreType = findExistingValue(
+      'RESTORE_ENVIRONMENT_MODE',
+      'VARIABLE',
+      'ENVIRONMENT',
+      existingValues
+    )?.value || 'dump'
 
+    log('\n', kleur.bold().underline('Restore'))
+    let configureRestore = restoreEnvironmentName ? true : false
     if (!restoreEnvironmentName && !configureBackup) {
-      log('\n', kleur.bold().underline('Restore'))
-      let configureRestore = await confirm({
+      configureRestore = await confirm({
           message: 'Do you want to configure restore?',
           default: Boolean(process.env.CONFIGURE_RESTORE)
         })
-      if (configureRestore) {
+    }
+    if (configureRestore) {
         const env_list_filtered = existingEnvironments.filter(env => env !== environment);
-        restoreEnvironmentName = (await promptAndStoreAnswer(
+        const restoreEnvironmentAnswers = await promptAndStoreAnswer(
           environment,
           [
             {
@@ -517,16 +527,37 @@ ALL_QUESTIONS.push(
                 title: env,
                 value: env
               })),
-              initial: '',
+              initial: env_list_filtered.indexOf(restoreEnvironmentName || ''),
               validate: (input: string) => 
                 env_list_filtered.includes(input) ? true : 'Please select a valid environment.'
-            }
+            },
+            {
+              name: 'restoreType',
+              type: 'select' as const,
+              message: 'Select environment backup mode',
+              choices: [
+                {
+                  title: 'Full dump (daily full database backup)',
+                  value: 'dump'
+                },
+                {
+                  title: 'Differential (weekly full, daily diff backup)',
+                  value: 'differential'
+                }
+              ],
+              valueType: 'VARIABLE' as const,
+              valueLabel: 'RESTORE_ENVIRONMENT_MODE',
+              initial: process.env.RESTORE_ENVIRONMENT_MODE,
+              scope: 'ENVIRONMENT' as const,
+            },
           ],
           existingValues
-        )).restoreEnvironmentName
+        )
+        restoreEnvironmentName = restoreEnvironmentAnswers.restoreEnvironmentName
+        restoreType = restoreEnvironmentAnswers.restoreType
       }
-    if (restoreEnvironmentName)
-      log('\n', kleur.bold().green('✔'), kleur.bold().yellow('Restore environment is already set to'), kleur.bold().blue(restoreEnvironmentName))
+    else {
+      log(kleur.bold().green('✔'), kleur.bold().yellow('Restore is disabled'))
     }
 
     log('\n', kleur.bold().underline('Monitoring'))
@@ -1253,6 +1284,7 @@ ALL_QUESTIONS.push(
         backup_enabled: configureBackup ? "true" : "false",
         restore_enabled: restoreEnvironmentName ? "true" : "false",
         restore_environment_name: restoreEnvironmentName || "",
+        restore_type: restoreType,
         traefik_mode: traefikConfOption,
         backup_type: backupType
       }
