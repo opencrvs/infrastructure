@@ -42,7 +42,7 @@ def setup_opencrvs(
     
     # Deploy dependencies
     print("🚀 Deploying dependencies: mongo, minio, elasticsearch...")
-    dependencies_chart_path = '{}/charts/dependencies'.format(infrastructure_path)
+    dependencies_chart_path = '../charts/charts/dependencies'.format(infrastructure_path)
     k8s_yaml(helm(dependencies_chart_path,
         namespace=dependencies_namespace,
         values=[deps_configuration_file],
@@ -51,7 +51,7 @@ def setup_opencrvs(
     
     # Deploy OpenCRVS services
     print("🚀 Deploying services: auth, events, gateway...")
-    opencrvs_chart_path = '{}/charts/opencrvs-services'.format(infrastructure_path)
+    opencrvs_chart_path = '../charts/charts/opencrvs-services'.format(infrastructure_path)
     k8s_yaml(
         helm(opencrvs_chart_path,
              namespace=opencrvs_namespace,
