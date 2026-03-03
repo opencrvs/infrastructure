@@ -60,6 +60,12 @@ spec:
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
             - name: GATEWAY_URL_INTERNAL
               value: http://gateway.{{ .Release.Namespace }}.svc.cluster.local:7070
+            - name: LOGIN_URL
+              value: http://login.{{ .Release.Namespace }}.svc.cluster.local:3020
+            - name: AUTH_URL_INTERNAL
+              value: http://auth.{{ .Release.Namespace }}.svc.cluster.local:4040
+            - name: CONFIG_API_URL_INTERNAL
+              value: http://config.{{ .Release.Namespace }}.svc.cluster.local:2021
             - name: COUNTRY_CONFIG_URL
               value: {{ include "render-external-url" (dict "service_name" "countryconfig" "Values" .Values) }}
             # FIXME: Do we use MINIO_URL variable inside client container?

@@ -53,6 +53,14 @@ spec:
               value: "*.{{ .Values.hostname }}"
             - name: COUNTRY_CONFIG_URL_INTERNAL
               value: http://countryconfig.{{ .Release.Namespace }}.svc.cluster.local:3040
+            - name: CLIENT_APP_URL
+              value: http://register.{{ .Release.Namespace }}.svc.cluster.local:3000
+            - name: AUTH_URL_INTERNAL
+              value: http://auth.{{ .Release.Namespace }}.svc.cluster.local:4040
+            - name: CONFIG_API_URL_INTERNAL
+              value: http://config.{{ .Release.Namespace }}.svc.cluster.local:2021
+            - name: GATEWAY_URL_INTERNAL
+              value: http://gateway.{{ .Release.Namespace }}.svc.cluster.local:7070
           {{- include "render-env-vars" (dict "service_name" "login" "Values" .Values) }}
           {{- include "resources-helper" (dict "service_name" "login" "Values" .Values) | indent 10 }}
           {{- include "probes-helper" (dict "service_name" "login" "Values" .Values) | indent 10 }}
