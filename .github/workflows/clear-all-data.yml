@@ -9,7 +9,8 @@ on:
         default: "development"
         type: choice
         options:
-          - ""
+          - development
+
   workflow_call:
     inputs:
       environment:
@@ -88,7 +89,11 @@ jobs:
             echo "values-file=/tmp/${namespace}.json" >> $GITHUB_OUTPUT
 
       - name: Upload helm release values file /tmp/opencrvs-${{ inputs.environment }}.json
+<<<<<<< HEAD
         uses: actions/upload-artifact@v7
+=======
+        uses: actions/upload-artifact@v4
+>>>>>>> 3184465 (fix: Cleanup charts repository (#261))
         with:
           name: opencrvs-${{ inputs.environment }}-values-file
           path: /tmp/opencrvs-${{ inputs.environment }}.json
@@ -110,11 +115,18 @@ jobs:
           - data-cleanup
           - postgres-on-deploy
           - data-migration
+<<<<<<< HEAD
           - data-migration-legacy
           - data-migration-analytics
     steps:
         - name: Download helm release values file into /tmp/opencrvs-${{ inputs.environment }}.json
           uses: actions/download-artifact@v8
+=======
+          - data-migration-analytics
+    steps:
+        - name: Download helm release values file into /tmp/opencrvs-${{ inputs.environment }}.json
+          uses: actions/download-artifact@v5
+>>>>>>> 3184465 (fix: Cleanup charts repository (#261))
           with:
             name: opencrvs-${{ inputs.environment }}-values-file
             path: /tmp

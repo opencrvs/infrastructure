@@ -201,17 +201,6 @@ export const infrastructureQuestions = [
     initial: process.env.KUBE_WORKER_NODES || '',
     scope: 'ENVIRONMENT' as const,
   },
-  {
-    name: 'kubeClusterNodeCidr',
-    type: 'text' as const,
-    message:
-      `Network CIDR range for Kubernetes node-to-node communication (default: no restrictions)`,
-    valueType: 'VARIABLE' as const,
-    validate: validateCIDR,
-    valueLabel: 'KUBE_CLUSTER_NODE_CIDR',
-    initial: process.env.KUBE_CLUSTER_NODE_CIDR || "0.0.0.0/0",
-    scope: 'ENVIRONMENT' as const,
-  },
 ]
 
 export const staticSSLCertQuestions = [

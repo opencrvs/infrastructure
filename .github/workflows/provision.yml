@@ -9,7 +9,7 @@ on:
         default: 'development'
         type: choice
         options:
-          - ""
+        - development
       tags:
         description: 'Tags to apply to the provisioned resources'
         required: true
@@ -17,17 +17,16 @@ on:
         type: choice
         options:
           - all
+          - k8s
+          - users
           - checks
           - updates
-          - users
           - backup
           - application
           - tools
           - fail2ban
           - data-partition
           - decrypt-on-boot
-          - containerd-setup
-          - k8s
           - system-preparation
 jobs:
   approve:

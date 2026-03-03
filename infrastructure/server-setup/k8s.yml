@@ -50,9 +50,9 @@
         file: tasks/k8s/install-containerd.yml
         apply:
           tags:
-            - containerd-setup
+            - k8s
       tags:
-        - containerd-setup
+        - k8s
     - name: Include Kubernetes installation tasks
       include_tasks:
         file: tasks/k8s/install-kubernetes.yml

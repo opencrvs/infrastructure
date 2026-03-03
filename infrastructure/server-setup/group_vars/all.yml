@@ -54,8 +54,6 @@ eviction_hard_imagefs: "10Gi"         # Minimum free space for container images
 eviction_soft_nodefs: "20Gi"          # Minimum free space on root (/) filesystem over time
 eviction_soft_imagefs: "20Gi"         # Minimum free space for container images over time
 
-# CIDR containing Kubernetes nodes (used for UFW rules, default: no restrictions)
-kube_cluster_node_cidr: "0.0.0.0/0"
 # CIDR(s) allowed to access Kubernetes API server, comma-separated (used for UFW rules, default: no restrictions)
 kube_api_allowed_cidrs: "0.0.0.0/0"
 
@@ -63,6 +61,22 @@ kube_api_allowed_cidrs: "0.0.0.0/0"
 calico_version: "v3.32.0"
 # CNI configuration (read-only after installation)
 pod_network_cidr: "192.168.0.0/16"
+cluster_communication_ports:
+    # Kubernetes API server (required by control plane & nodes)
+    - { port: 6443, proto: "tcp" }
+    # Kubelet API (required for all nodes)
+    - { port: 10250, proto: "tcp" }
+    # kube-scheduler (control plane only)
+    - { port: 10251, proto: "tcp" }
+    # kube-controller-manager (control plane only)
+    - { port: 10252, proto: "tcp" }
+    # Overlay network (Calico/Weave/Flannel, if used—verify your CNI and usage)
+    - { port: 7946, proto: "tcp" }   # Used by some CNIs (e.g., Flannel, Weave)
+    - { port: 7946, proto: "udp" }   # Used by some CNIs (e.g., Flannel, Weave)
+    - { port: 8472, proto: "udp" }   # VXLAN (Flannel/Calico; verify if needed)
+    - { port: 4789, proto: "udp" }   # VXLAN (Calico; verify if needed)
+    - { port: 179, proto: "tcp" }    # BGP (Calico)
+    - { port: 179, proto: "udp" }    # BGP (Calico)
 
 # Helm version
 helm_version: "v4.1.1"
