@@ -52,13 +52,14 @@
     group: root
     recurse: yes
 
-- name: Install k8s-help script
-  copy:
-    src: ../cryptfs/decrypt.sh
-    dest: "/opt/opencrvs/scripts/cryptfs/decrypt.sh"
+- name: Install cryptfs scripts (all executable)
+  ansible.builtin.copy:
+    src: "./files/cryptfs/"
+    dest: "/opt/opencrvs/scripts/cryptfs/"
     owner: "{{ ansible_user }}"
-    group: 'application'
-    mode: '0755'
+    group: application
+    mode: "0755"
+    directory_mode: "0755"
 
 - name: Copy reboot.service systemd file. Must decrypt disk on reboot
   ansible.builtin.copy:
