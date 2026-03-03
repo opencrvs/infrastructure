@@ -1,4 +1,4 @@
-name: Clear all environment data
+name: 08. Clear all environment data
 run-name: "Clear all data on ${{ inputs.environment }} environment"
 on:
   workflow_dispatch:

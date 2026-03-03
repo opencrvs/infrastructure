@@ -1,4 +1,4 @@
-name: Reindex data
+name: 04. Reindex data
 run-name: "Reindex data on ${{ inputs.environment }} environment"
 on:
   workflow_dispatch:
