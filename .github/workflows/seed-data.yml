@@ -1,4 +1,4 @@
-name: Seed environment
+name: 05. Seed environment
 run-name: "Seed data on ${{ inputs.environment }} environment"
 on:
   workflow_dispatch:
