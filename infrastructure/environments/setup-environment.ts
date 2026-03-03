@@ -471,15 +471,8 @@ ALL_QUESTIONS.push(
         })
     }
 
-    let backupHostPrivateKeyExists = findExistingValue(
-      'BACKUP_HOST_PRIVATE_KEY',
-      'SECRET',
-      'ENVIRONMENT',
-      existingValues
-    )
-
     let backupType = ''
-    let backupHostPrivateKey = undefined
+    let backupHostPrivateKey = ''
     let backupHostPublicKey = ''
     if (configureBackup) {
       const backupAnswers = (await promptAndStoreAnswer(
@@ -487,8 +480,15 @@ ALL_QUESTIONS.push(
         backupQuestions,
         existingValues
       ))
+      let backupHostPrivateKeyExists = findExistingValue(
+        'BACKUP_HOST_PRIVATE_KEY',
+        'SECRET',
+        'ENVIRONMENT',
+        existingValues
+      )
       backupType = backupAnswers.backupType
-      if (backupHost && !backupHostPrivateKeyExists) {
+      backupHost = backupAnswers.backupHost || backupHost
+      if (!backupHostPrivateKeyExists) {
         const { publicKey, privateKey } = generateSSHKeyPair();
         backupHostPublicKey = publicKey;
         backupHostPrivateKey = privateKey;
