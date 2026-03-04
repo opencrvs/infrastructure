@@ -233,12 +233,12 @@ export const backupQuestions = [
     message: 'Select environment backup mode',
     choices: [
       {
-        title: 'Differential (weekly full, daily diff backup)',
-        value: 'differential'
-      },
-      {
         title: 'Full dump (daily full database backup)',
         value: 'dump'
+      },
+      {
+        title: 'Differential (weekly full, daily diff backup)',
+        value: 'differential'
       }
     ],
     valueType: 'VARIABLE' as const,
