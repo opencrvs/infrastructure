@@ -2,29 +2,11 @@ import kleur from 'kleur'
 import { generateLongPassword } from './utils'
 import { getRepoInfo } from './git'
 
+
 const notEmpty = (value: string | number) =>
   value.toString().trim().length > 0 ? true : 'Please enter a value'
 
-export const environmentQuestions = [
-    {
-        name: 'environment_type',
-        type: 'select' as const,
-        scope: 'ENVIRONMENT' as const,
-        message: 'Purpose for the environment?',
-        choices: [
-        { title: 'Development/Quality assurance/Testing (no PII data)', value: 'non-production' },
-        { title: 'Staging/Production (hosts PII data, requires frequent backups)', value: 'production' },
-        ]
-    },
-    {
-        name: 'environment',
-        type: 'text' as const,
-        message: 'What is the name of your environment?',
-        validate: notEmpty,
-        initial: process.env.ENV,
-        scope: 'REPOSITORY' as const
-    }
-]
+
 export const dockerhubQuestions = [
   {
     name: 'dockerhubOrganisation',
