@@ -2,7 +2,7 @@ import { Octokit } from '@octokit/core'
 import dotenv from 'dotenv'
 import kleur from 'kleur'
 import prompts, { PromptObject } from 'prompts'
-import { confirm } from '@inquirer/prompts';
+import { confirm, select } from '@inquirer/prompts';
 
 import {
   Secret,
@@ -35,7 +35,6 @@ import { generateInventory, copyChartsValues } from './templates'
 import { updateWorkflowEnvironments } from './update-workflows';
 import { generateSSHKeyPair } from "./ssh-keygen";
 import {
-  environmentQuestions,
   dockerhubQuestions,
   githubQuestions,
   githubTokenQuestion,
@@ -64,7 +63,11 @@ import {
 } from './custom-types'
 
 import { askQuestionWithEditor } from './editor-questions'
-import { User, manageUsers } from './manage-users'
+import {
+  selectWithCustom,
+  getIndexFromChoices,
+} from './questions-helper'
+import { manageUsers } from './manage-users'
 
 function questionToPrompt<T extends string>({
   // eslint-disable-next-line no-unused-vars
@@ -162,6 +165,12 @@ async function promptAndStoreAnswer(
         existingValues
       )
       if (existingVariable) {
+        let initial_value: string | number = existingVariable.value
+        // Get correct initial value for select questions
+        if (questionWithVariableLabel.type === 'select' && Array.isArray(questionWithVariableLabel.choices)) {
+          initial_value = getIndexFromChoices(questionWithVariableLabel.choices, existingVariable.value)
+        }
+        
         return [
           {
             name: 'overWrite' + questionWithVariableLabel.name,
@@ -177,7 +186,7 @@ async function promptAndStoreAnswer(
             ...questionWithVariableLabel,
             type: ((prev: boolean) =>
               prev ? questionWithVariableLabel.type : null) as any,
-            initial: existingVariable.value
+            initial: initial_value
           }
         ]
       }
@@ -248,7 +257,6 @@ async function promptAndStoreAnswer(
 
 
 ALL_QUESTIONS.push(
-  ...environmentQuestions,
   ...githubTokenQuestion,
   ...githubOtherQuestions,
   ...dockerhubQuestions,
@@ -267,11 +275,42 @@ ALL_QUESTIONS.push(
 
 ; (async () => {
 
-    const { environment_type, environment } = await prompts(environmentQuestions.map(questionToPrompt), {
-      onCancel: () => {
+  const environment = await selectWithCustom(
+        {
+        message: 'Choose a name and purpose for the environment?',
+        choices: [
+          { name: 'Development', value: 'development' },
+          { name: 'Quality assurance (no PII data)', value: 'qa' },
+          {
+            name: 'Staging (hosts PII data, no backups)',
+            value: 'staging'
+          },
+          {
+            name: 'Production (hosts PII data, requires frequent backups)',
+            value: 'production'
+          },
+        ]
+      }
+    )
+    let environment_type = 'non-production'
+    if (['development', 'qa'].includes(environment)) {
+        environment_type = 'non-production'
+    } else if (['staging', 'production'].includes(environment)) {
+        environment_type = 'production'
+    } else {
+        environment_type = await select(
+          {
+            message: 'Purpose for the environment?',
+            choices: [
+            { name: 'Development/Quality assurance/Testing (no PII data)', value: 'non-production' },
+            { name: 'Staging/Production (hosts PII data, requires frequent backups)', value: 'production' },
+            ],
+          }
+        )
+    }
+    if (!environment) {
         process.exit(1)
       }
-    })
     // Read users .env file based on the environment name they gave above, e.g. .env.production
     dotenv.config({
       path: `${process.cwd()}/.env.${environment}`
@@ -448,18 +487,28 @@ ALL_QUESTIONS.push(
       )
       log(kleur.bold().green('✔'), kleur.bold().yellow('Variable DISK_SPACE is read-only variable:'), DISK_SPACE?.value)
     }
+
+    // Backup and restore configuration
     let backupHost = findExistingValue(
       'BACKUP_HOST',
       'VARIABLE',
       'ENVIRONMENT',
       existingValues
     )?.value || ''
+    let backupType = ''
+
     let restoreEnvironmentName = findExistingValue(
       'RESTORE_ENVIRONMENT_NAME',
       'VARIABLE',
       'ENVIRONMENT',
       existingValues
     )?.value
+    let restoreType = findExistingValue(
+      'RESTORE_ENVIRONMENT_MODE',
+      'VARIABLE',
+      'ENVIRONMENT',
+      existingValues
+    )?.value || process.env.RESTORE_ENVIRONMENT_MODE || 'dump'
 
     log('\n', kleur.bold().underline('Backup'))
     let configureBackup = backupHost ? true : false
@@ -471,7 +520,6 @@ ALL_QUESTIONS.push(
         })
     }
 
-    let backupType = ''
     let backupHostPrivateKey = ''
     let backupHostPublicKey = ''
     if (configureBackup) {
@@ -492,17 +540,11 @@ ALL_QUESTIONS.push(
         const { publicKey, privateKey } = generateSSHKeyPair();
         backupHostPublicKey = publicKey;
         backupHostPrivateKey = privateKey;
-        log(kleur.bold().green('✔'), kleur.bold().yellow(`Generated SSH key pair for backup host: ${backupHost}`))
+        log(kleur.bold().green('✔'), kleur.bold().yellow(`Generated new SSH key pair for backup host: ${backupHost}`))
       }
     } else {
       log(kleur.bold().green('✔'), kleur.bold().yellow('Backup is disabled'))
     }
-    let restoreType = findExistingValue(
-      'RESTORE_ENVIRONMENT_MODE',
-      'VARIABLE',
-      'ENVIRONMENT',
-      existingValues
-    )?.value || 'dump'
 
     log('\n', kleur.bold().underline('Restore'))
     let configureRestore = restoreEnvironmentName ? true : false
@@ -514,47 +556,28 @@ ALL_QUESTIONS.push(
     }
     if (configureRestore) {
         const env_list_filtered = existingEnvironments.filter(env => env !== environment);
-        const restoreEnvironmentAnswers = await promptAndStoreAnswer(
-          environment,
-          [
-            {
-              name: 'restoreEnvironmentName',
-              type: 'autocomplete' as const,
+        restoreEnvironmentName = await selectWithCustom({
               message: 'What is the name of your environment to restore?',
-              scope: 'ENVIRONMENT' as const,
-              valueLabel: 'RESTORE_ENVIRONMENT_NAME',
               choices: env_list_filtered.map(env => ({
-                title: env,
+                name: env,
                 value: env
               })),
-              initial: env_list_filtered.indexOf(restoreEnvironmentName || ''),
-              validate: (input: string) => 
-                env_list_filtered.includes(input) ? true : 'Please select a valid environment.'
+              initial: restoreEnvironmentName
             },
-            {
-              name: 'restoreType',
-              type: 'select' as const,
-              message: 'Select environment backup mode',
+        )
+        restoreType = await select(
+          { message: `Select ${kleur.yellow().bold(restoreEnvironmentName)} environment backup mode`,
               choices: [
                 {
-                  title: 'Full dump (daily full database backup)',
+                  name: 'Full dump (daily full database backup)',
                   value: 'dump'
                 },
                 {
-                  title: 'Differential (weekly full, daily diff backup)',
+                  name: 'Differential (weekly full, daily diff backup)',
                   value: 'differential'
                 }
-              ],
-              valueType: 'VARIABLE' as const,
-              valueLabel: 'RESTORE_ENVIRONMENT_MODE',
-              initial: process.env.RESTORE_ENVIRONMENT_MODE,
-              scope: 'ENVIRONMENT' as const,
-            },
-          ],
-          existingValues
+              ]}
         )
-        restoreEnvironmentName = restoreEnvironmentAnswers.restoreEnvironmentName
-        restoreType = restoreEnvironmentAnswers.restoreType
       }
     else {
       log(kleur.bold().green('✔'), kleur.bold().yellow('Restore is disabled'))
@@ -661,7 +684,7 @@ ALL_QUESTIONS.push(
       },
     ]
     derivedUpdates.push(...ssl_answers)
-    if ('production' === environment_type) {
+    if (configureBackup) {
       derivedUpdates.push({
         name: 'BACKUP_ENCRYPTION_PASSPHRASE',
         type: 'SECRET' as const,
