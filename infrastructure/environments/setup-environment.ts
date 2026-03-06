@@ -45,8 +45,6 @@ import {
   databaseAndMonitoringQuestions,
   diskQuestions,
   sentryQuestions,
-  notificationTransportQuestions,
-  smsQuestions,
   emailQuestions,
   metabaseAdminQuestions,
   backupQuestions,
@@ -265,8 +263,6 @@ ALL_QUESTIONS.push(
   ...backupQuestions,
   ...countryQuestions,
   ...databaseAndMonitoringQuestions,
-  ...notificationTransportQuestions,
-  ...smsQuestions,
   ...emailQuestions,
   ...sentryQuestions,
   ...derivedVariables,
@@ -626,19 +622,6 @@ ALL_QUESTIONS.push(
     log('\n', kleur.bold().underline('SMTP'))
     await promptAndStoreAnswer(environment, emailQuestions, existingValues)
 
-    log('\n', kleur.bold().underline('Notification'))
-
-    const { notificationTransport } = await promptAndStoreAnswer(
-      environment,
-      notificationTransportQuestions,
-      existingValues
-    )
-
-    if (notificationTransport.includes('sms')) {
-      await promptAndStoreAnswer(environment, smsQuestions, existingValues)
-    }
-
-
     const allAnswers = ALL_ANSWERS.reduce((acc, answer) => {
       return { ...acc, ...answer }
     })
@@ -683,6 +666,23 @@ ALL_QUESTIONS.push(
         scope: 'REPOSITORY' as const
       },
     ]
+    derivedUpdates.push({
+        name: 'NOTIFICATION_TRANSPORT',
+        type: 'VARIABLE' as const,
+        didExist: findExistingValue(
+          'NOTIFICATION_TRANSPORT',
+          'VARIABLE',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        value: findExistingOrDefine(
+          'NOTIFICATION_TRANSPORT',
+          'VARIABLE',
+          'ENVIRONMENT',
+          'email'
+        ),
+        scope: 'ENVIRONMENT' as const
+      })
     derivedUpdates.push(...ssl_answers)
     if (configureBackup) {
       derivedUpdates.push({
