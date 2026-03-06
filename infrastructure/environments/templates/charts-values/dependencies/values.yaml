@@ -14,10 +14,14 @@ environment_type: {{environment_type}}
 
 minio:
   use_default_credentials: false
+  {{#if restore_enabled}}
   restore:
     type: {{restore_type}}
+  {{/if}}
+  {{#if backup_enabled}}
   backup:
     type: {{backup_type}}
+  {{/if}}
 
 elasticsearch:
   use_default_credentials: false
@@ -27,10 +31,14 @@ mongodb:
 
 postgres:
   use_default_credentials: false
+  {{#if restore_enabled}}
   restore:
     type: {{restore_type}}
+  {{/if}}
+  {{#if backup_enabled}}
   backup:
     type: {{backup_type}}
+  {{/if}}
 
 redis:
   auth_mode: acl

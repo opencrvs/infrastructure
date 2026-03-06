@@ -16,6 +16,7 @@
     "environment:upgrade": "yarn environment:init",
     "environment:swarm-to-k8s": "ts-node infrastructure/environments/swarm-to-k8s.ts",
     "environment:users": "ts-node infrastructure/environments/users.ts",
+    "environment:update-workflows": "ts-node infrastructure/environments/update-workflows.ts",
     "prepare": "husky"
   },
   "devDependencies": {
