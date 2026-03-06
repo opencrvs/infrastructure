@@ -7,7 +7,7 @@
 - name: 'Setup backup rotation'
   cron:
     user: '{{ crontab_user }}'
-    name: 'rotate backups in {{ backup_server_remote_target_directory }}'
+    name: 'rotate backups in {{ backup_server_user_home }}/{{ k8s_cluster_env }}'
     minute: '0'
     hour: '0'
     # FIXME: We should have dedicated variable for backup
