@@ -60,5 +60,9 @@ countryconfig:
       - SMTP_SECURE
       - SMTP_USERNAME
 
+dashboards:
+  use_default_credentials: false
+  enabled: true
+
 on_restore_cronjob:
   enabled: {{restore_enabled}}
