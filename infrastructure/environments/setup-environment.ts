@@ -1322,12 +1322,12 @@ ALL_QUESTIONS.push(
       `➡️ ${kleur.bold().yellow('Run following command on Kubernetes worker VM to create provision user and setup SSH key:')}\n` +
       "\n" +
       "curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\ \n" +
-      `bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}\n` : ""
+      `bash opencrvs-bootstrap.sh --ssh-public-key "${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}"\n` : ""
 
     addon_message += configureBackup ? 
       `\n➡️ ${kleur.bold().yellow('Run following command on backup server to create provision user and setup SSH key:')}\n` +
       "curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\ \n" +
-      `bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}` : ""
+      `bash opencrvs-bootstrap.sh --ssh-public-key "${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}"` : ""
 
   log(`
 ${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
