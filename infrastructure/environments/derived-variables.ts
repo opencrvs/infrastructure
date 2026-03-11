@@ -153,4 +153,11 @@ export const derivedVariables = [
     type: 'disabled',
     scope: 'ENVIRONMENT'
   },
+  {
+    name: 'NOTIFICATION_TRANSPORT',
+    valueLabel: 'NOTIFICATION_TRANSPORT',
+    valueType: 'VARIABLE',
+    type: 'disabled',
+    scope: 'ENVIRONMENT'
+  },
 ] as const;
