@@ -29,7 +29,7 @@ core_images_tag = "v1.9.10"
 countryconfig_image_name="opencrvs/ocrvs-countryconfig"
 # If you would like to start with sample countryconfig image, please use:
 # countryconfig_image_name="opencrvs/ocrvs-countryconfig"
-countryconfig_image_tag="v1.9.10"
+countryconfig_image_tag="v1.9.10-arm64"
 
 # Namespaces:
 # - opencrvs-deps-dev, dependencies namespace
