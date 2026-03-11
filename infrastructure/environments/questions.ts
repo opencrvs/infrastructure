@@ -145,7 +145,7 @@ export const infrastructureQuestions = [
     valueType: 'VARIABLE' as const,
     // validate: notEmpty,
     valueLabel: 'KUBE_API_HOST',
-    initial: process.env.KUBE_API_HOST || '',
+    initial: process.env.KUBE_API_HOST,
     scope: 'ENVIRONMENT' as const
   },
   {
@@ -156,7 +156,7 @@ export const infrastructureQuestions = [
     valueType: 'VARIABLE' as const,
     // validate: notEmpty,
     valueLabel: 'WORKER_NODES',
-    initial: process.env.WORKER_NODES || '',
+    initial: process.env.WORKER_NODES,
     scope: 'ENVIRONMENT' as const,
   },
 ]
