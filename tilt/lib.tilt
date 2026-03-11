@@ -1,79 +1,3 @@
-
-def format_reset_environment_command(
-        opencrvs_namespace,
-        opencrvs_configuration_file,
-        opencrvs_tools_chart_path,
-        core_images_tag,
-        countryconfig_image_name,
-        countryconfig_image_tag):
-    """
-    Build command to reset the environment
-    :param opencrvs_namespace: OpenCRVS namespace
-    :param opencrvs_configuration_file: OpenCRVS configuration file for helm with environment variables
-    :param opencrvs_tools_chart_path: OpenCRVS tools chart path
-    :param default_values_file: OpenCRVS default values file
-    :return: Command to reset the environment
-    """
-    return """
-          echo 'Cleanup environment';
-          for job in data-cleanup postgres-on-deploy data-migration data-migration-analytics; do
-            echo "Running $job"
-            kubectl delete job -n {0} --ignore-not-found=true $job
-            helm template -f {1} \
-                --set image.tag={3} \
-                --set data_cleanup.enabled=true \
-                --set countryconfig.image.name={4} \
-                --set countryconfig.image.tag={5} \
-                --namespace {0} \
-                -s templates/$job-job.yaml \
-                {2} | kubectl apply -n {0} --wait=true -f - 
-            kubectl wait --for=condition=complete job/$job -n {0} --timeout=600s || true
-            kubectl logs job/$job -f --all-containers=true -n {0} || true
-          done;
-      """.format(
-            opencrvs_namespace,
-            opencrvs_configuration_file,
-            opencrvs_tools_chart_path,
-            core_images_tag,
-            countryconfig_image_name,
-            countryconfig_image_tag
-        )
-
-def format_seed_environment_command(
-    opencrvs_namespace,
-    opencrvs_configuration_file,
-    opencrvs_tools_chart_path,
-    core_images_tag,
-    countryconfig_image_name,
-    countryconfig_image_tag
-):
-    """
-    Build command to seed the environment
-    :param opencrvs_namespace: OpenCRVS namespace
-    :param opencrvs_configuration_file: OpenCRVS configuration file for helm with environment variables
-    :param opencrvs_tools_chart_path: OpenCRVS tools chart path
-    :param default_values_file: OpenCRVS default values file
-    :return: Command to seed the environment
-    """
-    return """
-      kubectl delete job -n {0} data-seed;
-      helm template -f {1} \
-        --set image.tag={3} \
-        --set data_cleanup.enabled=true \
-        --set countryconfig.image.name={4} \
-        --set countryconfig.image.tag={5} \
-        --set data_seed.enabled=true -s templates/data-seed-job.yaml --namespace {0} {2} | kubectl apply -n {0} -f -;
-      kubectl wait --for=condition=running job/data-seed -n {0} --timeout=600s;
-      kubectl logs job/data-seed -f -n {0};
-      """.format(
-            opencrvs_namespace,
-            opencrvs_configuration_file,
-            opencrvs_tools_chart_path,
-            core_images_tag,
-            countryconfig_image_name,
-            countryconfig_image_tag
-        )
-
 def copy_secrets(dependencies_namespace, opencrvs_namespace):
 
     secrets_to_copy = [
@@ -89,14 +13,15 @@ def copy_secrets(dependencies_namespace, opencrvs_namespace):
         labels=['3.Dependencies']
     )
     local_resource(
-      "Copy secrets",
+      "copy-secrets",
       cmd="""kubectl get secret {2} -n {0} -o yaml \
              | sed "s#namespace: {0}#namespace: {1}#" | grep -v 'resourceVersion\\|uid\\|creationTimestamp' \
              | kubectl apply -n {1} -f -""".format(dependencies_namespace, opencrvs_namespace, " ".join(secrets_to_copy)),
       resource_deps=["deps-secrets"],
       labels=['2.Data-tasks'])
 
-def reset_environment(
+
+def data_cleanup(
     opencrvs_namespace,
     opencrvs_configuration_file,
     core_images_tag,
@@ -105,19 +30,29 @@ def reset_environment(
 ):
     opencrvs_tools_chart_path = '../charts/charts/opencrvs-services'
 
-    local_resource(
-        'Reset database',
+    job_yaml = local("""
+            helm template ../charts/charts/opencrvs-services \
+                --namespace {opencrvs_namespace} \
+                -f {opencrvs_configuration_file} \
+                --set image.tag={core_images_tag} \
+                --set data_cleanup.enabled=true \
+                --set countryconfig.image.name={countryconfig_image_name} \
+                --set countryconfig.image.tag={countryconfig_image_tag} \
+                --show-only templates/data-cleanup-job.yaml
+        """.format(
+            opencrvs_namespace=opencrvs_namespace,
+            opencrvs_configuration_file=opencrvs_configuration_file,
+            core_images_tag=core_images_tag,
+            countryconfig_image_name=countryconfig_image_name,
+            countryconfig_image_tag=countryconfig_image_tag
+        )
+    )
+
+    k8s_yaml(job_yaml)
+    k8s_resource(
+        'data-cleanup',
         labels=['2.Data-tasks'],
-        auto_init=False,
-        cmd=format_reset_environment_command(
-            opencrvs_namespace,
-            opencrvs_configuration_file,
-            opencrvs_tools_chart_path,
-            core_images_tag,
-            countryconfig_image_name,
-            countryconfig_image_tag
-        ),
-        trigger_mode=TRIGGER_MODE_MANUAL,
+        auto_init=False
     )
 
 def seed_data(
@@ -128,44 +63,21 @@ def seed_data(
     countryconfig_image_tag
 ):
     opencrvs_tools_chart_path = '../charts/charts/opencrvs-services'
-
-    local_resource(
-        'Seed data',
-        labels=['2.Data-tasks'],
-        auto_init=False,
-        cmd=format_seed_environment_command(
-            opencrvs_namespace,
-            opencrvs_configuration_file,
-            opencrvs_tools_chart_path,
-            core_images_tag,
-            countryconfig_image_name,
-            countryconfig_image_tag
-        ),
-        trigger_mode=TRIGGER_MODE_MANUAL,
+    job_yaml = local("""
+      helm template -f {opencrvs_configuration_file} \
+        --set image.tag={core_images_tag} \
+        --set data_seed.enabled=true -s templates/data-seed-job.yaml --namespace {opencrvs_namespace} {opencrvs_tools_chart_path}
+      """.format(
+            opencrvs_namespace=opencrvs_namespace,
+            opencrvs_configuration_file=opencrvs_configuration_file,
+            core_images_tag=core_images_tag,
+            opencrvs_tools_chart_path=opencrvs_tools_chart_path
+        )
     )
 
-def reindex_environment(
-    opencrvs_namespace,
-    opencrvs_configuration_file,
-    core_images_tag,
-    countryconfig_image_name,
-    countryconfig_image_tag
-):
-    opencrvs_tools_chart_path = '../charts/charts/opencrvs-services'
-    
-    local_resource(
-        'Reindex search',
+    k8s_yaml(job_yaml)
+    k8s_resource(
+        'data-seed',
         labels=['2.Data-tasks'],
-        auto_init=False,
-        cmd="""
-            kubectl delete job -n {0} elasticsearch-reindex || true
-            helm template -f {1} \
-                --namespace {0} \
-                -s templates/elasticsearch-reindex-job.yaml \
-                {2} | kubectl apply -n {0} -f -
-            kubectl wait --for=condition=running job/elasticsearch-reindex -n {0} --timeout=600s;
-            kubectl logs job/elasticsearch-reindex -f -n {0} || true
-            kubectl wait --for=condition=complete job/elasticsearch-reindex -n {0} --timeout=600s;
-          """.format(opencrvs_namespace, opencrvs_configuration_file, opencrvs_tools_chart_path),
-        trigger_mode=TRIGGER_MODE_MANUAL,
+        auto_init=False
     )

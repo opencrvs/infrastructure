@@ -3,7 +3,7 @@
 infrastructure_path = '.'
 load('ext://namespace', 'namespace_create', 'namespace_inject')
 load("./lib.tilt", 
-        "copy_secrets", "reset_environment", "seed_data", "reindex_environment")
+        "copy_secrets", "data_cleanup", "seed_data")
 include('./common.tilt')
 
 def setup_opencrvs(
@@ -64,9 +64,9 @@ def setup_opencrvs(
              ]
         )
     )
-    
+
     # Add data tasks
-    reset_environment(
+    data_cleanup(
         opencrvs_namespace,
         opencrvs_configuration_file,
         core_images_tag,
@@ -75,13 +75,6 @@ def setup_opencrvs(
     )
 
     seed_data(
-        opencrvs_namespace,
-        opencrvs_configuration_file,
-        core_images_tag,
-        countryconfig_image_name,
-        countryconfig_image_tag
-    )
-    reindex_environment(
         opencrvs_namespace,
         opencrvs_configuration_file,
         core_images_tag,
