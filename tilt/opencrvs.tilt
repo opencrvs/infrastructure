@@ -60,7 +60,7 @@ def setup_opencrvs(
                 "image.tag={}".format(core_images_tag),
                 "countryconfig.image.name={}".format(countryconfig_image_name),
                 "countryconfig.image.tag={}".format(countryconfig_image_tag),
-                "data_seed.enabled={}".format(False)  # Disable data seeding on helm install for tilt
+                "data_seed.enabled=false" # Disable data seeding on helm install for tilt
              ]
         )
     )
