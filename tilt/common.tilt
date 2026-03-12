@@ -121,5 +121,3 @@ for workload in opensrvs_services:
   k8s_resource(workload, labels=[tilt_label], resource_deps=dependencies + opensrvs_predeploy_jobs)
 for job in opensrvs_postdeploy_jobs:
   k8s_resource(job, labels=[job_label], resource_deps=opensrvs_services)
-
-k8s_resource('elasticsearch-reindex', labels=[job_label, '2.Data-tasks'], resource_deps=opensrvs_services)
