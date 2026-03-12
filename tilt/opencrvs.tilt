@@ -1,6 +1,5 @@
 # Shared OpenCRVS Tilt configuration
 # Load extensions
-infrastructure_path = '.'
 load('ext://namespace', 'namespace_create', 'namespace_inject')
 load("./lib.tilt", 
         "copy_secrets", "data_cleanup", "seed_data")
@@ -14,13 +13,15 @@ def setup_opencrvs(
     opencrvs_namespace='opencrvs-dev',
     security_enabled=False,
     monitoring_enabled=False,
-    infrastructure_path='.',
+    infrastructure_repo='.',
+    opencrvs_chart_repo='../charts/'
 ):
     """
     Common OpenCRVS setup function
     
     Args:
-        infrastructure_path: Path to infrastructure directory (relative)
+        infrastructure_repo: Path to infrastructure directory (relative)
+        opencrvs_chart_repo: Path to OpenCRVS charts directory (relative)
     """
         
     # Create namespaces
@@ -30,19 +31,19 @@ def setup_opencrvs(
     # Select configuration files
     if security_enabled:
         print("🔑 Deploying OpenCRVS and Dependencies in secure mode")
-        deps_configuration_file = '{}/examples/localhost/dependencies/values-secure.yaml'.format(infrastructure_path)
-        opencrvs_configuration_file = '{}/examples/localhost/opencrvs-services/values-secure.yaml'.format(infrastructure_path)
+        deps_configuration_file = '{}/examples/localhost/dependencies/values-secure.yaml'.format(infrastructure_repo)
+        opencrvs_configuration_file = '{}/examples/localhost/opencrvs-services/values-secure.yaml'.format(infrastructure_repo)
     else:
         print("""🔑 Deploying OpenCRVS and Dependencies in non-secure mode
         - Minio admin user/password: minioadmin/minioadmin
         - Postgres admin user/password: postgres/postgres
         - Authentication for Redis, MongoDB and Elasticsearch is disabled""")
-        deps_configuration_file = '{}/examples/localhost/dependencies/values.yaml'.format(infrastructure_path)
-        opencrvs_configuration_file = '{}/examples/localhost/opencrvs-services/values.yaml'.format(infrastructure_path)
+        deps_configuration_file = '{}/examples/localhost/dependencies/values.yaml'.format(infrastructure_repo)
+        opencrvs_configuration_file = '{}/examples/localhost/opencrvs-services/values.yaml'.format(infrastructure_repo)
     
     # Deploy dependencies
     print("🚀 Deploying dependencies: mongo, minio, elasticsearch...")
-    dependencies_chart_path = '../charts/charts/dependencies'.format(infrastructure_path)
+    dependencies_chart_path = '{}/charts/dependencies'.format(opencrvs_chart_repo)
     k8s_yaml(helm(dependencies_chart_path,
         namespace=dependencies_namespace,
         values=[deps_configuration_file],
@@ -51,7 +52,7 @@ def setup_opencrvs(
     
     # Deploy OpenCRVS services
     print("🚀 Deploying services: auth, events, gateway...")
-    opencrvs_chart_path = '../charts/charts/opencrvs-services'.format(infrastructure_path)
+    opencrvs_chart_path = '{}/charts/opencrvs-services'.format(opencrvs_chart_repo)
     k8s_yaml(
         helm(opencrvs_chart_path,
              namespace=opencrvs_namespace,
@@ -71,7 +72,8 @@ def setup_opencrvs(
         opencrvs_configuration_file,
         core_images_tag,
         countryconfig_image_name,
-        countryconfig_image_tag
+        countryconfig_image_tag,
+        opencrvs_chart_path
     )
 
     seed_data(
@@ -79,7 +81,8 @@ def setup_opencrvs(
         opencrvs_configuration_file,
         core_images_tag,
         countryconfig_image_name,
-        countryconfig_image_tag
+        countryconfig_image_tag,
+        opencrvs_chart_path
     )
     
     if security_enabled:

@@ -26,10 +26,9 @@ def data_cleanup(
     opencrvs_configuration_file,
     core_images_tag,
     countryconfig_image_name,
-    countryconfig_image_tag
+    countryconfig_image_tag,
+    opencrvs_tools_chart_path
 ):
-    opencrvs_tools_chart_path = '../charts/charts/opencrvs-services'
-
     job_yaml = local("""
             helm template ../charts/charts/opencrvs-services \
                 --namespace {opencrvs_namespace} \
@@ -60,9 +59,9 @@ def seed_data(
     opencrvs_configuration_file,
     core_images_tag,
     countryconfig_image_name,
-    countryconfig_image_tag
+    countryconfig_image_tag,
+    opencrvs_tools_chart_path
 ):
-    opencrvs_tools_chart_path = '../charts/charts/opencrvs-services'
     job_yaml = local("""
       helm template -f {opencrvs_configuration_file} \
         --set image.tag={core_images_tag} \
