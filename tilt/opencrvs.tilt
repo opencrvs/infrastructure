@@ -65,7 +65,13 @@ def setup_opencrvs(
              ]
         )
     )
-
+    local_resource(
+        name="clean-&-seed",
+        auto_init=False,
+        labels="2.Data-tasks",
+        cmd="{infrastructure_repo}/tilt/clear-all-data.sh".format(infrastructure_repo=infrastructure_repo),
+        allow_parallel=True,
+    )
     # Add data tasks
     data_cleanup(
         opencrvs_namespace,
