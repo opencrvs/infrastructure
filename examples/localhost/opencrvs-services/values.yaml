@@ -1,13 +1,17 @@
 ingress:
   ssl_enabled: false
 
+
+credentials:
+  super_user_password: password
+
 # OpenCRVS core image tag:
 image:
-  tag: v1.9.7
+  tag: v1.9.11
 
 countryconfig:
   image:
-    tag: v1.9.7
+    tag: v1.9.11
 
 # Horizontal Pod Autoscaler (HPA) configuration:
 # Disabled by default for local environment.
