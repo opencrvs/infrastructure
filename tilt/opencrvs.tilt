@@ -49,10 +49,20 @@ def setup_opencrvs(
         values=[deps_configuration_file],
         set=["monitoring.enabled={}".format(monitoring_enabled).lower()]
     ))
-    
+    opencrvs_chart_path = '{}/charts/opencrvs-services'.format(opencrvs_chart_repo)
+    certs_dir = '{opencrvs_chart_path}/certs'.format(opencrvs_chart_path=opencrvs_chart_path)
+    if not os.path.exists("{certs_dir}/tls.crt".format(certs_dir=certs_dir)):
+        local("""
+        mkdir -p {certs_dir}
+        openssl req -x509 -nodes -days 365 \
+        -newkey rsa:2048 \
+        -keyout {certs_dir}/tls.key \
+        -out {certs_dir}/tls.crt \
+        -subj "/CN=local.dev"
+        """.format(certs_dir=certs_dir))
+
     # Deploy OpenCRVS services
     print("🚀 Deploying services: auth, events, gateway...")
-    opencrvs_chart_path = '{}/charts/opencrvs-services'.format(opencrvs_chart_repo)
     k8s_yaml(
         helm(opencrvs_chart_path,
              namespace=opencrvs_namespace,
@@ -61,7 +71,9 @@ def setup_opencrvs(
                 "image.tag={}".format(core_images_tag),
                 "countryconfig.image.name={}".format(countryconfig_image_name),
                 "countryconfig.image.tag={}".format(countryconfig_image_tag),
-                "data_seed.enabled=false" # Disable data seeding on helm install for tilt
+                "data_seed.enabled=false", # Disable data seeding on helm install for tilt
+                "certs.crt_file=certs/tls.crt",
+                "certs.key_file=certs/tls.key"
              ]
         )
     )
