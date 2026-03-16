@@ -45,8 +45,6 @@ import {
   databaseAndMonitoringQuestions,
   diskQuestions,
   sentryQuestions,
-  notificationTransportQuestions,
-  smsQuestions,
   emailQuestions,
   metabaseAdminQuestions,
   backupQuestions,
@@ -265,8 +263,6 @@ ALL_QUESTIONS.push(
   ...backupQuestions,
   ...countryQuestions,
   ...databaseAndMonitoringQuestions,
-  ...notificationTransportQuestions,
-  ...smsQuestions,
   ...emailQuestions,
   ...sentryQuestions,
   ...derivedVariables,
@@ -626,19 +622,6 @@ ALL_QUESTIONS.push(
     log('\n', kleur.bold().underline('SMTP'))
     await promptAndStoreAnswer(environment, emailQuestions, existingValues)
 
-    log('\n', kleur.bold().underline('Notification'))
-
-    const { notificationTransport } = await promptAndStoreAnswer(
-      environment,
-      notificationTransportQuestions,
-      existingValues
-    )
-
-    if (notificationTransport.includes('sms')) {
-      await promptAndStoreAnswer(environment, smsQuestions, existingValues)
-    }
-
-
     const allAnswers = ALL_ANSWERS.reduce((acc, answer) => {
       return { ...acc, ...answer }
     })
@@ -683,6 +666,23 @@ ALL_QUESTIONS.push(
         scope: 'REPOSITORY' as const
       },
     ]
+    derivedUpdates.push({
+        name: 'NOTIFICATION_TRANSPORT',
+        type: 'VARIABLE' as const,
+        didExist: findExistingValue(
+          'NOTIFICATION_TRANSPORT',
+          'VARIABLE',
+          'ENVIRONMENT',
+          existingValues
+        ),
+        value: findExistingOrDefine(
+          'NOTIFICATION_TRANSPORT',
+          'VARIABLE',
+          'ENVIRONMENT',
+          'email'
+        ),
+        scope: 'ENVIRONMENT' as const
+      })
     derivedUpdates.push(...ssl_answers)
     if (configureBackup) {
       derivedUpdates.push({
@@ -1322,12 +1322,12 @@ ALL_QUESTIONS.push(
       `➡️ ${kleur.bold().yellow('Run following command on Kubernetes worker VM to create provision user and setup SSH key:')}\n` +
       "\n" +
       "curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\ \n" +
-      `bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}\n` : ""
+      `bash opencrvs-bootstrap.sh --ssh-public-key "${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}"\n` : ""
 
     addon_message += configureBackup ? 
       `\n➡️ ${kleur.bold().yellow('Run following command on backup server to create provision user and setup SSH key:')}\n` +
       "curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\ \n" +
-      `bash opencrvs-bootstrap.sh --ssh-public-key ${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}` : ""
+      `bash opencrvs-bootstrap.sh --ssh-public-key "${kleur.bold('[PUT PROVISION USER PUBLIC KEY FROM MASTER NODE]')}"` : ""
 
   log(`
 ${kleur.yellow('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
