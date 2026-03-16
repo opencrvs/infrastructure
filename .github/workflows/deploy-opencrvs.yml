@@ -136,7 +136,7 @@ jobs:
             . &
           STERN_PID=$!
           touch environments/${ENV}/opencrvs-services/values.override.yaml
-          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services:0.1.29 \
+          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services:0.1.30 \
             --timeout 15m \
             --namespace "opencrvs-${ENV}" \
             -f environments/${ENV}/opencrvs-services/values.yaml \
