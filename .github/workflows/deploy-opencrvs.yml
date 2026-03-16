@@ -120,6 +120,13 @@ jobs:
             | kubectl apply -n opencrvs-${ENV} -f - \
             || echo "Secret $secret doesn't exist in opencrvs-deps-${ENV} namespace"
           done
+      - name: Deploy OpenCRVS MOSIP API
+        run: |
+          helm upgrade --install mosip-api ghcr.io/opencrvs/opencrvs-mosip:0.1.0 \
+          --namespace "opencrvs-${ENV}" \
+          -f environments/integration/mosip-api/values.yaml \
+          --set hostname=farajaland-integration.opencrvs.dev \
+          --atomic
       - name: Install stern
         run: |
           curl -L https://github.com/stern/stern/releases/download/v1.28.0/stern_1.28.0_linux_amd64.tar.gz | tar xz
