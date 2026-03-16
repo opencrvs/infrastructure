@@ -13,7 +13,7 @@ on:
         default: 
         required: true
         options:
-          - ""
+          - integration
 
 jobs:
   approve:
