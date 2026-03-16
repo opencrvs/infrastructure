@@ -2,3 +2,5 @@
 # Use this file to customize helm chart behavior
 # Please make sure your custom changes doesn't conflict with values.yaml
 ##################################################################################
+# Disable authentication
+imagePullSecrets: {}
