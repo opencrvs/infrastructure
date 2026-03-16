@@ -122,7 +122,7 @@ jobs:
           done
       - name: Deploy OpenCRVS MOSIP API
         run: |
-          helm upgrade --install mosip-api ghcr.io/opencrvs/opencrvs-mosip:0.1.0 \
+          helm upgrade --install mosip-api oci://ghcr.io/opencrvs/opencrvs-mosip:0.1.0 \
           --namespace "opencrvs-${ENV}" \
           -f environments/integration/mosip-api/values.yaml \
           --set hostname=farajaland-integration.opencrvs.dev \
