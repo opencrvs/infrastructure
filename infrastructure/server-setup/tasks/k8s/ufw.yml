@@ -42,6 +42,16 @@
     - { port: 30443, proto: "tcp" }  # NodePort HTTPS
   ignore_errors: yes
 
+
+- name: "Allow traffic on Calico interfaces"
+  community.general.ufw:
+    rule: allow
+    interface_in: "{{ item }}"
+  loop:
+    - cali+
+    - vxlan.calico
+  ignore_errors: yes
+
 - name: "Enable UFW with deny by default"
   ufw:
     state: enabled
