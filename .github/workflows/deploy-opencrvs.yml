@@ -22,9 +22,9 @@ on:
         required: true
         default: "v1.9.10"
       data-seed-enabled:
-        description: "Enable data seeding during deployment"
+        description: "Data seeding during deployment"
         required: false
-        default: "true"
+        default: "false"
         type: boolean
       environment:
         description: "Target environment"
