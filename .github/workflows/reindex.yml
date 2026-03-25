@@ -64,6 +64,7 @@ jobs:
               --version ${{ steps.helm-version.outputs.version }} \
               --values ${namespace}.json \
               --namespace ${namespace} \
+              --set elasticsearch.reindex_enabled=true \
               --show-only templates/elasticsearch-reindex-job.yaml \
               oci://ghcr.io/opencrvs/opencrvs-services \
               | kubectl apply --wait -n ${namespace} -f -
