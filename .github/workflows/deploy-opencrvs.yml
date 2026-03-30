@@ -32,7 +32,7 @@ on:
         default: "dev"
         type: choice
         options:
-          - ""
+          - qa
 
 jobs:
   approve:
