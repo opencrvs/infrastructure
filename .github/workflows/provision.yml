@@ -9,6 +9,7 @@ on:
         default: 'dev'
         type: choice
         options:
+          - qa
           - staging
       tags:
         description: 'Tags to apply to the provisioned resources'

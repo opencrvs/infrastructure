@@ -9,6 +9,7 @@ on:
         default: "dev"
         type: choice
         options:
+          - qa
           - staging
   workflow_call:
     inputs:
