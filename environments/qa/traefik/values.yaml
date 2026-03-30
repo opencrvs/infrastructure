@@ -55,9 +55,27 @@ ports:
     hostPort: 443
     protocol: TCP
     nodePort: 30443
+    tls:
+      enabled: true
+      certResolver: letsencrypt
 
 
-certificatesResolvers: {}
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      tlsChallenge: false
+      httpChallenge:
+        entryPoint: web
+      # 👇 Put admin email here
+      email: euan@opencrvs.org
+      # Storage for certificates:
+      storage: /certificates/acme.json
+      # NOTE: Sometimes Let's Encrypt hit production SSL certificate issuing limits
+      #       If you are having issues, switch to staging
+      # Staging server
+      # caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+      # Production server
+      caServer: https://acme-v02.api.letsencrypt.org/directory
 
 # 👇 Custom TLS configuration
 tlsStore:
