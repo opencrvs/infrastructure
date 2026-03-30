@@ -11,7 +11,6 @@ on:
         type: choice
         options:
           - production
-          - stg
       namespace_template:
         description: "Secrets mapping template"
         default: "opencrvs"
