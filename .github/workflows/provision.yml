@@ -9,6 +9,7 @@ on:
         default: 'dev'
         type: choice
         options:
+          - production
           - qa
           - staging
       tags:
