@@ -11,6 +11,7 @@ on:
         type: choice
         options:
           - qa
+          - staging
       namespace_template:
         description: "Secrets mapping template"
         default: "opencrvs"

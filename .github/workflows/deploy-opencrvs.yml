@@ -33,6 +33,7 @@ on:
         type: choice
         options:
           - qa
+          - staging
 
 jobs:
   approve:
