@@ -10,6 +10,8 @@ on:
         type: choice
         options:
           - production
+          - qa
+          - staging
   workflow_call:
     inputs:
       environment:

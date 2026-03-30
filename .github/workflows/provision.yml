@@ -10,6 +10,8 @@ on:
         type: choice
         options:
           - production
+          - qa
+          - staging
       tags:
         description: 'Tags to apply to the provisioned resources'
         required: true
