@@ -73,6 +73,11 @@ all:
           - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCx/Htkb/OF5xHpJwvrNnVcShvW2JgeYhdSgjRBKXnxkswHHrrGd1hRJARWqoZ3dMtOa1VBWtYrEDLXuA5wxLSBKMX9yn15I7wZ9gz237SErZEQSJrKtC+XNRGaV6P2QbZFpBN4xpuxIxuiOCv1bp3xPLfcnKer9bL6nnx/ao1IKfw4BluhJ3AFg1t5iH8YNoiUcNs33Ma+TilKiETMx3VR+vsu4CW5klSg3zxCRwU5GI/H27R6xq/HcCvDIudqMRawj5cG9gUfLexCLa2ci+g5EhhldEgrHp9Whng/pzrLTmM5SE+vXM/XPp3Bza9PgO5oqN5iQBgUlbCMQ4y+piZier/F3Z3K4FDXmMFmraXaO+7gESJ6KZifMdWKlxSBcXD47pabyzKiqHNWn7/XnHJvu5Vv7+6DY3mIMB1/bxtlC3NG3UCcsdf8Yfifzq5PwuTR1eUTcz5QgpcsPFT64qWQSNKyud6v/te2msOZ5AN02Pf0vGXMyGLMekdAtXt7+Y+GXsZqYuvRPsO5VPl7Tf6c3k3gLYZsDEgVmVskMplb9ATHZBTrph28OnbLxFKPvWPucdD4wA39iP/QyZRj+EpYn5hDPu+KGZAv4ZPdGysGCeHaYALQzfSaQroNZlZStjQp5hw8ut6k+PinrSb7Jx0P/Y9mzZ+AUo98Jbjn+Inemw== siya@opencrvs.org
         state: present
         role: admin
+      - name: vmudryi
+        ssh_keys:
+          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINgMcsSBwTE0EbMDRSF1T4vJDcN/5HAjKGbi2DqV7g/Q vmudryi@opencrvs.org
+        state: present
+        role: admin
 
   children:
     master:
