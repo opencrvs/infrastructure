@@ -178,13 +178,22 @@ jobs:
           openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
           echo "::add-mask::$BACKUP_SERVER_USER"
 
-          POSTGRES_USER=$(echo "${{ needs.get-restore-postgres-admin-user.outputs.secret_value }}" | base64 --decode | \
-          openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
-          echo "::add-mask::$POSTGRES_USER"
-
-          POSTGRES_PASSWORD=$(echo "${{ needs.get-restore-postgres-admin-password.outputs.secret_value }}" | base64 --decode | \
-          openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
-          echo "::add-mask::$POSTGRES_PASSWORD"
+          if [ -n "${{ needs.get-restore-postgres-admin-user.outputs.secret_value }}" ]; then
+            POSTGRES_USER=$(echo "${{ needs.get-restore-postgres-admin-user.outputs.secret_value }}" | base64 --decode | \
+            openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
+            echo "::add-mask::$POSTGRES_USER"
+            echo POSTGRES_USER=$POSTGRES_USER >> $env_file
+          else
+            echo "No postgres admin user found for restore environment, skipping"
+          fi
+          if [ -n "${{ needs.get-restore-postgres-admin-password.outputs.secret_value }}" ]; then
+            POSTGRES_PASSWORD=$(echo "${{ needs.get-restore-postgres-admin-password.outputs.secret_value }}" | base64 --decode | \
+            openssl enc -aes-256-cbc -pbkdf2 -d -salt -k "${{ secrets.GH_ENCRYPTION_PASSWORD }}" | base64)
+            echo "::add-mask::$POSTGRES_PASSWORD"
+            echo POSTGRES_PASSWORD=$POSTGRES_PASSWORD >> $env_file
+          else
+            echo "No postgres admin password found for restore environment, skipping"
+          fi
 
           echo RESTORE_ENCRYPTION_PASSPHRASE=$RESTORE_ENCRYPTION_PASSPHRASE >> $env_file
           echo BACKUP_HOST=$BACKUP_HOST >> $env_file
