@@ -12,7 +12,6 @@ IMAGES=(
     opencrvs/ocrvs-login
     opencrvs/ocrvs-gateway
     opencrvs/ocrvs-events
-    opencrvs/ocrvs-workflow
     opencrvs/ocrvs-search
     opencrvs/ocrvs-metrics
     opencrvs/ocrvs-scheduler
