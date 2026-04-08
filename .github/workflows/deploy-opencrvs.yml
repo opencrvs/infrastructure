@@ -16,15 +16,15 @@ on:
       core-image-tag:
         description: "Tag of the core image"
         required: true
-        default: "v1.9.10"
+        default: "v1.9.12"
       countryconfig-image-tag:
         description: "Tag of the countryconfig image"
         required: true
-        default: "v1.9.10"
+        default: "v1.9.12"
       data-seed-enabled:
-        description: "Enable data seeding during deployment"
+        description: "Data seeding during deployment"
         required: false
-        default: "true"
+        default: "false"
         type: boolean
       environment:
         description: "Target environment"
@@ -34,6 +34,9 @@ on:
         options:
           - integration
 
+env:
+  # Assuming chart version matches core image tag
+  OPENCRVS_CHART_VERSION: "${{ inputs.core-image-tag }}"
 jobs:
   approve:
     environment: ${{ inputs.environment }}
@@ -120,6 +123,7 @@ jobs:
             | kubectl apply -n opencrvs-${ENV} -f - \
             || echo "Secret $secret doesn't exist in opencrvs-deps-${ENV} namespace"
           done
+
       - name: Deploy OpenCRVS MOSIP API
         run: |
           helm upgrade --install mosip-api oci://ghcr.io/opencrvs/opencrvs-mosip:0.1.0 \
@@ -127,10 +131,7 @@ jobs:
           -f environments/integration/mosip-api/values.yaml \
           --set hostname=farajaland-integration.opencrvs.dev \
           --atomic
-      - name: Install stern
-        run: |
-          curl -L https://github.com/stern/stern/releases/download/v1.28.0/stern_1.28.0_linux_amd64.tar.gz | tar xz
-          sudo mv stern /usr/local/bin/
+
       - name: Deploy with Helm
         id: deploy
         run: |
@@ -143,7 +144,7 @@ jobs:
             . &
           STERN_PID=$!
           touch environments/${ENV}/opencrvs-services/values.override.yaml
-          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services:0.1.30 \
+          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/opencrvs-services:${OPENCRVS_CHART_VERSION} \
             --timeout 15m \
             --namespace "opencrvs-${ENV}" \
             -f environments/${ENV}/opencrvs-services/values.yaml \
