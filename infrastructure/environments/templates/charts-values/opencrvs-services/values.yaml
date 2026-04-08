@@ -21,7 +21,6 @@ hpa:
 
 env:
   APN_SERVICE_URL: "http://apm-server.opencrvs-deps-{{env}}.svc.cluster.local:8200"
-  QA_ENV: {{is_qa_env}}
   MINIO_BUCKET: ocrvs
 
 influxdb:
