@@ -19,7 +19,6 @@ IMAGES=(
     opencrvs/ocrvs-user-mgnt
     opencrvs/ocrvs-webhooks
     opencrvs/ocrvs-notification
-    opencrvs/ocrvs-config
     opencrvs/ocrvs-migration
     opencrvs/ocrvs-documents
 )
