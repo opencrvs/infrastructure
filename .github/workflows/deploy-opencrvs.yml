@@ -32,7 +32,7 @@ on:
         default: "dev"
         type: choice
         options:
-          - ""
+          - integration
 
 env:
   # Assuming chart version matches core image tag
@@ -123,6 +123,14 @@ jobs:
             | kubectl apply -n opencrvs-${ENV} -f - \
             || echo "Secret $secret doesn't exist in opencrvs-deps-${ENV} namespace"
           done
+
+      - name: Deploy OpenCRVS MOSIP API
+        run: |
+          helm upgrade --install mosip-api oci://ghcr.io/opencrvs/opencrvs-mosip:0.1.0 \
+          --namespace "opencrvs-${ENV}" \
+          -f environments/integration/mosip-api/values.yaml \
+          --set hostname=farajaland-integration.opencrvs.dev \
+          --atomic
 
       - name: Deploy with Helm
         id: deploy
