@@ -15,7 +15,6 @@ IMAGES=(
     opencrvs/ocrvs-workflow
     opencrvs/ocrvs-search
     opencrvs/ocrvs-metrics
-    opencrvs/ocrvs-scheduler
     opencrvs/ocrvs-auth
     opencrvs/ocrvs-user-mgnt
     opencrvs/ocrvs-webhooks
