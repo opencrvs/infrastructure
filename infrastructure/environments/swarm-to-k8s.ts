@@ -93,6 +93,7 @@ import { createEnvironmentSecret, createEnvironmentVariable, getRepositoryId } f
             backup_enabled: environment === 'production' ? "true" : "false",
             restore_enabled: environment === 'staging' ? "true" : "false",
             restore_environment_name: environment === 'staging' ? "production" : "",
+            restore_type: "dump",
             traefik_mode: "static_ssl",
             backup_type: "dump",
         }
