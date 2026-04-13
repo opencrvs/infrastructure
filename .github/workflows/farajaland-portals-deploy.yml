@@ -46,7 +46,6 @@ jobs:
             -f environments/${ENV}/${RELEASE_NAME}.yaml \
             --create-namespace \
             --timeout 15m \
-            --set hostname=${{ vars.DOMAIN }} \
             --atomic; STATUS=$?;
 
           kill $STERN_PID 2>/dev/null || true
