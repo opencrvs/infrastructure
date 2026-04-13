@@ -12,15 +12,12 @@ IMAGES=(
     opencrvs/ocrvs-login
     opencrvs/ocrvs-gateway
     opencrvs/ocrvs-events
-    opencrvs/ocrvs-workflow
-    opencrvs/ocrvs-search
     opencrvs/ocrvs-metrics
     opencrvs/ocrvs-scheduler
     opencrvs/ocrvs-auth
     opencrvs/ocrvs-user-mgnt
     opencrvs/ocrvs-webhooks
     opencrvs/ocrvs-notification
-    opencrvs/ocrvs-config
     opencrvs/ocrvs-migration
     opencrvs/ocrvs-documents
 )
