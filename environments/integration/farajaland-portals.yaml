@@ -6,7 +6,11 @@ ingress:
 imagePullSecrets:
   - name: portal-docker-reg
 
-port: 8080
+service:
+  enabled: true
+  port: 8080
+  container_port: 8080
+
 image:
   name: ghcr.io/opencrvs/opencrvs-farajaland-demo-portals
   tag: latest
