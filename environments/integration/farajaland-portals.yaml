@@ -1,4 +1,4 @@
-service_name: portals
+app_name: portals
 hostname: portals.farajaland-integration.opencrvs.dev
 ingress:
   ssl_enabled: true
