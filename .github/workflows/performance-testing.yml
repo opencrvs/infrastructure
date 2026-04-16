@@ -1,0 +1,70 @@
+name: 10. Performance testing
+run-name: "Run performance test action ${{ inputs.action }} on ${{ inputs.environment }} "
+on:
+  workflow_call:
+    inputs:
+      action:
+        type: string
+      environment:
+        type: string
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Action to perform"
+        required: true
+        default: "perf-test"
+        type: choice
+        options:
+          - perf-test
+          - generate-data
+      environment:
+        description: "Target environment"
+        required: true
+        default: "integration"
+        type: choice
+        options:
+          - integration
+
+env:
+  # Assuming chart version matches core image tag
+  ENV: ${{ inputs.environment }}
+jobs:
+  deploy:
+    runs-on:
+      - self-hosted
+      - k8s
+      - ${{ inputs.environment }}
+    steps:
+      - name: Deploy with Helm
+        id: deploy
+        run: |
+          stern -n "opencrvs-${ENV}" \
+            --since 1s \
+            --tail 0 \
+            --exclude 'kube-probe' \
+            --exclude '"level":(30|info)' \
+            --template '{{.PodName}}/{{.ContainerName}} | {{.Message}}{{"\n"}}' \
+            . &
+          STERN_PID=$!
+          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/${{ inputs.action }} \
+            --timeout 15m \
+            --namespace "opencrvs-${ENV}" \
+            --set k6_env_args.GATEWAY_URL="https://gateway.${{ vars.DOMAIN }}" \
+            --set k6_env_args.EVENTS_URL="https://events.${{ vars.DOMAIN }}" \
+            --set-string k6_cloud_project_id=${{ secrets.K6_CLOUD_PROJECT_ID }} \
+            --set-string k6_cloud_token=${{ secrets.K6_CLOUD_TOKEN }} \
+            --set postgres.user=${{ secrets.POSTGRES_USER }} \
+            --set postgres.password=${{ secrets.POSTGRES_PASSWORD }} \
+            --set postgres.host=postgres-0.postgres.opencrvs-deps-${ENV}.svc.cluster.local \
+            --set env.count=${{ vars.GENERATE_DATA_COUNT_RECORDS }} \
+            --set env.sleepMs=0 \
+            --set env.batchSize=${{ vars.GENERATE_DATA_BATCH_SIZE }}
+          kill $STERN_PID 2>/dev/null || true
+          exit $STATUS
+      - name: Cleanup Helm Locks
+        if: failure() || cancelled()
+        run: |
+          kubectl -n "opencrvs-${ENV}" get secrets -l owner=helm -o json | \
+          jq -r '.items[] | select(.metadata.labels.status=="pending-install" or .metadata.labels.status=="pending-upgrade" or .metadata.labels.status=="pending-rollback") | .metadata.name' | \
+          xargs -r kubectl -n "opencrvs-${ENV}" delete secret || \
+          echo "No helm locks found, all is good"
