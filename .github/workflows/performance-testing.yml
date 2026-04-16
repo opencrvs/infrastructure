@@ -46,7 +46,7 @@ jobs:
             --template '{{.PodName}}/{{.ContainerName}} | {{.Message}}{{"\n"}}' \
             . &
           STERN_PID=$!
-          helm upgrade --install opencrvs oci://ghcr.io/opencrvs/${{ inputs.action }} \
+          helm upgrade --install ${{ inputs.action }} oci://ghcr.io/opencrvs/${{ inputs.action }} \
             --timeout 15m \
             --namespace "opencrvs-${ENV}" \
             --set k6_env_args.GATEWAY_URL="https://gateway.${{ vars.DOMAIN }}" \
