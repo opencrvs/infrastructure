@@ -30,6 +30,7 @@ env:
   ENV: ${{ inputs.environment }}
 jobs:
   deploy:
+    environment: ${{ inputs.environment }}
     runs-on:
       - self-hosted
       - k8s
