@@ -10,6 +10,7 @@ on:
         type: choice
         options:
           - integration
+          - prod
 env:
   DEPENDENCIES_CHART_VERSION: "v1.9.12"
   TRAEFIK_CHART_VERSION: "39.0.0"

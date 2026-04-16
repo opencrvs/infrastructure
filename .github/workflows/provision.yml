@@ -9,6 +9,7 @@ on:
         default: 'dev'
         type: choice
         options:
+          - prod
           - integration
       tags:
         description: 'Tags to apply to the provisioned resources'

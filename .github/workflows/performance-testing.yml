@@ -23,6 +23,7 @@ on:
         default: "integration"
         type: choice
         options:
+          - prod
           - integration
 
 env:

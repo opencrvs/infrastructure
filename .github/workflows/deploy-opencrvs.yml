@@ -33,6 +33,7 @@ on:
         type: choice
         options:
           - integration
+          - prod
 
 env:
   # Assuming chart version matches core image tag

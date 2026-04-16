@@ -11,6 +11,7 @@ on:
         type: choice
         options:
           - integration
+          - prod
       namespace_template:
         description: "Secrets mapping template"
         default: "opencrvs"

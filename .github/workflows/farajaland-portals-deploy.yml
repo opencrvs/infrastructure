@@ -10,6 +10,7 @@ on:
         type: choice
         options:
           - integration
+          - prod
 env:
   APPLICATION_CHART_VERSION: "v2.0.0"
   RELEASE_NAME: "farajaland-portals"

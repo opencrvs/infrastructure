@@ -10,6 +10,7 @@ on:
         type: choice
         options:
           - integration
+          - prod
   workflow_call:
     inputs:
       environment:

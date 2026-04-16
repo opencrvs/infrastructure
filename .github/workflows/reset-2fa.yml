@@ -13,6 +13,7 @@ on:
         default: 
         required: true
         options:
+          - prod
           - integration
 
 jobs:
