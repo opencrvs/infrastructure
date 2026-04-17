@@ -15,7 +15,6 @@ IMAGES=(
     opencrvs/ocrvs-metrics
     opencrvs/ocrvs-auth
     opencrvs/ocrvs-user-mgnt
-    opencrvs/ocrvs-webhooks
     opencrvs/ocrvs-notification
     opencrvs/ocrvs-migration
     opencrvs/ocrvs-documents
