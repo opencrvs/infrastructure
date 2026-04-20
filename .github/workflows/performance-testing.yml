@@ -55,8 +55,6 @@ jobs:
             -f environments/${ENV}/${{ inputs.action }}.yaml \
             --timeout 15m \
             --namespace "opencrvs-${ENV}" \
-            --set-string k6_cloud_project_id=${{ secrets.K6_CLOUD_PROJECT_ID }} \
-            --set-string k6_cloud_token=${{ secrets.K6_CLOUD_TOKEN }} \
             --set postgres.user=${{ secrets.POSTGRES_USER }} \
             --set postgres.password=${{ secrets.POSTGRES_PASSWORD }} \
             --set postgres.host=postgres-0.postgres.opencrvs-deps-${ENV}.svc.cluster.local \
