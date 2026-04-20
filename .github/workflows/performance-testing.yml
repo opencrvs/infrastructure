@@ -38,6 +38,7 @@ jobs:
       - k8s
       - ${{ inputs.environment }}
     steps:
+      - uses: actions/checkout@v6
       - name: Deploy with Helm
         id: deploy
         run: |
