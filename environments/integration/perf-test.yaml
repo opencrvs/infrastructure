@@ -1,0 +1,5 @@
+k6_env_args:
+  GATEWAY_URL: https://gateway.farajaland-integration.opencrvs.dev
+  EVENTS_URL: https://events.farajaland-integration.opencrvs.dev
+
+k6_output: "cloud"

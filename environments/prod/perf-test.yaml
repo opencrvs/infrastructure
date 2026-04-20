@@ -1,0 +1,5 @@
+k6_env_args:
+  GATEWAY_URL: https://gateway.tmp-prod.opencrvs.dev
+  EVENTS_URL: https://events.tmp-prod.opencrvs.dev
+
+k6_output: "cloud"

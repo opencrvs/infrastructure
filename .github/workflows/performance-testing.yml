@@ -49,11 +49,11 @@ jobs:
             --template '{{.PodName}}/{{.ContainerName}} | {{.Message}}{{"\n"}}' \
             . &
           STERN_PID=$!
+          touch environments/${ENV}/${{ inputs.action }}.yaml
           helm upgrade --install ${{ inputs.action }} oci://ghcr.io/opencrvs/${{ inputs.action }} \
+            -f environments/${ENV}/${{ inputs.action }}.yaml \
             --timeout 15m \
             --namespace "opencrvs-${ENV}" \
-            --set k6_env_args.GATEWAY_URL="https://gateway.${{ vars.DOMAIN }}" \
-            --set k6_env_args.EVENTS_URL="https://events.${{ vars.DOMAIN }}" \
             --set-string k6_cloud_project_id=${{ secrets.K6_CLOUD_PROJECT_ID }} \
             --set-string k6_cloud_token=${{ secrets.K6_CLOUD_TOKEN }} \
             --set postgres.user=${{ secrets.POSTGRES_USER }} \
