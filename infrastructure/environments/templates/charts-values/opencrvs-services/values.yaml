@@ -50,9 +50,10 @@ postgres:
   auth_mode: auto
   host: postgres-0.postgres.opencrvs-deps-{{env}}.svc.cluster.local
 
-imagePullSecrets:
-  # Default value for credentials created while yarn environment:init
-  - name: dockerhub-credentials
+platform:
+  imagePullSecrets:
+    # Default value for credentials created while yarn environment:init
+    - name: dockerhub-credentials
 
 countryconfig:
   secrets:
