@@ -14,7 +14,6 @@ IMAGES=(
     opencrvs/ocrvs-events
     opencrvs/ocrvs-auth
     opencrvs/ocrvs-user-mgnt
-    opencrvs/ocrvs-notification
     opencrvs/ocrvs-migration
     opencrvs/ocrvs-documents
 )
