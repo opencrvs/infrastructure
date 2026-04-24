@@ -32,6 +32,7 @@ on:
         default: "dev"
         type: choice
         options:
+          - demo
           - integration
           - prod
 
@@ -115,7 +116,11 @@ jobs:
         # Only redis secret for now needs to be copied
         run: |
           secrets=(
+            "elasticsearch-admin-user"
             "redis-opencrvs-users"
+            "minio-opencrvs-users"
+            "mongodb-admin-user"
+            "postgres-admin-user"
           )
           for secret in "${secrets[@]}"; do
             kubectl get secret $secret -n opencrvs-deps-${ENV} -o yaml \
