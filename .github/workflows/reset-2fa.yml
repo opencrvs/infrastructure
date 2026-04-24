@@ -15,6 +15,7 @@ on:
         options:
           - prod
           - integration
+          - demo
 
 jobs:
   approve:
