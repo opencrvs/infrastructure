@@ -11,6 +11,7 @@ on:
         options:
           - prod
           - integration
+          - demo
       tags:
         description: 'Tags to apply to the provisioned resources'
         required: true
