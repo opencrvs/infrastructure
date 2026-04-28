@@ -101,6 +101,7 @@ jobs:
       matrix:
         job-name:
           - data-seed
+          - data-migration-legacy
           - elasticsearch-reindex
     steps:
         - name: Download helm release values file into /tmp/opencrvs-${{ inputs.environment }}.json
