@@ -51,8 +51,6 @@ imagePullSecrets:
 
 countryconfig:
   secrets:
-    reference-data-db-secret:
-      - REFERENCE_DATA_DATABASE_URL  
     smtp-config:
       - ALERT_EMAIL
       - SENDER_EMAIL_ADDRESS
@@ -61,14 +59,6 @@ countryconfig:
       - SMTP_PORT
       - SMTP_SECURE
       - SMTP_USERNAME
-
-postgres_on_deploy:
-  secrets:
-    reference-data-db-secret:
-      - REFERENCE_DATA_POSTGRES_USER
-      - REFERENCE_DATA_POSTGRES_PASSWORD
-      - REFERENCE_DATA_EDITOR_USER
-      - REFERENCE_DATA_EDITOR_PASSWORD
 
 dashboards:
   use_default_credentials: false
