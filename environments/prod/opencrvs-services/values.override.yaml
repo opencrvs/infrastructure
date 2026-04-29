@@ -9,6 +9,7 @@ countryconfig:
     reference-data-db-secret:
       - REFERENCE_DATA_DATABASE_URL
   env:
+    OPENCRVS_ENVIRONMENT: prod
     OPENID_PROVIDER_CLAIMS: name,family_name,given_name,middle_name,birthdate,address
     OPENID_PROVIDER_CLIENT_ID: 8iM8fdsPG5aQy0rvYpOK95BeQ5mKM0UlsPMrTQGsqPs
     ESIGNET_REDIRECT_URL: https://esignet-mosipid.collab.mosip.net/authorize
