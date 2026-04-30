@@ -159,7 +159,9 @@ jobs:
             --set countryconfig.image.name="$COUNTRYCONFIG_IMAGE_NAME" \
             --set data_seed.env.ACTIVATE_USERS="${{ vars.ACTIVATE_USERS || 'false' }}" \
             --set data_seed.enabled="${{ inputs.data-seed-enabled }}" \
+            --set env.CONTENT_SECURITY_POLICY_WILDCARD="${{ vars.CONTENT_SECURITY_POLICY_WILDCARD }}" \
             --set hostname=${{ vars.DOMAIN }} 2>&1 ; STATUS=$?;
+
             kill $STERN_PID 2>/dev/null || true
             exit $STATUS
       - name: Cleanup Helm Locks

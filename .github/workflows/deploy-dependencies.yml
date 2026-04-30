@@ -65,7 +65,7 @@ jobs:
             --create-namespace \
             -f environments/${ENV}/traefik/values.yaml \
             -f environments/${ENV}/traefik/values.override.yaml
-          kubectl scale deployment traefik --replicas=1 --namespace traefik
+          kubectl scale deployment traefik --replicas=1 --namespace traefik || true
 
       - name: Install OpenCRVS dependencies
         id: deploy
