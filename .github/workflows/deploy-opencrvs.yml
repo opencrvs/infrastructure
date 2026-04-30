@@ -135,7 +135,7 @@ jobs:
         run: |
           helm upgrade --install mosip-api oci://ghcr.io/opencrvs/opencrvs-mosip:v1.9.12 \
           --namespace "opencrvs-${ENV}" \
-          -f environments/integration/mosip-api/values.yaml \
+          -f environments/${ENV}/mosip-api/values.yaml \
           --set hostname=farajaland-integration.opencrvs.dev \
           --atomic
 
