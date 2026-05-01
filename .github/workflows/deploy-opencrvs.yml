@@ -125,14 +125,6 @@ jobs:
             || echo "Secret $secret doesn't exist in opencrvs-deps-${ENV} namespace"
           done
 
-      - name: Deploy OpenCRVS MOSIP API
-        run: |
-          helm upgrade --install mosip-api oci://ghcr.io/opencrvs/opencrvs-mosip:v1.9.12 \
-          --namespace "opencrvs-${ENV}" \
-          -f environments/${ENV}/mosip-api/values.yaml \
-          --set hostname=farajaland-integration.opencrvs.dev \
-          --atomic
-
       - name: Deploy with Helm
         id: deploy
         run: |
