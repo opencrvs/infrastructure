@@ -70,4 +70,4 @@ dashboards:
   enabled: true
 
 on_restore_cronjob:
-  enabled: false
+  enabled: true
