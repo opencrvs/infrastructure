@@ -27,7 +27,7 @@ all:
     # Defaults production configuration:
     # - master node
     # - 2 worker nodes
-    single_node: true
+    single_node: false
     ################################################################
     # DON'T MODIFY THIS SECTION BY HANDS
     # Use: yarn environment:users
@@ -68,3 +68,9 @@ all:
             traefik-role: ingress
             # By default all datastores are deployed to node with role data1
             role: data1
+    # backup section is optional, feel free to remove if backups are not enabled
+    # section can be added later
+    backup:
+      hosts:
+        backup0:
+          ansible_host: 10.0.1.2

@@ -20,6 +20,8 @@ node_selector:
 
 minio:
   use_default_credentials: false
+  backup:
+    type: dump
 
 elasticsearch:
   use_default_credentials: false
@@ -29,6 +31,8 @@ mongodb:
 
 postgres:
   use_default_credentials: false
+  backup:
+    type: dump
 
 redis:
   auth_mode: acl
@@ -42,7 +46,7 @@ elastalert:
 
 # Backup configuration
 backup:
-  enabled: false
+  enabled: true
   schedule: "0 1 * * *"
   backup_server_secret: backup-server-ssh-credentials
   backup_server_dir: /home/backup/demo
