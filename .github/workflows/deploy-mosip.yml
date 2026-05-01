@@ -23,7 +23,6 @@ env:
   OPENCRVS_CHART_VERSION: "v2.0.0"
 jobs:
   github-to-k8s-sync-env:
-    needs: approve
     uses: ./.github/workflows/github-to-k8s-sync-env.yml
     with:
       environment: ${{ inputs.environment }}
