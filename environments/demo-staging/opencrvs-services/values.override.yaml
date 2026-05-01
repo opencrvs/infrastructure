@@ -2,7 +2,8 @@
 # Use this file to customize helm chart behavior
 # Please make sure your custom changes doesn't conflict with values.yaml
 ##################################################################################
-
+env:
+  APN_SERVICE_URL: "http://apm-server.opencrvs-deps-demo.svc.cluster.local:8200"
 countryconfig:
   secrets:
     reference-data-db-secret:
