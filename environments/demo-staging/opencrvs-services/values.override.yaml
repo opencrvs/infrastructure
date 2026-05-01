@@ -11,8 +11,8 @@ countryconfig:
   env:
     OPENID_PROVIDER_CLAIMS: name,family_name,given_name,middle_name,birthdate,address
     OPENID_PROVIDER_CLIENT_ID: mock-client_id
-    ESIGNET_REDIRECT_URL: https://esignet-mock.farajaland-demo.opencrvs.org/authorize
-    MOSIP_API_USERINFO_URL: https://mosip-api.farajaland-demo.opencrvs.org/esignet/get-oidp-user-info
+    ESIGNET_REDIRECT_URL: https://esignet-mock.farajaland-demo-staging.opencrvs.org/authorize
+    MOSIP_API_USERINFO_URL: https://mosip-api.farajaland-demo-staging.opencrvs.org/esignet/get-oidp-user-info
     VERIFIABLE_CREDENTIALS_SDJWT_ISSUE_URL: https://proxy.issuer.opencrvs.dev/openid4vc/sdjwt/issue
     VERIFIABLE_CREDENTIALS_RAW_JWT_SIGN_URL: https://proxy.issuer.opencrvs.dev/raw/jwt/sign
 
