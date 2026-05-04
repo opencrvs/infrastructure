@@ -20,7 +20,7 @@ on:
 
 env:
   # Assuming chart version matches core image tag
-  OPENCRVS_CHART_VERSION: "v2.0.0"
+  MOSIP_CHART_VERSION: "v2.0.0"
 jobs:
   github-to-k8s-sync-env:
     uses: ./.github/workflows/github-to-k8s-sync-env.yml
@@ -58,7 +58,7 @@ jobs:
             --template '{{.PodName}}/{{.ContainerName}} | {{.Message}}{{"\n"}}' \
             . &
           STERN_PID=$!
-          helm upgrade --install mosip-api oci://ghcr.io/opencrvs/opencrvs-mosip:v1.9.12 \
+          helm upgrade --install mosip-api oci://ghcr.io/opencrvs/opencrvs-mosip:${MOSIP_CHART_VERSION} \
           --namespace "opencrvs-${ENV}" \
           -f environments/${ENV}/mosip-api/values.yaml \
           --set hostname=${{ vars.DOMAIN }} \

@@ -10,6 +10,8 @@ on:
         default: "development"
         type: choice
         options:
+          - demo
+          - demo-staging
           - integration
           - prod
       namespace_template:

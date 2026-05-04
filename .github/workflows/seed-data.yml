@@ -9,6 +9,8 @@ on:
         default: "dev"
         type: choice
         options:
+          - demo
+          - demo-staging
           - integration
           - prod
   workflow_call:
