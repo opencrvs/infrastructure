@@ -16,15 +16,14 @@ on:
         type: choice
         options:
           - perf-test
-          - generate-data
+          - data-generator
       environment:
         description: "Target environment"
         required: true
-        default: "integration"
+        default: "prod"
         type: choice
         options:
           - prod
-          - integration
 
 env:
   # Assuming chart version matches core image tag
