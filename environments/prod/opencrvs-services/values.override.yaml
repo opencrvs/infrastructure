@@ -18,6 +18,7 @@ countryconfig:
     MOSIP_API_USERINFO_URL: https://mosip-api.farajaland-integration.opencrvs.dev/esignet/get-oidp-user-info
     VERIFIABLE_CREDENTIALS_SDJWT_ISSUE_URL: https://proxy.issuer.opencrvs.dev/openid4vc/sdjwt/issue
     VERIFIABLE_CREDENTIALS_RAW_JWT_SIGN_URL: https://proxy.issuer.opencrvs.dev/raw/jwt/sign
+    NOTIFICATIONS_ENABLED: false
 
 postgres_on_deploy:
   secrets:
