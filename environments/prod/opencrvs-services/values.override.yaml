@@ -3,6 +3,8 @@
 # Please make sure your custom changes doesn't conflict with values.yaml
 ##################################################################################
 
+elasticsearch:
+  reindex_enabled: false
 
 countryconfig:
   secrets:
