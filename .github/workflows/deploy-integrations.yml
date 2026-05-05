@@ -1,5 +1,5 @@
-name: 09. Farajaland Portals Deploy
-run-name: Farajaland Portals Deploy on ${{ inputs.environment }}
+name: 03. Deploy Integrations
+run-name: Deploy ${{ inputs.release_name }} to ${{ inputs.environment }}
 on:
   workflow_dispatch:
     inputs:
@@ -11,9 +11,18 @@ on:
         options:
           - integration
           - prod
+      release_name:
+        description: "Name of the release to deploy"
+        required: true
+        default: "portals"
+        type: choice
+        options:
+          - portals
+          - dci-crvs-api
+
 env:
   APPLICATION_CHART_VERSION: "v2.0.0"
-  RELEASE_NAME: "farajaland-portals"
+  RELEASE_NAME: ${{ inputs.release_name }}
 jobs:
   deploy:
     environment: ${{ inputs.environment }}
@@ -33,7 +42,7 @@ jobs:
       - name: Install/Upgrade Helm release
         id: deploy
         run: |
-          stern -n "${RELEASE_NAME}-${ENV}" \
+          stern -n "opencrvs-${ENV}" \
             --since 1s \
             --tail 0 \
             --exclude 'kube-probe' \
@@ -43,7 +52,7 @@ jobs:
           STERN_PID=$!
 
           helm upgrade --install ${RELEASE_NAME} oci://ghcr.io/opencrvs/opencrvs-application:${APPLICATION_CHART_VERSION} \
-            --namespace "${RELEASE_NAME}-${ENV}" \
+            --namespace "opencrvs-${ENV}" \
             -f environments/${ENV}/${RELEASE_NAME}.yaml \
             --create-namespace \
             --timeout 15m \
