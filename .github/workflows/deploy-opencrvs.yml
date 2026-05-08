@@ -152,7 +152,7 @@ jobs:
             --atomic \
             --wait \
             --wait-for-jobs \
-            --set image.tag="$CORE_IMAGE_TAG" \
+            --set platform.tag="$CORE_IMAGE_TAG" \
             --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set countryconfig.image.name="$COUNTRYCONFIG_IMAGE_NAME" \
             --set data_seed.env.ACTIVATE_USERS="${{ vars.ACTIVATE_USERS || 'false' }}" \
