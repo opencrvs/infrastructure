@@ -24,3 +24,7 @@ postgres_on_deploy:
       - REFERENCE_DATA_POSTGRES_PASSWORD
       - REFERENCE_DATA_EDITOR_USER
       - REFERENCE_DATA_EDITOR_PASSWORD
+
+client:
+  env:
+    CONTENT_SECURITY_POLICY_WILDCARD: https://mosip-api.farajaland-integration.opencrvs.dev/
