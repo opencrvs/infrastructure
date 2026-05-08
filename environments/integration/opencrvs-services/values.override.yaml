@@ -27,4 +27,4 @@ postgres_on_deploy:
 
 client:
   env:
-    CONTENT_SECURITY_POLICY_WILDCARD: https://mosip-api.farajaland-integration.opencrvs.dev/
+    CONTENT_SECURITY_POLICY_WILDCARD: https://*.farajaland-integration.opencrvs.dev/
