@@ -67,7 +67,7 @@ jobs:
         with:
           ref: ${{ steps.get_base_branch.outputs.base_branch }}
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.INFRASTRUCTURE_WORKFLOW_TOKEN }}
 
       - name: Check if release branch already exists
         id: check_branch
