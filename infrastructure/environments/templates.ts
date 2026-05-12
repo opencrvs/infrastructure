@@ -77,31 +77,42 @@ export function extractWorkerNodes(data: any): string[] {
 export function copyChartsValues(env: string, values: Record<string, string | boolean>) {
   const srcDir = path.resolve(__dirname, "templates", "charts-values");
   const destDir = path.resolve(__dirname, "..", "..", "environments", env);
+
   fs.mkdirSync(destDir, { recursive: true });
-  values['lets_encrypt'] = values['traefik_mode'] === "lets_encrypt" ? true : false
-  values['static_ssl'] = values['traefik_mode'] === "static_ssl" ? true : false
+
+  values['lets_encrypt'] = values['traefik_mode'] === "lets_encrypt";
+  values['static_ssl'] = values['traefik_mode'] === "static_ssl";
+
   function copyRecursive(src: string, dest: string) {
     const stat = fs.statSync(src);
 
     if (stat.isDirectory()) {
       fs.mkdirSync(dest, { recursive: true });
+
       for (const item of fs.readdirSync(src)) {
         copyRecursive(path.join(src, item), path.join(dest, item));
       }
     } else {
-      // read file
       const content = fs.readFileSync(src, "utf8");
 
-      // replace placeholders
       const template = Handlebars.compile(content);
       const updated = template(values);
-      // write updated file
+      
+      const isOverridesFile = dest.endsWith("override.yaml");
+      // Skip overwrite for existing overrides.yaml
+      if (isOverridesFile && fs.existsSync(dest)) {
+        log(`  ↷ Skipped existing overrides file: ${dest}`);
+        return;
+      }
+
       fs.writeFileSync(dest, updated, "utf8");
       log(`  ✓ Created: ${dest}`);
     }
   }
+
   log(`\n📋 Copying charts-values templates to ${destDir}:`);
   copyRecursive(srcDir, destDir);
+
   success(`✅ Completed copying charts-values.\n`);
 }
 
