@@ -486,6 +486,9 @@ ALL_QUESTIONS.push(
       log(kleur.bold().green('✔'), kleur.bold().yellow(' Disk encryption is enabled'))
       await promptAndStoreAnswer(environment, diskQuestions, existingValues)
     } else {
+      if (!enableEncryption && !encryption_key_defined && environment_exists) {
+        log(kleur.bold().green('✔'), kleur.bold().grey(`Environment ${environment} is already configured, skipping disk encryption question`))
+      }
       const DISK_SPACE = findExistingValue(
         'DISK_SPACE',
         'VARIABLE',
@@ -495,7 +498,7 @@ ALL_QUESTIONS.push(
       if (!DISK_SPACE) {
         log(kleur.bold().green('✔'), kleur.bold().grey('All available disk space at /data will be used'))
       } else {
-        log(kleur.bold().green('✔'), kleur.bold().yellow('Variable DISK_SPACE is read-only variable:'), DISK_SPACE?.value)
+        log(kleur.bold().green('✔'), kleur.bold().yellow('Variable DISK_SPACE is read-only, allocated space:'), DISK_SPACE?.value)
       }
     }
 
