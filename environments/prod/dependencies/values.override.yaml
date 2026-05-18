@@ -3,8 +3,6 @@
 # Please make sure your custom changes doesn't conflict with values.yaml
 ##################################################################################
 
-client:
-  env:
-    # Example of overriding environment variables for client service
-    # CUSTOM_ENV_VAR: "custom_value"
-    CONTENT_SECURITY_POLICY_WILDCARD: https://mosip-api.farajaland-integration.opencrvs.dev/
+postgres:
+  node_selector:
+    role: data2
