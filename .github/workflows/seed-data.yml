@@ -12,7 +12,7 @@ on:
           - demo
           - demo-staging
           - integration
-          - prod
+
   workflow_call:
     inputs:
       environment:

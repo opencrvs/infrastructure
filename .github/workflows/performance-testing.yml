@@ -20,10 +20,10 @@ on:
       environment:
         description: "Target environment"
         required: true
-        default: "prod"
+        default: ""
         type: choice
         options:
-          - prod
+          - ""
 
 env:
   # Assuming chart version matches core image tag

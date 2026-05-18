@@ -9,7 +9,6 @@ on:
         default: 'dev'
         type: choice
         options:
-          - prod
           - integration
           - demo
       tags:
