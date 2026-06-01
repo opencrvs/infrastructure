@@ -6,13 +6,10 @@ on:
       environment:
         description: "Target environment"
         required: true
-        default: "dev"
+        default: "development"
         type: choice
         options:
-          - demo
-          - demo-staging
-          - integration
-          - prod
+
   workflow_call:
     inputs:
       environment:
