@@ -23,16 +23,12 @@ env:
   APN_SERVICE_URL: "http://apm-server.opencrvs-deps-{{env}}.svc.cluster.local:8200"
   MINIO_BUCKET: ocrvs
 
-events:
-  env:
-    TWO_FA_ENABLED: {{two_fa_enabled}}
-
 influxdb:
   host: influxdb-0.influxdb.opencrvs-deps-{{env}}.svc.cluster.local
+
 elasticsearch:
   auth_mode: auto
   host: elasticsearch.opencrvs-deps-{{env}}.svc.cluster.local
-
 
 minio:
   auth_mode: use_secret
@@ -49,10 +45,20 @@ redis:
 postgres:
   auth_mode: auto
   host: postgres-0.postgres.opencrvs-deps-{{env}}.svc.cluster.local
+
 platform:
   imagePullSecrets:
     # Default value for credentials created while yarn environment:init
     - name: dockerhub-credentials
+
+
+auth:
+  env:
+    TWO_FA_ENABLED: {{two_fa_enabled}}
+
+events:
+  env:
+    TWO_FA_ENABLED: {{two_fa_enabled}}
 
 countryconfig:
   secrets:
