@@ -424,8 +424,8 @@ ALL_QUESTIONS.push(
       infrastructureQuestions,
       existingValues
     )
-    const workerNodes = infrastructure.workerNodes
-      ? infrastructure.workerNodes.split(',').map((ip: string) => ip.trim()) : []
+    const kubeWorkerNodes = infrastructure.kubeWorkerNodes
+      ? infrastructure.kubeWorkerNodes.split(',').map((ip: string) => ip.trim()) : []
 
     log('\n', kleur.bold().underline('SSH Users'), '\n')
     const users = await manageUsers(`infrastructure/server-setup/inventory/${environment}.yml`)
@@ -1291,9 +1291,9 @@ ALL_QUESTIONS.push(
     generateInventory(
       environment,
       {
-        worker_nodes: workerNodes,
-        backup_host: backupHost || '',
+        kube_worker_nodes: kubeWorkerNodes,
         kube_api_host: infrastructure.kubeAPIHost || '',
+        backup_host: backupHost || '',
         users: users
       }
     )
@@ -1316,11 +1316,11 @@ ALL_QUESTIONS.push(
     )
     await updateWorkflowEnvironments();
 
-    let addon_message = workerNodes.length > 0 || configureBackup ? 
+    let addon_message = kubeWorkerNodes.length > 0 || configureBackup ? 
       "--------------------------------------------------------------------------------------------\n" +
       `\n➡️ ${kleur.bold().yellow('COPY the SSH public key from the master VM to your clipboard')}\n` +
       "--------------------------------------------------------------------------------------------\n" : ""
-    addon_message += workerNodes.length > 0 ?
+    addon_message += kubeWorkerNodes.length > 0 ?
       `➡️ ${kleur.bold().yellow('Run following command on Kubernetes worker VM to create provision user and setup SSH key:')}\n` +
       "\n" +
       "curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\ \n" +

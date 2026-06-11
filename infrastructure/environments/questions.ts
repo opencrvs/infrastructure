@@ -6,6 +6,37 @@ import { getRepoInfo } from './git'
 const notEmpty = (value: string | number) =>
   value.toString().trim().length > 0 ? true : 'Please enter a value'
 
+function validateCIDR(input: string): true | string {
+  if (!input.trim()) {
+    return true
+  }
+
+  const cidrRegex =
+    /^((25[0-5]|(2[0-4]|1\d|[1-9]?\d)\d?)\.){3}(25[0-5]|(2[0-4]|1\d|[1-9]?\d)\d?)\/([0-9]|[12][0-9]|3[0-2])$/
+
+  return cidrRegex.test(input.trim())
+    ? true
+    : 'Please enter a valid CIDR (e.g. 10.0.0.0/24)'
+}
+
+function validateCIDRs(input: string): true | string {
+  if (!input.trim()) {
+    return true
+  }
+
+  const cidrs = input.split(',').map((v) => v.trim())
+
+  for (const cidr of cidrs) {
+    const result = validateCIDR(cidr)
+
+    if (result !== true) {
+      return `Invalid CIDR: ${cidr}`
+    }
+  }
+
+  return true
+}
+
 
 export const dockerhubQuestions = [
   {
@@ -141,7 +172,7 @@ export const infrastructureQuestions = [
     name: 'kubeAPIHost',
     type: 'text' as const,
     message: 
-      `Please enter host/IP to expose Kubernetes API endpoint, (default: Master first IP address):`,
+      `Kubernetes API endpoint (default: auto-detect)`,
     valueType: 'VARIABLE' as const,
     // validate: notEmpty,
     valueLabel: 'KUBE_API_HOST',
@@ -149,14 +180,36 @@ export const infrastructureQuestions = [
     scope: 'ENVIRONMENT' as const
   },
   {
-    name: 'workerNodes',
+    name: 'kubeApiAllowedCidrs',
     type: 'text' as const,
     message:
-      `Please enter Kubernetes workers hosts/IP addresses (comma-separated), (default: no workers):`,
+      `Allowed CIDRs for Kubernetes API access (default: unrestricted)`,
+    valueType: 'VARIABLE' as const,
+    validate: validateCIDRs,
+    valueLabel: 'KUBE_API_ALLOWED_CIDRS',
+    initial: process.env.KUBE_API_ALLOWED_CIDRS || "0.0.0.0/0",
+    scope: 'ENVIRONMENT' as const,
+  },
+  {
+    name: 'kubeWorkerNodes',
+    type: 'text' as const,
+    message:
+      `Kubernetes worker node hostnames or IPs (comma-separated, default: no worker nodes)`,
     valueType: 'VARIABLE' as const,
     // validate: notEmpty,
-    valueLabel: 'WORKER_NODES',
-    initial: process.env.WORKER_NODES,
+    valueLabel: 'KUBE_WORKER_NODES',
+    initial: process.env.KUBE_WORKER_NODES || '',
+    scope: 'ENVIRONMENT' as const,
+  },
+  {
+    name: 'kubeClusterNodeCidr',
+    type: 'text' as const,
+    message:
+      `Network CIDR range for Kubernetes node-to-node communication (default: no restrictions)`,
+    valueType: 'VARIABLE' as const,
+    validate: validateCIDR,
+    valueLabel: 'KUBE_CLUSTER_NODE_CIDR',
+    initial: process.env.KUBE_CLUSTER_NODE_CIDR || "0.0.0.0/0",
     scope: 'ENVIRONMENT' as const,
   },
 ]
