@@ -47,6 +47,12 @@
 - name: Deploy opencrvs-infra-runner
   retries: 10
   delay: 60
+  vars:
+    base_labels:
+      - "self-hosted"
+      - "k8s"
+      - "{{ k8s_cluster_env }}"
+    extra_labels: "{{ self_hosted_runner_additional_labels | default('') | split(',') | reject('equalto','') | list }}"
   kubernetes.core.k8s:
     state: present
     definition:
@@ -62,7 +68,4 @@
             serviceAccountName: opencrvs-runner
             repository: "{{ repository }}"
             image: ghcr.io/opencrvs/opencrvs-github-runner:latest
-            labels:
-              - "self-hosted"
-              - "k8s"
-              - "{{ k8s_cluster_env }}"
+            labels: "{{ base_labels + extra_labels }}"

@@ -77,6 +77,9 @@ jobs:
           smtp_password: ${{ secrets.SMTP_PASSWORD }}
           alert_email: ${{ secrets.ALERT_EMAIL }}
           backup_host_public_key: ${{ secrets.BACKUP_HOST_PUBLIC_KEY }}
+          kubernetes_api_allowed_cidrs: ${{ vars.KUBE_API_ALLOWED_CIDRS }}
+          cluster_node_cidr: ${{ vars.KUBE_CLUSTER_NODE_CIDR }}
+          self_hosted_runner_additional_labels: ${{ vars.SELF_HOSTED_RUNNER_ADDITIONAL_LABELS }}
       - name: checkout repository
         uses: actions/checkout@v6
       - name: Run Ansible Playbook

@@ -141,7 +141,7 @@ export const infrastructureQuestions = [
     name: 'kubeAPIHost',
     type: 'text' as const,
     message: 
-      `Please enter host/IP to expose Kubernetes API endpoint, (default: Master first IP address):`,
+      `Kubernetes API endpoint (default: auto-detect)`,
     valueType: 'VARIABLE' as const,
     // validate: notEmpty,
     valueLabel: 'KUBE_API_HOST',
@@ -149,14 +149,36 @@ export const infrastructureQuestions = [
     scope: 'ENVIRONMENT' as const
   },
   {
+    name: 'kubeApiAllowedCidrs',
+    type: 'text' as const,
+    message:
+      `Allowed CIDRs for Kubernetes API access (default: unrestricted)`,
+    valueType: 'VARIABLE' as const,
+    // validate: notEmpty,
+    valueLabel: 'KUBE_API_ALLOWED_CIDRS',
+    initial: process.env.KUBE_API_ALLOWED_CIDRS || "0.0.0.0/0",
+    scope: 'ENVIRONMENT' as const,
+  },
+  {
     name: 'workerNodes',
     type: 'text' as const,
     message:
-      `Please enter Kubernetes workers hosts/IP addresses (comma-separated), (default: no workers):`,
+      `Kubernetes worker node IPs, comma-separated (default: no workers)`,
     valueType: 'VARIABLE' as const,
     // validate: notEmpty,
     valueLabel: 'WORKER_NODES',
-    initial: process.env.WORKER_NODES,
+    initial: process.env.WORKER_NODES || '',
+    scope: 'ENVIRONMENT' as const,
+  },
+  {
+    name: 'kubeClusterNodeCidr',
+    type: 'text' as const,
+    message:
+      `Cluster network CIDR (default: no restrictions)`,
+    valueType: 'VARIABLE' as const,
+    // validate: notEmpty,
+    valueLabel: 'KUBE_CLUSTER_NODE_CIDR',
+    initial: process.env.KUBE_CLUSTER_NODE_CIDR || "0.0.0.0/0",
     scope: 'ENVIRONMENT' as const,
   },
 ]
