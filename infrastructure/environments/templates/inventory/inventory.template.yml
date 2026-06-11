@@ -76,13 +76,13 @@ all:
             traefik-role: ingress
             # By default all datastores are deployed to node with role data1
             role: data1
-  {{#if worker_nodes}}
+  {{#if kube_worker_nodes}}
     # Workers section is optional, for single node cluster feel free to remove this section
     # section can be added later
     # more workers can be added later as well
     workers:
       hosts:
-    {{#each worker_nodes as |host idx|}}
+    {{#each kube_worker_nodes as |host idx|}}
         worker{{idx}}:
           ansible_host: {{host}}
           labels:

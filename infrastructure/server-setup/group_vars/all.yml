@@ -55,9 +55,9 @@ eviction_soft_nodefs: "20Gi"          # Minimum free space on root (/) filesyste
 eviction_soft_imagefs: "20Gi"         # Minimum free space for container images over time
 
 # CIDR containing Kubernetes nodes (used for UFW rules, default: no restrictions)
-cluster_node_cidr: "0.0.0.0/0"
+kube_cluster_node_cidr: "0.0.0.0/0"
 # CIDR(s) allowed to access Kubernetes API server, comma-separated (used for UFW rules, default: no restrictions)
-kubernetes_api_allowed_cidrs: "0.0.0.0/0"
+kube_api_allowed_cidrs: "0.0.0.0/0"
 
 # Container Network Interface plugin: Calico version
 calico_version: "v3.32.0"

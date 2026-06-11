@@ -37,7 +37,7 @@
     comment: "Managed by OpenCRVS Ansible"
   loop: >-
     {{
-      kubernetes_api_allowed_cidrs.split(',')
+      kube_api_allowed_cidrs.split(',')
       | map('trim')
       | list
     }}
@@ -55,7 +55,7 @@
     rule: allow
     port: "{{ item.port }}"
     proto: "{{ item.proto }}"
-    from_ip: "{{ cluster_node_cidr }}"
+    from_ip: "{{ kube_cluster_node_cidr }}"
     comment: "Managed by OpenCRVS Ansible"
   loop:
     # Kubernetes API server (required by control plane & nodes)

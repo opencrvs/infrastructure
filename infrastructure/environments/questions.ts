@@ -160,14 +160,14 @@ export const infrastructureQuestions = [
     scope: 'ENVIRONMENT' as const,
   },
   {
-    name: 'workerNodes',
+    name: 'kubeWorkerNodes',
     type: 'text' as const,
     message:
-      `Kubernetes worker node IPs, comma-separated (default: no workers)`,
+      `Kubernetes worker node hostnames or IPs (comma-separated, default: no worker nodes)`,
     valueType: 'VARIABLE' as const,
     // validate: notEmpty,
-    valueLabel: 'WORKER_NODES',
-    initial: process.env.WORKER_NODES || '',
+    valueLabel: 'KUBE_WORKER_NODES',
+    initial: process.env.KUBE_WORKER_NODES || '',
     scope: 'ENVIRONMENT' as const,
   },
   {

@@ -66,15 +66,15 @@ import { createEnvironmentSecret, createEnvironmentVariable, getRepositoryId } f
     const master = dockerManagerFirst(data) || ''
     log(`  ✓ Kubernetes API Host (Docker Manager): ${master}`);
     const users = extractAndModifyUsers(data);
-    const worker_nodes = extractWorkerNodes(data);
-    log(`  ✓ Worker nodes: ${worker_nodes.join(', ')}`);
+    const kube_worker_nodes = extractWorkerNodes(data);
+    log(`  ✓ Worker nodes: ${kube_worker_nodes.join(', ')}`);
     const backup_host = extractBackupNode(data);
     log(`  ✓ Backup host: ${backup_host}`);
 
     generateInventory(
         environment,
         {
-            worker_nodes: worker_nodes,
+            kube_worker_nodes: kube_worker_nodes,
             users: users,
             backup_host: environment === 'production' ? backup_host : '',
             kube_api_host: master
@@ -141,7 +141,7 @@ import { createEnvironmentSecret, createEnvironmentVariable, getRepositoryId } f
         }
         const variablesToCreate = {
             BACKUP_HOST: backup_host,
-            WORKER_NODES: worker_nodes.join(','),
+            KUBE_WORKER_NODES: kube_worker_nodes.join(','),
         }
         for (const [secretName, secretValue] of Object.entries(secretsToCreate)) {
             try {

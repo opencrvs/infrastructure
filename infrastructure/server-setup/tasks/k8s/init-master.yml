@@ -2,10 +2,10 @@
 - name: Check if Kubernetes is already initialized
   stat:
     path: /etc/kubernetes/admin.conf
-  register: k8s_init_check
+  register: kube_init_check
 
 - name: Initialize Kubernetes cluster
-  when: not k8s_init_check.stat.exists
+  when: not kube_init_check.stat.exists
   shell: |
     sudo kubeadm init \
       --apiserver-advertise-address={{ kube_api_address | default(ansible_default_ipv4.address) }} \
@@ -60,6 +60,6 @@
     force: yes
 
 - name: Display initialization result
-  when: not k8s_init_check.stat.exists
+  when: not kube_init_check.stat.exists
   debug:
     msg: "{{ kubeadm_init_result.stdout_lines }}"
