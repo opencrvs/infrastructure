@@ -79,7 +79,7 @@ jobs:
           kube_api_allowed_cidrs: ${{ vars.KUBE_API_ALLOWED_CIDRS }}
           kube_cluster_node_cidr: ${{ vars.KUBE_CLUSTER_NODE_CIDR }}
           kube_runner_token: ${{ secrets.GH_TOKEN }}
-          self_hosted_runner_additional_labels: ${{ vars.KUBE_SELF_HOSTED_RUNNER_ADDITIONAL_LABELS }}
+          kube_self_hosted_runner_additional_labels: ${{ vars.KUBE_SELF_HOSTED_RUNNER_ADDITIONAL_LABELS }}
       - name: checkout repository
         uses: actions/checkout@v6
       - name: Run Ansible Playbook
