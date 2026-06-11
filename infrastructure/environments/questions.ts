@@ -205,7 +205,7 @@ export const infrastructureQuestions = [
     name: 'kubeClusterNodeCidr',
     type: 'text' as const,
     message:
-      `Cluster network CIDR (default: no restrictions)`,
+      `Network CIDR range for Kubernetes node-to-node communication (default: no restrictions)`,
     valueType: 'VARIABLE' as const,
     validate: validateCIDR,
     valueLabel: 'KUBE_CLUSTER_NODE_CIDR',
