@@ -18,16 +18,28 @@
 
 - name: Configure Unattended Upgrades
   ansible.builtin.copy:
-    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    dest: /etc/apt/apt.conf.d/99-opencrvs-unattended-upgrades
     content: |
-      Unattended-Upgrade::Package-Blacklist {};
-      Unattended-Upgrade::DevRelease "auto";
-      Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
-      Unattended-Upgrade::Remove-New-Unused-Dependencies "true";
-      Unattended-Upgrade::Remove-Unused-Dependencies "true";
       Unattended-Upgrade::Allowed-Origins {
+          "${distro_id}:${distro_codename}";
           "${distro_id}:${distro_codename}-security";
+          "${distro_id}ESMApps:${distro_codename}-apps-security";
+          "${distro_id}ESM:${distro_codename}-infra-security";
       };
+      // Kubernetes packages source pkgs.k8s.io is not enabled as part of Allowed-Origins
+      // OpenCRVS explicitly disables unattended upgrades for Kubernetes
+      // since some cloud providers (e.g. Azure) have Kubernetes packages in their repositories
+      // Use GitHub provision action to upgrade Kubernetes nodes
+      Unattended-Upgrade::Package-Blacklist {
+              "kubeadm";
+              "kubelet";
+              "kubectl";
+              "kubernetes-cni";
+      };
+      Unattended-Upgrade::Automatic-Reboot "false";
+      Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+      Unattended-Upgrade::Remove-Unused-Dependencies "true";
+      Unattended-Upgrade::Remove-New-Unused-Dependencies "true";
     owner: root
     group: root
     mode: '0644'
