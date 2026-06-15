@@ -16,6 +16,11 @@
   apt:
     autoclean: yes
 
+- name: Remove legacy OpenCRVS unattended-upgrades config
+  ansible.builtin.file:
+    path: /etc/apt/apt.conf.d/50unattended-upgrades
+    state: absent
+
 - name: Configure Unattended Upgrades
   ansible.builtin.copy:
     dest: /etc/apt/apt.conf.d/99-opencrvs-unattended-upgrades
@@ -26,10 +31,11 @@
           "${distro_id}ESMApps:${distro_codename}-apps-security";
           "${distro_id}ESM:${distro_codename}-infra-security";
       };
-      // Kubernetes packages source pkgs.k8s.io is not enabled as part of Allowed-Origins
-      // OpenCRVS explicitly disables unattended upgrades for Kubernetes
-      // since some cloud providers (e.g. Azure) have Kubernetes packages in their repositories
-      // Use GitHub provision action to upgrade Kubernetes nodes
+      // Kubernetes packages from pkgs.k8s.io are not included in Allowed-Origins.
+      // OpenCRVS explicitly blocks automatic Kubernetes package upgrades because
+      // some cloud providers, e.g. Azure, may expose Kubernetes packages through
+      // repositories that could otherwise match unattended-upgrades origins.
+      // Use GitHub provision action to upgrade Kubernetes nodes.
       Unattended-Upgrade::Package-Blacklist {
               "kubeadm";
               "kubelet";
