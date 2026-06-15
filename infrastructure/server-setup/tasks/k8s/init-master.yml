@@ -8,9 +8,9 @@
   when: not kube_init_check.stat.exists
   shell: |
     sudo kubeadm init \
-      --apiserver-advertise-address={{ kube_api_address | default(ansible_default_ipv4.address) }} \
+      --apiserver-advertise-address={{ kube_api_host | default(ansible_default_ipv4.address) }} \
       --pod-network-cidr={{ pod_network_cidr }} \
-      --control-plane-endpoint={{ kube_api_address | default(ansible_default_ipv4.address) }}
+      --control-plane-endpoint={{ kube_api_host | default(ansible_default_ipv4.address) }}
   register: kubeadm_init_result
 
 - name: Create .kube directory for provision user
