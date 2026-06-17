@@ -23,6 +23,7 @@
     mode: "0644"
     content: |
       KUBELET_EXTRA_ARGS="--node-ip={{ kubelet_node_ip }}"
+  register: kubelet_default_file
 
 - name: Restart kubelet
   become: yes
@@ -30,3 +31,4 @@
     name: kubelet
     daemon_reload: true
     state: restarted
+  when: kubelet_default_file.changed
