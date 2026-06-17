@@ -183,7 +183,7 @@ export const infrastructureQuestions = [
     name: 'kubeApiAllowedCidrs',
     type: 'text' as const,
     message:
-      `Allowed CIDRs for Kubernetes API access (default: unrestricted)`,
+      `Allowed CIDRs for Kubernetes API access (default: KUBE_API_HOST)`,
     valueType: 'VARIABLE' as const,
     validate: validateCIDRs,
     valueLabel: 'KUBE_API_ALLOWED_CIDRS',
