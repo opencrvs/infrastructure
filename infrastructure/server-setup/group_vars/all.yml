@@ -69,6 +69,7 @@ cluster_communication_ports:
     - { port: 4789, proto: "udp" }   # VXLAN (Calico; verify if needed)
     - { port: 179, proto: "tcp" }    # BGP (Calico)
     - { port: 179, proto: "udp" }    # BGP (Calico)
+
 # CIDR(s) allowed to access Kubernetes API server, comma-separated (used for UFW rules, default: cluster nodes only)
 kube_api_allowed_cidrs: ""
 
