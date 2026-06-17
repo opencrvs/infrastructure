@@ -187,7 +187,7 @@ export const infrastructureQuestions = [
     valueType: 'VARIABLE' as const,
     validate: validateCIDRs,
     valueLabel: 'KUBE_API_ALLOWED_CIDRS',
-    initial: process.env.KUBE_API_ALLOWED_CIDRS || "0.0.0.0/0",
+    initial: process.env.KUBE_API_ALLOWED_CIDRS || "",
     scope: 'ENVIRONMENT' as const,
   },
   {
@@ -199,17 +199,6 @@ export const infrastructureQuestions = [
     // validate: notEmpty,
     valueLabel: 'KUBE_WORKER_NODES',
     initial: process.env.KUBE_WORKER_NODES || '',
-    scope: 'ENVIRONMENT' as const,
-  },
-  {
-    name: 'kubeClusterNodeCidr',
-    type: 'text' as const,
-    message:
-      `Network CIDR range for Kubernetes node-to-node communication (default: no restrictions)`,
-    valueType: 'VARIABLE' as const,
-    validate: validateCIDR,
-    valueLabel: 'KUBE_CLUSTER_NODE_CIDR',
-    initial: process.env.KUBE_CLUSTER_NODE_CIDR || "0.0.0.0/0",
     scope: 'ENVIRONMENT' as const,
   },
 ]
