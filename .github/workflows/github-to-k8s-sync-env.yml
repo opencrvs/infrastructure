@@ -279,6 +279,15 @@ jobs:
             echo "ℹ️  Dockerhub credentials not provided, skipping Docker Registry Secret creation for $DOCKERHUB_SECRET_NAME"
           fi
 
+      
+      - name: Install yq v4
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          /usr/local/bin/yq --version
+          which yq
+          type -a yq
+          yq --version
       - name: Apply secrets to Kubernetes
         run: |
           echo "✅ Generated manifests:"

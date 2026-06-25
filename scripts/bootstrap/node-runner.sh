@@ -69,7 +69,7 @@ RUNNER_DIR=${RUNNER_DIR:-"/opt/github-runner"}
 # Runner name
 [[ -z "${RUNNER_NAME:-}" ]] && RUNNER_NAME="$(hostname)-runner"
 # Runner labels
-LABELS="self-hosted,linux,node,${ENV}"
+LABELS="self-hosted,linux,node,k8s,${ENV}"
 # Runner user and group
 RUNAS_USER="${RUNAS_USER:-provision}"
 RUNAS_GROUP="${RUNAS_GROUP:-provision}"
