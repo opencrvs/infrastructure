@@ -134,7 +134,7 @@ export function generateInventory(env: string, values: Record<string, any>){
 
   const templateFile = fs.readFileSync(templatePath, "utf-8");
   const template = Handlebars.compile(templateFile);
-  values['single_node'] = (values['worker_nodes'].length > 0 || values['backup_host']) ? "false" : "true";
+  values['single_node'] = (values['kube_worker_nodes'].length > 0 || values['backup_host']) ? "false" : "true";
 
   const updated = template(values);
 

@@ -29,7 +29,7 @@ on:
       environment:
         description: "Target environment"
         required: true
-        default: "dev"
+        default: "development"
         type: choice
         options:
           - ""
@@ -114,7 +114,11 @@ jobs:
         # Only redis secret for now needs to be copied
         run: |
           secrets=(
+            "elasticsearch-admin-user"
             "redis-opencrvs-users"
+            "minio-opencrvs-users"
+            "mongodb-admin-user"
+            "postgres-admin-user"
           )
           for secret in "${secrets[@]}"; do
             kubectl get secret $secret -n opencrvs-deps-${ENV} -o yaml \
@@ -145,8 +149,8 @@ jobs:
             --atomic \
             --wait \
             --wait-for-jobs \
-            --set platform.tag="$CORE_IMAGE_TAG" \
-            --set countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
+            --set-string platform.tag="$CORE_IMAGE_TAG" \
+            --set-string countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set countryconfig.image.name="$COUNTRYCONFIG_IMAGE_NAME" \
             --set data_seed.env.ACTIVATE_USERS="${{ vars.ACTIVATE_USERS || 'false' }}" \
             --set data_seed.enabled="${{ inputs.data-seed-enabled }}" \

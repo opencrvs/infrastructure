@@ -10,8 +10,7 @@ on:
         default: "development"
         type: choice
         options:
-          - production
-          - stg
+          - ""
       namespace_template:
         description: "Secrets mapping template"
         default: "opencrvs"
@@ -199,8 +198,6 @@ jobs:
           echo BACKUP_HOST=$BACKUP_HOST >> $env_file
           echo BACKUP_HOST_PRIVATE_KEY=$BACKUP_HOST_PRIVATE_KEY >> $env_file
           echo BACKUP_SERVER_USER=$BACKUP_SERVER_USER >> $env_file
-          echo POSTGRES_USER=$POSTGRES_USER >> $env_file
-          echo POSTGRES_PASSWORD=$POSTGRES_PASSWORD >> $env_file
           grep BACKUP_HOST_PRIVATE_KEY $env_file || echo "No restore encryption passphrase to add"
 
       - name: Preprocess mapping into Secret YAMLs
@@ -293,6 +290,7 @@ jobs:
             echo "🚀 Applying $f within namespace"
             kubectl get namespace $namespace >/dev/null 2>&1 || kubectl create namespace $namespace
             yq eval . "$f" > /dev/null && echo "✅ $f is valid YAML" || echo "❌ $f has YAML errors" && cat "$f"
+            kubectl delete --ignore-not-found -n $namespace -f "$f"
             kubectl apply -n $namespace -f "$f"
             echo "Dropping last-applied-configuration annotation for secret $(basename ${f/.yaml/})"
             kubectl annotate secret -n $namespace "$(basename ${f/.yaml/})" kubectl.kubernetes.io/last-applied-configuration-
