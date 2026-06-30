@@ -16,6 +16,8 @@
       authSecret:
         create: true
         github_token: "{{ kube_runner_token }}"
+      podAnnotations:
+        opencrvs.org/lastdeploy-timestamp: "{{ ansible_date_time.epoch }}"
 
 - name: Create ServiceAccount for opencrvs-runner
   kubernetes.core.k8s:
