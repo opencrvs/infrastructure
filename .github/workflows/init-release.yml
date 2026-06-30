@@ -94,12 +94,12 @@ jobs:
           export VERSION="${{ inputs.version }}"
           # Bump helm chart version: sed instead of yq to preserve formatting and comments.
           sed -i \
-            -e "s/^\(\s*OPENCRVS_CHART_VERSION:\s*\).*/\1\"$VERSION\"/" \
-            -e '/core-image-tag:/,/default:/ s/default: ".*"/default: "'"$VERSION"'"/' \
-            -e '/countryconfig-image-tag:/,/default:/ s/default: ".*"/default: "'"$VERSION"'"/' \
+            -e "s/^\(\s*OPENCRVS_CHART_VERSION:\s*\).*/\1\"v$VERSION\"/" \
+            -e '/core-image-tag:/,/default:/ s/default: ".*"/default: "'"v$VERSION"'"/' \
+            -e '/countryconfig-image-tag:/,/default:/ s/default: ".*"/default: "'"v$VERSION"'"/' \
             .github/workflows/deploy-opencrvs.yml
           sed -i \
-            -e "s/^\(\s*DEPENDENCIES_CHART_VERSION:\s*\).*/\1\"$VERSION\"/" \
+            -e "s/^\(\s*DEPENDENCIES_CHART_VERSION:\s*\).*/\1\"v$VERSION\"/" \
             .github/workflows/deploy-dependencies.yml
           git add .
           git commit -m "chore: update version to ${{ inputs.version }}"
