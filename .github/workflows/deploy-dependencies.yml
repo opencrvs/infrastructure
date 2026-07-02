@@ -6,12 +6,12 @@ on:
       environment:
         description: "Target environment"
         required: true
-        default: "dev"
+        default: "development"
         type: choice
         options:
           - ""
 env:
-  DEPENDENCIES_CHART_VERSION: "1.9.15"
+  DEPENDENCIES_CHART_VERSION: "v2.1.0"
   TRAEFIK_CHART_VERSION: "39.0.0"
 jobs:
   approve:

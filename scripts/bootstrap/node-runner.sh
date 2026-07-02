@@ -100,7 +100,7 @@ if [[ ! -f "runner.tar.gz" ]]; then
     echo "❌ Failed to fetch GitHub runner URL. Check your internet connection and 'jq'."
     exit 1
   fi
-
+  # FIXME:Fails with permission denied if run as non-root without sudo, so we use sudo for the download step
   echo "[+] Download URL: $RUNNER_LATEST_URL into folder $(pwd)"
   if ! sudo -u $RUNAS_USER curl -fL "$RUNNER_LATEST_URL" -o runner.tar.gz; then
     echo "❌ Failed to download runner archive."

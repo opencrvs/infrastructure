@@ -15,7 +15,7 @@ all:
     # - If you would like to run kubectl commands from the remote server, leave this field empty
     # kube_api_endpoint: ''
 
-    # IMPORTANT: If master VM has multiple ethernet interfaces, put private IP address at kube_api_address
+    # IMPORTANT: If master VM has multiple ethernet interfaces, put private IP address at kube_api_host
     # kube_api_host: 10.10.10.10
     kube_api_host: {{kube_api_host}}
 
@@ -76,13 +76,13 @@ all:
             traefik-role: ingress
             # By default all datastores are deployed to node with role data1
             role: data1
-  {{#if worker_nodes}}
+  {{#if kube_worker_nodes}}
     # Workers section is optional, for single node cluster feel free to remove this section
     # section can be added later
     # more workers can be added later as well
     workers:
       hosts:
-    {{#each worker_nodes as |host idx|}}
+    {{#each kube_worker_nodes as |host idx|}}
         worker{{idx}}:
           ansible_host: {{host}}
           labels:

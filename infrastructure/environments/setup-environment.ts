@@ -270,50 +270,7 @@ ALL_QUESTIONS.push(
 )
 
 ; (async () => {
-
-  const environment = await selectWithCustom(
-        {
-        message: 'Choose a name and purpose for the environment?',
-        choices: [
-          { name: 'Development', value: 'development' },
-          { name: 'Quality assurance (no PII data)', value: 'qa' },
-          {
-            name: 'Staging (hosts PII data, no backups)',
-            value: 'staging'
-          },
-          {
-            name: 'Production (hosts PII data, requires frequent backups)',
-            value: 'production'
-          },
-        ]
-      }
-    )
-    let environment_type = 'non-production'
-    if (['development', 'qa'].includes(environment)) {
-        environment_type = 'non-production'
-    } else if (['staging', 'production'].includes(environment)) {
-        environment_type = 'production'
-    } else {
-        environment_type = await select(
-          {
-            message: 'Purpose for the environment?',
-            choices: [
-            { name: 'Development/Quality assurance/Testing (no PII data)', value: 'non-production' },
-            { name: 'Staging/Production (hosts PII data, requires frequent backups)', value: 'production' },
-            ],
-          }
-        )
-    }
-    if (!environment) {
-        process.exit(1)
-      }
-    // Read users .env file based on the environment name they gave above, e.g. .env.production
-    dotenv.config({
-      path: `${process.cwd()}/.env.${environment}`
-    })
-
     log('\n', kleur.bold().underline('Github'), '\n')
-
     const { githubOrganisation, githubRepository } = await prompts(
       githubQuestions.map(questionToPrompt),
       {
@@ -332,8 +289,65 @@ ALL_QUESTIONS.push(
     const octokit = new Octokit({
       auth: githubToken
     })
-
+    log(kleur.green('\nSuccessfully logged in to Github\n'))
     let existingEnvironments = await getRepositoryEnvironments(octokit, githubOrganisation, githubRepository);
+
+    let defaultChoices = [
+            { name: 'Development', value: 'development' },
+            { name: 'Quality assurance (no PII data)', value: 'qa' },
+            {
+              name: 'Staging (hosts PII data, no backups)',
+              value: 'staging'
+            },
+            {
+              name: 'Production (hosts PII data, requires frequent backups)',
+              value: 'production'
+            },
+          ]
+    // Add only environments that are not already present
+    const choices = [
+      ...defaultChoices,
+      ...existingEnvironments
+        .filter(
+          (env) => !defaultChoices.some((choice) => choice.value === env)
+        )
+        .map((env) => ({
+          name: env,
+          value: env
+        }))
+    ];
+    const environment = await selectWithCustom(
+          {
+          message: 'Choose a name and purpose for the environment?',
+          choices: choices
+        }
+    )
+    let environment_type = 'non-production'
+    if (['development', 'qa'].includes(environment)) {
+        environment_type = 'non-production'
+    } else if (['staging', 'production'].includes(environment)) {
+        environment_type = 'production'
+    } else {
+        environment_type = await select(
+          {
+            message: 'Purpose for the environment?',
+            choices: [
+            { name: 'Development/Quality assurance/Testing (no PII data)', value: 'non-production' },
+            { name: 'Staging/Production (hosts PII data, requires frequent backups)', value: 'production' },
+            ],
+          }
+        )
+    }
+    const environment_exists = existingEnvironments
+      .map((e) => e.trim())
+      .includes(environment);
+    if (!environment) {
+        process.exit(1)
+      }
+    // Read users .env file based on the environment name they gave above, e.g. .env.production
+    dotenv.config({
+      path: `${process.cwd()}/.env.${environment}`
+    })
 
     await createEnvironment(
       octokit,
@@ -392,8 +406,6 @@ ALL_QUESTIONS.push(
         existingEnvironmentSecrets.length,
         'secrets'
       )
-    } else {
-      log(kleur.green('\nSuccessfully logged in to Github\n'))
     }
     if (environment_type === 'production') {
       log('\n', kleur.yellow().bold(
@@ -412,8 +424,8 @@ ALL_QUESTIONS.push(
       infrastructureQuestions,
       existingValues
     )
-    const workerNodes = infrastructure.workerNodes
-      ? infrastructure.workerNodes.split(',').map((ip: string) => ip.trim()) : []
+    const kubeWorkerNodes = infrastructure.kubeWorkerNodes
+      ? infrastructure.kubeWorkerNodes.split(',').map((ip: string) => ip.trim()) : []
 
     log('\n', kleur.bold().underline('SSH Users'), '\n')
     const users = await manageUsers(`infrastructure/server-setup/inventory/${environment}.yml`)
@@ -447,17 +459,16 @@ ALL_QUESTIONS.push(
       ssl_answers = await askQuestionWithEditor(staticSSLCertQuestions, existingEnvironmentSecrets)
     }
     
-    log('\n', kleur.bold().underline('Storage'))
+    log('\n', kleur.bold().underline('Storage'), '\n')
 
-    let enableEncryption = true
+    let enableEncryption = false
     const encryption_key_defined = findExistingValue(
       'ENCRYPTION_KEY',
       'SECRET',
       'ENVIRONMENT',
       existingValues
     )
-
-    if (!encryption_key_defined) {
+    if (!encryption_key_defined && !environment_exists) {
       const answers_enable_encryption = await prompts(
         [
           {
@@ -471,17 +482,24 @@ ALL_QUESTIONS.push(
       )
       enableEncryption = answers_enable_encryption.enableEncryption
     }
-    if (enableEncryption && !encryption_key_defined) {
+    if (enableEncryption && !encryption_key_defined && !environment_exists) {
       log(kleur.bold().green('✔'), kleur.bold().yellow(' Disk encryption is enabled'))
       await promptAndStoreAnswer(environment, diskQuestions, existingValues)
     } else {
+      if (!enableEncryption && !encryption_key_defined && environment_exists) {
+        log(kleur.bold().green('✔'), kleur.bold().grey(`Environment ${environment} is already configured, skipping disk encryption question`))
+      }
       const DISK_SPACE = findExistingValue(
         'DISK_SPACE',
         'VARIABLE',
         'ENVIRONMENT',
         existingValues
       )
-      log(kleur.bold().green('✔'), kleur.bold().yellow('Variable DISK_SPACE is read-only variable:'), DISK_SPACE?.value)
+      if (!DISK_SPACE) {
+        log(kleur.bold().green('✔'), kleur.bold().grey('All available disk space at /data will be used'))
+      } else {
+        log(kleur.bold().green('✔'), kleur.bold().yellow('Variable DISK_SPACE is read-only, allocated space:'), DISK_SPACE?.value)
+      }
     }
 
     // Backup and restore configuration
@@ -864,22 +882,6 @@ ALL_QUESTIONS.push(
         value: 'production' === environment_type ? 'false' : 'true',
         didExist: findExistingValue(
           'ACTIVATE_USERS',
-          'VARIABLE',
-          'ENVIRONMENT',
-          existingValues
-        ),
-        scope: 'ENVIRONMENT' as const
-      },
-      {
-        type: 'VARIABLE' as const,
-        name: 'AUTH_HOST',
-        value: answerOrExisting(
-          allAnswers.domain,
-          findExistingValue('DOMAIN', 'VARIABLE', 'ENVIRONMENT', existingValues),
-          (val) => `https://auth.${val}`
-        ),
-        didExist: findExistingValue(
-          'AUTH_HOST',
           'VARIABLE',
           'ENVIRONMENT',
           existingValues
@@ -1289,9 +1291,9 @@ ALL_QUESTIONS.push(
     generateInventory(
       environment,
       {
-        worker_nodes: workerNodes,
-        backup_host: backupHost || '',
+        kube_worker_nodes: kubeWorkerNodes,
         kube_api_host: infrastructure.kubeAPIHost || '',
+        backup_host: backupHost || '',
         users: users
       }
     )
@@ -1314,11 +1316,11 @@ ALL_QUESTIONS.push(
     )
     await updateWorkflowEnvironments();
 
-    let addon_message = workerNodes.length > 0 || configureBackup ? 
+    let addon_message = kubeWorkerNodes.length > 0 || configureBackup ? 
       "--------------------------------------------------------------------------------------------\n" +
       `\n➡️ ${kleur.bold().yellow('COPY the SSH public key from the master VM to your clipboard')}\n` +
       "--------------------------------------------------------------------------------------------\n" : ""
-    addon_message += workerNodes.length > 0 ?
+    addon_message += kubeWorkerNodes.length > 0 ?
       `➡️ ${kleur.bold().yellow('Run following command on Kubernetes worker VM to create provision user and setup SSH key:')}\n` +
       "\n" +
       "curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\ \n" +

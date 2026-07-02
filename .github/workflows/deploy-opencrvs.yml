@@ -16,11 +16,11 @@ on:
       core-image-tag:
         description: "Tag of the core image"
         required: true
-        default: "1.9.15"
+        default: "v2.1.0"
       countryconfig-image-tag:
         description: "Tag of the countryconfig image"
         required: true
-        default: "1.9.15"
+        default: "v2.1.0"
       data-seed-enabled:
         description: "Data seeding during deployment"
         required: false
@@ -29,14 +29,14 @@ on:
       environment:
         description: "Target environment"
         required: true
-        default: "dev"
+        default: "development"
         type: choice
         options:
           - ""
 
 env:
   # Assuming chart version matches core image tag
-  OPENCRVS_CHART_VERSION: "1.9.15"
+  OPENCRVS_CHART_VERSION: "v2.1.0"
 jobs:
   approve:
     environment: ${{ inputs.environment }}
@@ -114,7 +114,11 @@ jobs:
         # Only redis secret for now needs to be copied
         run: |
           secrets=(
+            "elasticsearch-admin-user"
             "redis-opencrvs-users"
+            "minio-opencrvs-users"
+            "mongodb-admin-user"
+            "postgres-admin-user"
           )
           for secret in "${secrets[@]}"; do
             kubectl get secret $secret -n opencrvs-deps-${ENV} -o yaml \
@@ -150,7 +154,9 @@ jobs:
             --set countryconfig.image.name="$COUNTRYCONFIG_IMAGE_NAME" \
             --set data_seed.env.ACTIVATE_USERS="${{ vars.ACTIVATE_USERS || 'false' }}" \
             --set data_seed.enabled="${{ inputs.data-seed-enabled }}" \
+            --set env.CONTENT_SECURITY_POLICY_WILDCARD="${{ vars.CONTENT_SECURITY_POLICY_WILDCARD }}" \
             --set hostname=${{ vars.DOMAIN }} 2>&1 ; STATUS=$?;
+
             kill $STERN_PID 2>/dev/null || true
             exit $STATUS
       - name: Cleanup Helm Locks
