@@ -82,7 +82,7 @@ export function copyChartsValues(env: string, values: Record<string, string | bo
 
   values['lets_encrypt'] = values['traefik_mode'] === "lets_encrypt";
   values['static_ssl'] = values['traefik_mode'] === "static_ssl";
-
+  values['opencrvs_environment'] = env;
   function copyRecursive(src: string, dest: string) {
     const stat = fs.statSync(src);
 
