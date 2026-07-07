@@ -5,6 +5,8 @@ Guidance for AI coding agents working in this infrastructure repository.
 This repo provisions and configures OpenCRVS servers (Ansible, Kubernetes, Helm,
 Terraform). It handles production infrastructure and secrets.
 
+Docs: https://github.com/opencrvs/documentation
+
 ## Security rules — non-negotiable
 
 - **ALWAYS obey `.claude/settings.json` permissions.** Deny rules exist to keep
