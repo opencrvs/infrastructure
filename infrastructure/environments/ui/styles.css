@@ -77,6 +77,7 @@ aside {
 
 .screen {
   display: none;
+  min-width: 0;
   padding: 36px;
 }
 
@@ -148,6 +149,21 @@ textarea.form-control {
 
 .review-section summary {
   cursor: pointer;
+}
+
+.review-section {
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+.review-section .table-responsive {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.review-compact-table > :not(caption) > * > * {
+  padding: 0.25rem 0.375rem;
 }
 
 .finalize-summary details ul {

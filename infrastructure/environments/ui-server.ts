@@ -578,64 +578,6 @@ function deleteNestedValue(target: Record<string, unknown>, pathValue: string) {
   remove(target, 0)
 }
 
-function validateConfigurationFieldBindings() {
-  const corePaths = [
-    process.env.OPENCRVS_CORE_PATH,
-    path.resolve(process.cwd(), '..', 'opencrvs-core')
-  ].filter((candidate): candidate is string => Boolean(candidate))
-  const corePath = corePaths.find((candidate) =>
-    fs.existsSync(path.join(candidate, 'charts'))
-  )
-
-  if (!corePath) {
-    return
-  }
-
-  const chartValues = new Map<HelmChart, Record<string, unknown>>()
-
-  for (const field of CONFIGURATION_FIELDS) {
-    for (const binding of field.bindings) {
-      if (binding.target !== 'helm') {
-        continue
-      }
-
-      if (binding.skipPathValidation) {
-        continue
-      }
-
-      if (!chartValues.has(binding.chart)) {
-        const valuesPath = path.join(
-          corePath,
-          'charts',
-          binding.chart,
-          'values.yaml'
-        )
-        if (!fs.existsSync(valuesPath)) {
-          throw new Error(`Missing Helm chart values file: ${valuesPath}`)
-        }
-        const parsed = loadYaml(fs.readFileSync(valuesPath, 'utf8'))
-        chartValues.set(binding.chart, isRecord(parsed) ? parsed : {})
-      }
-
-      const chartValue = getNestedValue(chartValues.get(binding.chart)!, binding.path)
-      if (chartValue === undefined) {
-        throw new Error(
-          `Configuration field ${field.id} targets missing Helm value ${binding.chart}.${binding.path}`
-        )
-      }
-
-      if (
-        field.defaultValue !== undefined &&
-        typeof chartValue !== typeof field.defaultValue
-      ) {
-        throw new Error(
-          `Configuration field ${field.id} has a different type from ${binding.chart}.${binding.path}`
-        )
-      }
-    }
-  }
-}
-
 function getHelmOverridePath(environmentName: string, chart: HelmChart) {
   return path.join(
     process.cwd(),
@@ -854,9 +796,11 @@ function getConfigurationScreenResponse(screenId: string) {
     throw new Error(`Configuration screen is disabled for this setup type: ${screenId}`)
   }
 
-  const fields = (screenId === 'application'
-    ? getApplicationFields()
-    : getConfigurationFields(screenId))
+  const fields = (screenId === 'infrastructure'
+    ? getInfrastructureFields()
+    : screenId === 'application'
+      ? getApplicationFields()
+      : getConfigurationFields(screenId))
     .filter(isFieldEnabledForDeployment)
     .map(getFieldForCurrentDeployment)
   const existingSecrets = Object.fromEntries(
@@ -1174,6 +1118,31 @@ function getBackupRestoreState() {
       (environment) => environment !== environmentName
     )
   }
+}
+
+function isExistingGithubEnvironment() {
+  const environmentName = environmentSelection?.environmentName || ''
+  return Boolean(
+    hasDeploymentFeature('github') &&
+    environmentName &&
+    existingEnvironments.includes(environmentName)
+  )
+}
+
+function getInfrastructureFields() {
+  const diskEncryptionLocked = isExistingGithubEnvironment()
+
+  return getConfigurationFields('infrastructure').map((field) => {
+    if (field.id !== 'enableDiskEncryption' || !diskEncryptionLocked) {
+      return field
+    }
+
+    return {
+      ...field,
+      disabled: true,
+      description: 'Disk encryption reflects the existing GitHub ENCRYPTION_KEY secret and cannot be changed here.'
+    }
+  })
 }
 
 function getApplicationFields() {
@@ -2247,8 +2216,11 @@ function saveInfrastructureConfig(payload: InfrastructureRequest) {
     throw new Error('Allowed CIDRs must be valid comma-separated CIDR ranges.')
   }
 
-  const enableDiskEncryption =
-    hasDeploymentFeature('github') && Boolean(payload.enableDiskEncryption)
+  const enableDiskEncryption = hasDeploymentFeature('github') && (
+    isExistingGithubEnvironment()
+      ? hasEnvironmentSecret('ENCRYPTION_KEY')
+      : Boolean(payload.enableDiskEncryption)
+  )
 
   if (enableDiskEncryption && !payload.diskSpace?.trim()) {
     throw new Error('Disk space is required when disk encryption is enabled.')
@@ -2614,7 +2586,6 @@ function openBrowser(url: string) {
 }
 
 export function startEnvironmentInitUi() {
-  validateConfigurationFieldBindings()
   const server = http.createServer(handleRequest)
 
   server.listen(DEFAULT_PORT, HOST, () => {

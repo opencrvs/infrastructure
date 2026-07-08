@@ -548,6 +548,14 @@ function appendReviewRow(container, values) {
   container.appendChild(row);
 }
 
+function formatGithubScope(scope) {
+  return scope === 'REPOSITORY' ? 'REPO' : scope === 'ENVIRONMENT' ? 'ENV' : scope;
+}
+
+function formatGithubStatus(update) {
+  return update.exists ? 'Exists' : 'New';
+}
+
 function renderReview(plan) {
   reviewFiles.innerHTML = '';
   reviewVariables.innerHTML = '';
@@ -562,19 +570,19 @@ function renderReview(plan) {
 
   for (const variable of plan.variables || []) {
     appendReviewRow(reviewVariables, [
-      variable.scope,
+      formatGithubScope(variable.scope),
       variable.name,
       variable.value,
+      formatGithubStatus(variable),
       variable.action
     ]);
   }
 
   for (const secret of plan.secrets || []) {
-    const status = secret.exists ? 'Exists in GitHub' : 'Missing in GitHub';
     appendReviewRow(reviewSecrets, [
-      secret.scope,
+      formatGithubScope(secret.scope),
       secret.name,
-      status,
+      formatGithubStatus(secret),
       secret.action
     ]);
   }

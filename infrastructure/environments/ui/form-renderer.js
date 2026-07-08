@@ -127,7 +127,7 @@
           labelText.textContent = field.label;
           label.appendChild(labelText);
         } else {
-          label.className = 'form-label fw-semibold';
+          label.className = 'form-label fw-normal';
           label.appendChild(document.createTextNode(field.label));
           label.appendChild(input);
         }
