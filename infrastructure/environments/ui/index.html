@@ -13,13 +13,51 @@
         <aside>
           <p class="brand fw-bold">OpenCRVS setup</p>
           <ol class="steps nav nav-pills flex-column">
-            <li class="step active nav-link" data-screen="github">GitHub configuration</li>
+            <li class="step active nav-link" data-screen="setup">Setup type</li>
+            <li><button id="github-navigation" class="step nav-link" type="button" data-screen="github" disabled>GitHub configuration</button></li>
             <li><button id="review-navigation" class="step nav-link" type="button" data-screen="review" disabled>Review</button></li>
           </ol>
         </aside>
-        <section id="github-screen" class="screen active">
-          <h1>GitHub configuration</h1>
+        <section id="setup-screen" class="screen active">
+          <h1>Setup type</h1>
           <p class="lede text-body-secondary small">
+            Choose which parts of the environment setup this local tool should manage.
+          </p>
+          <form id="setup-form" class="configuration-form">
+            <label class="form-check">
+              <input id="enableGithubIntegration" class="form-check-input" name="enableGithubIntegration" type="checkbox" checked />
+              <span class="form-check-label">Enable GitHub integration</span>
+              <span class="form-text d-block small fw-normal">
+                Use GitHub as the backend for repository variables, secrets, environments, and workflows.
+              </span>
+            </label>
+            <label class="form-label fw-semibold">
+              Infrastructure type
+              <select id="infrastructureType" class="form-select" name="infrastructureType" required>
+                <option value="on-premise">On-Premise</option>
+                <option value="cloud-native">Cloud-Native / Managed Kubernetes cluster</option>
+                <option value="existing-cluster">Existing cluster</option>
+              </select>
+              <span class="form-text fw-normal">
+                On-Premise generates Ansible inventory files. Managed and existing clusters skip Ansible inventory.
+              </span>
+            </label>
+            <label class="form-check">
+              <input id="configureHelmValues" class="form-check-input" name="configureHelmValues" type="checkbox" checked />
+              <span class="form-check-label">Configure values files for OpenCRVS Helm charts</span>
+              <span class="form-text d-block small fw-normal">
+                Generate and update environment-specific Helm chart values.
+              </span>
+            </label>
+            <div class="actions d-flex gap-2">
+              <button id="setup-button" class="btn btn-primary" type="submit">Continue</button>
+            </div>
+          </form>
+          <div id="setup-status" class="status alert d-none" role="status" aria-live="polite"></div>
+        </section>
+        <section id="github-screen" class="screen">
+          <h1 id="github-screen-title">GitHub configuration</h1>
+          <p id="github-screen-description" class="lede text-body-secondary small">
             Connect the infrastructure repository, then choose the environment
             to configure.
           </p>
@@ -55,7 +93,7 @@
           <div id="environment-part" class="configuration-part d-none">
             <div id="connection-summary" class="connection-summary alert alert-success"></div>
             <h2>Environment</h2>
-            <p class="lede text-body-secondary small">
+            <p id="environment-description" class="lede text-body-secondary small">
               Choose the target GitHub environment and configure the repository
               approval settings used by deployment workflows.
             </p>

@@ -93,6 +93,12 @@ function buildConfigurationUi() {
 }
 
 buildConfigurationUi();
+const setupForm = document.querySelector('#setup-form');
+const setupButton = document.querySelector('#setup-button');
+const setupStatusBox = document.querySelector('#setup-status');
+const enableGithubIntegrationInput = document.querySelector('#enableGithubIntegration');
+const infrastructureTypeInput = document.querySelector('#infrastructureType');
+const configureHelmValuesInput = document.querySelector('#configureHelmValues');
 const form = document.querySelector('#github-form');
 const environmentForm = document.querySelector('#environment-form');
 const organisationInput = document.querySelector('#organisation');
@@ -106,10 +112,14 @@ const environmentStatusBox = document.querySelector('#environment-status');
 const reviewStatusBox = document.querySelector('#review-status');
 const steps = Array.from(document.querySelectorAll('.step'));
 const configurationNavigation = Array.from(document.querySelectorAll('.configuration-navigation'));
+const githubNavigation = document.querySelector('#github-navigation');
 const reviewNavigation = document.querySelector('#review-navigation');
 const authenticationPart = document.querySelector('#authentication-part');
 const environmentPart = document.querySelector('#environment-part');
 const connectionSummary = document.querySelector('#connection-summary');
+const githubScreenTitle = document.querySelector('#github-screen-title');
+const githubScreenDescription = document.querySelector('#github-screen-description');
+const environmentDescription = document.querySelector('#environment-description');
 const environmentNameInput = document.querySelector('#environmentName');
 const customEnvironmentField = document.querySelector('#customEnvironmentField');
 const customEnvironmentNameInput = document.querySelector('#customEnvironmentName');
@@ -134,6 +144,8 @@ const finalizeSummary = document.querySelector('#finalize-summary');
 let users = [];
 let editingUserIndex = null;
 let environmentPreviewRequest = 0;
+let deploymentFeatures = ['github', 'ansible', 'helm'];
+let enabledConfigurationScreens = new Set(configurationSchema.map(({ id }) => id));
 const configurationControllers = new Map(
   configurationSchema.map((definition) => [
     definition.id,
@@ -164,6 +176,11 @@ function showStatus(type, message) {
   statusBox.textContent = message;
 }
 
+function showSetupStatus(type, message) {
+  setupStatusBox.className = 'status alert alert-' + (type === 'error' ? 'danger' : type || 'secondary');
+  setupStatusBox.textContent = message;
+}
+
 function showConfigurationStatus(screenId, type, message) {
   const status = configurationControllers.get(screenId)?.status;
   if (!status) {
@@ -171,6 +188,45 @@ function showConfigurationStatus(screenId, type, message) {
   }
   status.className = 'status alert alert-' + (type === 'error' ? 'danger' : type || 'secondary');
   status.textContent = message;
+}
+
+function hasDeploymentFeature(feature) {
+  return deploymentFeatures.includes(feature);
+}
+
+function syncGitHubVisibility() {
+  githubNavigation.textContent = hasDeploymentFeature('github')
+    ? 'GitHub configuration'
+    : 'Environment';
+  githubScreenTitle.textContent = hasDeploymentFeature('github')
+    ? 'GitHub configuration'
+    : 'Environment';
+  githubScreenDescription.textContent = hasDeploymentFeature('github')
+    ? 'Connect the infrastructure repository, then choose the environment to configure.'
+    : 'Choose the environment to configure.';
+  environmentDescription.textContent = hasDeploymentFeature('github')
+    ? 'Choose the target GitHub environment and configure the repository approval settings used by deployment workflows.'
+    : 'Choose the target environment name and type for generated local files.';
+  authenticationPart.classList.toggle('d-none', !hasDeploymentFeature('github') || Boolean(environmentPart.dataset.githubConnected));
+  approvalRequiredInput.closest('label').classList.toggle('d-none', !hasDeploymentFeature('github'));
+  githubApproversInput.closest('label').classList.toggle('d-none', !hasDeploymentFeature('github'));
+}
+
+function syncConfigurationAvailability(states) {
+  enabledConfigurationScreens = new Set(
+    (states || []).map((state) => state?.definition?.id).filter(Boolean)
+  );
+
+  for (const navigationButton of configurationNavigation) {
+    const enabled = enabledConfigurationScreens.has(navigationButton.dataset.screen);
+    navigationButton.closest('li').classList.toggle('d-none', !enabled);
+    navigationButton.disabled = !enabled || navigationButton.disabled;
+  }
+
+  for (const [screenId] of configurationControllers) {
+    const screen = document.querySelector('#' + screenId + '-screen');
+    screen?.classList.toggle('d-none', !enabledConfigurationScreens.has(screenId));
+  }
 }
 
 function showReviewStatus(type, message) {
@@ -208,12 +264,21 @@ function showScreen(screenName) {
 
 function enableConfigurationNavigation() {
   for (const navigationButton of configurationNavigation) {
-    navigationButton.disabled = false;
+    navigationButton.disabled = !enabledConfigurationScreens.has(navigationButton.dataset.screen);
   }
 }
 
 function enableReviewNavigation() {
   reviewNavigation.disabled = false;
+}
+
+function getNextAvailableScreen(screenId) {
+  const currentIndex = configurationSchema.findIndex(({ id }) => id === screenId);
+  const nextScreen = configurationSchema
+    .slice(currentIndex + 1)
+    .find(({ id }) => enabledConfigurationScreens.has(id));
+
+  return nextScreen?.id || 'review';
 }
 
 function setConfigurationDirty(screenName, dirty) {
@@ -224,8 +289,23 @@ function setConfigurationDirty(screenName, dirty) {
 function completeGitHubLogin(result) {
   populateEnvironmentScreen(result);
   connectionSummary.textContent = 'Connected to ' + result.organisation + '/' + result.repository + '.';
+  environmentPart.dataset.githubConnected = 'true';
   authenticationPart.classList.add('d-none');
   environmentPart.classList.remove('d-none');
+  githubNavigation.disabled = false;
+  syncGitHubVisibility();
+}
+
+function openEnvironmentStep(result = {}) {
+  populateEnvironmentScreen(result);
+  connectionSummary.textContent = hasDeploymentFeature('github')
+    ? 'GitHub connection is ready.'
+    : 'GitHub integration is disabled for this setup.';
+  environmentPart.dataset.githubConnected = hasDeploymentFeature('github') ? 'true' : 'false';
+  authenticationPart.classList.toggle('d-none', !hasDeploymentFeature('github'));
+  environmentPart.classList.remove('d-none');
+  githubNavigation.disabled = false;
+  syncGitHubVisibility();
 }
 
 function renderUsers() {
@@ -312,7 +392,15 @@ function syncCustomEnvironmentField() {
 }
 
 function populateEnvironmentScreen(result) {
-  const choices = result.environmentChoices || [];
+  const choices = result.environmentChoices || [
+    { name: 'Development', value: 'development' },
+    { name: 'Quality assurance (no PII data)', value: 'qa' },
+    { name: 'Staging (hosts PII data, no backups)', value: 'staging' },
+    {
+      name: 'Production (hosts PII data, requires frequent backups)',
+      value: 'production'
+    }
+  ];
   environmentNameInput.innerHTML = '';
 
   for (const choice of choices) {
@@ -330,7 +418,9 @@ function populateEnvironmentScreen(result) {
   githubApproversInput.value = result.githubApprovers || '';
   approvalRequiredInput.checked = false;
   syncCustomEnvironmentField();
-  loadEnvironmentPreview();
+  if (hasDeploymentFeature('github')) {
+    loadEnvironmentPreview();
+  }
 }
 
 async function loadEnvironmentPreview() {
@@ -497,6 +587,11 @@ function renderReview(plan) {
       update.action
     ]);
   }
+
+  reviewFiles.closest('.review-section').classList.toggle('d-none', !(plan.files || []).length);
+  reviewVariables.closest('.review-section').classList.toggle('d-none', !(plan.variables || []).length);
+  reviewSecrets.closest('.review-section').classList.toggle('d-none', !(plan.secrets || []).length);
+  reviewHelmValues.closest('.review-section').classList.toggle('d-none', !(plan.helmUpdates || []).length);
 }
 
 function appendCommand(container, command, options = {}) {
@@ -539,7 +634,7 @@ function appendCommand(container, command, options = {}) {
 
 function renderFinalizeSummary(actions, nextSteps) {
   const performedActions = actions || [];
-  const steps = nextSteps || {};
+  const steps = nextSteps || null;
   finalizeSummary.classList.remove('d-none');
   finalizeSummary.innerHTML = '';
 
@@ -568,6 +663,10 @@ function renderFinalizeSummary(actions, nextSteps) {
   completionMessage.setAttribute('role', 'status');
   completionMessage.textContent = 'Setup finalized. Follow the next steps below.';
   finalizeSummary.appendChild(completionMessage);
+
+  if (!steps) {
+    return;
+  }
 
   const primaryHeading = document.createElement('h3');
   primaryHeading.className = 'h5 mt-4';
@@ -630,11 +729,59 @@ async function loadDefaults() {
 
   organisationInput.value = defaults.organisation || '';
   repositoryInput.value = defaults.repository || '';
+  if (defaults.setupOptions) {
+    enableGithubIntegrationInput.checked = defaults.setupOptions.enableGithubIntegration !== false;
+    infrastructureTypeInput.value = defaults.setupOptions.infrastructureType || 'on-premise';
+    configureHelmValuesInput.checked = defaults.setupOptions.configureHelmValues !== false;
+  }
+  deploymentFeatures = defaults.deploymentFeatures || deploymentFeatures;
+  syncGitHubVisibility();
   addCurrentUserButton.classList.toggle(
     'd-none',
     defaults.currentSystemUserAvailable === false
   );
 }
+
+setupForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  setupButton.disabled = true;
+  setupButton.textContent = 'Saving...';
+  showSetupStatus('', 'Saving setup type...');
+
+  try {
+    const response = await fetch('/api/setup-options', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        enableGithubIntegration: enableGithubIntegrationInput.checked,
+        infrastructureType: infrastructureTypeInput.value,
+        configureHelmValues: configureHelmValuesInput.checked
+      })
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Setup type could not be saved.');
+    }
+
+    deploymentFeatures = result.setupOptions?.deploymentFeatures || deploymentFeatures;
+    syncGitHubVisibility();
+    showSetupStatus('success', 'Setup type saved.');
+
+    if (hasDeploymentFeature('github')) {
+      githubNavigation.disabled = false;
+      showScreen('github');
+    } else {
+      openEnvironmentStep(result);
+      showScreen('github');
+    }
+  } catch (error) {
+    showSetupStatus('error', error.message || 'Setup type could not be saved.');
+  } finally {
+    setupButton.disabled = false;
+    setupButton.textContent = 'Continue';
+  }
+});
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -700,10 +847,12 @@ environmentForm.addEventListener('submit', async (event) => {
     }
 
     approvalRequiredInput.checked = Boolean(result.approvalRequired);
+    deploymentFeatures = result.deploymentFeatures || deploymentFeatures;
+    syncConfigurationAvailability(result.configuration);
     populateConfigurationScreens(result.configuration);
     enableConfigurationNavigation();
     showEnvironmentStatus('success', 'Environment selection saved.');
-    showScreen(configurationSchema[0]?.id || 'review');
+    showScreen([...enabledConfigurationScreens][0] || 'review');
   } catch (error) {
     showEnvironmentStatus('error', error.message || 'Environment selection failed.');
   } finally {
@@ -739,7 +888,12 @@ for (const [screenId, controller] of configurationControllers) {
       await loadReview();
       enableReviewNavigation();
       showConfigurationStatus(screenId, 'success', controller.definition.savedMessage);
-      showScreen(controller.definition.nextScreen || 'review');
+      const configuredNextScreen = controller.definition.nextScreen;
+      showScreen(
+        configuredNextScreen && enabledConfigurationScreens.has(configuredNextScreen)
+          ? configuredNextScreen
+          : getNextAvailableScreen(screenId)
+      );
     } catch (error) {
       showConfigurationStatus(
         screenId,

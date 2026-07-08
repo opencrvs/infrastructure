@@ -1,4 +1,5 @@
 export type ConfigurationScreen = string
+export type DeploymentFeature = 'github' | 'ansible' | 'helm'
 
 export type ConfigurationSubScreen = {
   id: string
@@ -14,6 +15,7 @@ export type ConfigurationScreenDefinition = {
   submitLabel: string
   savedMessage: string
   nextScreen?: string
+  requires?: DeploymentFeature[]
   customComponents?: Array<'users'>
   subScreens?: ConfigurationSubScreen[]
 }
@@ -36,7 +38,12 @@ export type HelmBinding = {
   skipPathValidation?: boolean
 }
 
-export type FieldBinding = GithubBinding | HelmBinding
+export type AnsibleBinding = {
+  target: 'ansible'
+  name: string
+}
+
+export type FieldBinding = AnsibleBinding | GithubBinding | HelmBinding
 
 export type FieldSource =
   | {
@@ -62,6 +69,7 @@ export type ConfigurationField = {
   label: string
   description: string
   control: 'checkbox' | 'number' | 'password' | 'select' | 'text' | 'textarea'
+  requires?: DeploymentFeature[]
   source: FieldSource
   bindings: FieldBinding[]
   defaultValue?: string | number | boolean
@@ -95,6 +103,7 @@ export const CONFIGURATION_SCREENS: ConfigurationScreenDefinition[] = [
     submitLabel: 'Save infrastructure',
     savedMessage: 'Infrastructure configuration saved.',
     nextScreen: 'application',
+    requires: ['ansible'],
     customComponents: ['users']
   },
   {
@@ -151,6 +160,10 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
         scope: 'ENVIRONMENT',
         name: 'KUBE_API_HOST',
         omitWhenEmpty: true
+      },
+      {
+        target: 'ansible',
+        name: 'kube_api_host'
       }
     ]
   },
@@ -173,6 +186,10 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
         scope: 'ENVIRONMENT',
         name: 'KUBE_WORKER_NODES',
         omitWhenEmpty: true
+      },
+      {
+        target: 'ansible',
+        name: 'kube_worker_nodes'
       }
     ]
   },
@@ -195,6 +212,10 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
         scope: 'ENVIRONMENT',
         name: 'KUBE_API_ALLOWED_CIDRS',
         omitWhenEmpty: true
+      },
+      {
+        target: 'ansible',
+        name: 'kube_api_allowed_cidrs'
       }
     ]
   },
@@ -205,6 +226,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     label: 'Enable disk encryption',
     description: 'Create and store the environment encryption key in GitHub.',
     control: 'checkbox',
+    requires: ['github'],
     defaultValue: false,
     source: { target: 'state', name: 'enableDiskEncryption' },
     bindings: []
@@ -269,6 +291,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     label: 'Certificate mode',
     description: 'Choose how Traefik obtains and serves the environment certificate.',
     control: 'select',
+    requires: ['helm'],
     required: true,
     defaultValue: 'lets_encrypt',
     options: [
@@ -334,6 +357,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     label: 'Country configuration image source',
     description: 'Use the OpenCRVS Farajaland image or provide another Docker Hub repository.',
     control: 'select',
+    requires: ['github'],
     defaultValue: 'opencrvs',
     options: [
       {
@@ -451,6 +475,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     label: 'Configuration',
     description: 'Backup and restore are mutually exclusive. Either option can be selected until one is configured.',
     control: 'select',
+    requires: ['github'],
     defaultValue: 'none',
     options: [
       { label: 'No backup or restore', value: 'none' },
@@ -625,6 +650,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     label: 'SMTP Enabled',
     description: 'Configure SMTP details for OpenCRVS emails and alerts.',
     control: 'checkbox',
+    requires: ['github'],
     defaultValue: false,
     source: { target: 'state', name: 'smtpEnabled' },
     bindings: []

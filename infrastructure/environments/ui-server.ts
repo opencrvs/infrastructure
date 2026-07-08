@@ -12,6 +12,7 @@ import {
   CONFIGURATION_FIELDS,
   CONFIGURATION_SCREENS,
   ConfigurationField,
+  DeploymentFeature,
   GithubBinding,
   HelmBinding,
   HelmChart,
@@ -91,6 +92,13 @@ type EnvironmentSelectionRequest = {
 }
 
 type ConfigurationValue = string | number | boolean
+type InfrastructureType = 'on-premise' | 'cloud-native' | 'existing-cluster'
+
+type SetupOptionsRequest = {
+  enableGithubIntegration?: boolean
+  infrastructureType?: InfrastructureType
+  configureHelmValues?: boolean
+}
 
 type AdvancedRequest = {
   values?: Record<string, unknown>
@@ -165,6 +173,11 @@ let repositorySecrets: Secret[] = []
 let environmentVariables: Variable[] = []
 let environmentSecrets: Secret[] = []
 let environmentSelection: Required<EnvironmentSelectionRequest> | null = null
+let setupOptions: Required<SetupOptionsRequest> = {
+  enableGithubIntegration: true,
+  infrastructureType: 'on-premise',
+  configureHelmValues: true
+}
 let users: User[] = []
 let applicationConfig: ApplicationRequest | null = null
 let generatedEncryptionKey = ''
@@ -225,6 +238,103 @@ function getGitHubDefaults() {
   return {
     organisation: process.env.GITHUB_ORGANISATION || repoInfo.organization,
     repository: process.env.GITHUB_REPOSITORY || repoInfo.repository
+  }
+}
+
+function getDeploymentFeatures(): DeploymentFeature[] {
+  return [
+    setupOptions.enableGithubIntegration ? 'github' : null,
+    setupOptions.infrastructureType === 'on-premise' ? 'ansible' : null,
+    setupOptions.configureHelmValues ? 'helm' : null
+  ].filter((feature): feature is DeploymentFeature => Boolean(feature))
+}
+
+function hasDeploymentFeature(feature: DeploymentFeature) {
+  return getDeploymentFeatures().includes(feature)
+}
+
+function getBindingFeature(binding: { target: string }): DeploymentFeature | null {
+  if (
+    binding.target === 'github' ||
+    binding.target === 'helm' ||
+    binding.target === 'ansible'
+  ) {
+    return binding.target
+  }
+
+  return null
+}
+
+function isBindingEnabled(binding: { target: string }) {
+  const feature = getBindingFeature(binding)
+  return feature ? hasDeploymentFeature(feature) : true
+}
+
+function isScreenEnabled(definition: { requires?: DeploymentFeature[] }) {
+  return !definition.requires?.length ||
+    definition.requires.some((feature) => hasDeploymentFeature(feature))
+}
+
+function isFieldEnabledForDeployment(field: ConfigurationField) {
+  if (field.requires?.length) {
+    return field.requires.some((feature) => hasDeploymentFeature(feature))
+  }
+
+  if (!field.bindings.length) {
+    return true
+  }
+
+  return field.bindings.some(isBindingEnabled)
+}
+
+function getActiveFieldBindings(field: ConfigurationField) {
+  return field.bindings.filter(isBindingEnabled)
+}
+
+function getFieldForCurrentDeployment(field: ConfigurationField) {
+  return {
+    ...field,
+    bindings: getActiveFieldBindings(field)
+  }
+}
+
+function isFieldIdEnabled(fieldId: string) {
+  const field = CONFIGURATION_FIELDS.find(({ id }) => id === fieldId)
+  return field ? isFieldEnabledForDeployment(field) : false
+}
+
+function saveSetupOptions(payload: SetupOptionsRequest) {
+  const infrastructureType = [
+    'on-premise',
+    'cloud-native',
+    'existing-cluster'
+  ].includes(payload.infrastructureType || '')
+    ? payload.infrastructureType as InfrastructureType
+    : 'on-premise'
+
+  setupOptions = {
+    enableGithubIntegration: payload.enableGithubIntegration !== false,
+    infrastructureType,
+    configureHelmValues: payload.configureHelmValues !== false
+  }
+
+  if (!hasDeploymentFeature('github')) {
+    verifiedConnection = null
+    repositoryId = null
+    repositoryVariables = []
+    repositorySecrets = []
+    environmentVariables = []
+    environmentSecrets = []
+  }
+
+  if (!hasDeploymentFeature('ansible')) {
+    infrastructureConfig = null
+    users = []
+  }
+
+  return {
+    ...setupOptions,
+    deploymentFeatures: getDeploymentFeatures()
   }
 }
 
@@ -695,11 +805,14 @@ function loadGenericScreenConfigs(environmentName: string) {
 }
 
 function getAdvancedResponse() {
+  const fields = getConfigurationFields('advanced')
+    .filter(isFieldEnabledForDeployment)
+    .map(getFieldForCurrentDeployment)
   return {
-    fields: getConfigurationFields('advanced'),
+    fields,
     values: advancedConfig,
     existingSecrets: Object.fromEntries(
-      getConfigurationFields('advanced').map((field) => {
+      fields.map((field) => {
         const source = field.source
         return [
           field.id,
@@ -711,11 +824,14 @@ function getAdvancedResponse() {
 }
 
 function getDependenciesResponse() {
+  const fields = getConfigurationFields('dependencies')
+    .filter(isFieldEnabledForDeployment)
+    .map(getFieldForCurrentDeployment)
   return {
-    fields: getConfigurationFields('dependencies'),
+    fields,
     values: dependenciesConfig,
     existingSecrets: Object.fromEntries(
-      getConfigurationFields('dependencies').map((field) => {
+      fields.map((field) => {
         const source = field.source
         const exists = source.target === 'github' && source.scope === 'ENVIRONMENT'
           ? secretExists('ENVIRONMENT', source.name)
@@ -734,10 +850,15 @@ function getConfigurationScreenResponse(screenId: string) {
   if (!definition) {
     throw new Error(`Unknown configuration screen: ${screenId}`)
   }
+  if (!isScreenEnabled(definition)) {
+    throw new Error(`Configuration screen is disabled for this setup type: ${screenId}`)
+  }
 
-  const fields = screenId === 'application'
+  const fields = (screenId === 'application'
     ? getApplicationFields()
-    : getConfigurationFields(screenId)
+    : getConfigurationFields(screenId))
+    .filter(isFieldEnabledForDeployment)
+    .map(getFieldForCurrentDeployment)
   const existingSecrets = Object.fromEntries(
     fields.map((field) => {
       const source = field.source
@@ -766,7 +887,9 @@ function getConfigurationScreenResponse(screenId: string) {
     context: {
       environmentType: environmentSelection?.environmentType || 'non-production'
     },
-    custom: definition.customComponents?.includes('users') ? { users } : {}
+    custom: definition.customComponents?.includes('users') && hasDeploymentFeature('ansible')
+      ? { users }
+      : {}
   }
 }
 
@@ -774,11 +897,16 @@ function getConfigurationResponse() {
   return CONFIGURATION_SCREENS
     .slice()
     .sort((left, right) => left.order - right.order)
+    .filter(isScreenEnabled)
+    .filter((definition) =>
+      Boolean(definition.customComponents?.length) ||
+      getConfigurationFields(definition.id).some(isFieldEnabledForDeployment)
+    )
     .map(({ id }) => getConfigurationScreenResponse(id))
 }
 
 async function loadEnvironmentValues(environmentName: string) {
-  if (!verifiedConnection || !repositoryId) {
+  if (hasDeploymentFeature('github') && (!verifiedConnection || !repositoryId)) {
     throw new Error('Connect to GitHub before loading environment values.')
   }
 
@@ -786,27 +914,33 @@ async function loadEnvironmentValues(environmentName: string) {
   generatedBackupHostPrivateKey = ''
   generatedBackupHostPublicKey = ''
 
-  if (!existingEnvironments.includes(environmentName)) {
+  if (!hasDeploymentFeature('github') || !existingEnvironments.includes(environmentName)) {
     environmentVariables = []
     environmentSecrets = []
-    loadUsersFromInventory(environmentName)
+    if (hasDeploymentFeature('ansible')) {
+      loadUsersFromInventory(environmentName)
+    } else {
+      users = []
+    }
     infrastructureConfig = getInfrastructureConfigFromGitHub()
     applicationConfig = getApplicationConfigFromGitHub()
     loadAdvancedConfig(environmentName)
     return
   }
 
-  const octokit = new Octokit({ auth: verifiedConnection.token })
+  const connection = verifiedConnection!
+  const currentRepositoryId = repositoryId!
+  const octokit = new Octokit({ auth: connection.token })
 
   environmentVariables = await listEnvironmentVariables(
     octokit,
-    repositoryId,
+    currentRepositoryId,
     environmentName
   )
   environmentSecrets = await listEnvironmentSecrets(
     octokit,
-    verifiedConnection.organisation!,
-    repositoryId,
+    connection.organisation!,
+    currentRepositoryId,
     environmentName
   )
   loadUsersFromInventory(environmentName)
@@ -816,7 +950,7 @@ async function loadEnvironmentValues(environmentName: string) {
 }
 
 async function saveEnvironmentSelection(payload: EnvironmentSelectionRequest) {
-  if (!verifiedConnection) {
+  if (hasDeploymentFeature('github') && !verifiedConnection) {
     throw new Error('Connect to GitHub before selecting an environment.')
   }
 
@@ -836,8 +970,10 @@ async function saveEnvironmentSelection(payload: EnvironmentSelectionRequest) {
     environmentName,
     customEnvironmentName: '',
     environmentType,
-    approvalRequired: Boolean(payload.approvalRequired),
-    githubApprovers: payload.githubApprovers?.trim() || ''
+    approvalRequired: hasDeploymentFeature('github') && Boolean(payload.approvalRequired),
+    githubApprovers: hasDeploymentFeature('github')
+      ? payload.githubApprovers?.trim() || ''
+      : ''
   }
 
   await loadEnvironmentValues(environmentName)
@@ -1132,7 +1268,7 @@ function planSecret(
 }
 
 function getGithubUpdates(includeSecretValues = false) {
-  if (!environmentSelection || !infrastructureConfig || !applicationConfig) {
+  if (!hasDeploymentFeature('github') || !environmentSelection) {
     return {
       variables: [] as GithubUpdate[],
       secrets: [] as GithubUpdate[]
@@ -1140,13 +1276,16 @@ function getGithubUpdates(includeSecretValues = false) {
   }
 
   const variables = [
-    planVariable('ENVIRONMENT', 'APPROVAL_REQUIRED', environmentSelection.approvalRequired ? 'true' : 'false'),
-    planVariable(
+    planVariable('ENVIRONMENT', 'APPROVAL_REQUIRED', environmentSelection.approvalRequired ? 'true' : 'false')
+  ]
+
+  if (applicationConfig?.domain) {
+    variables.push(planVariable(
       'ENVIRONMENT',
       'CONTENT_SECURITY_POLICY_WILDCARD',
       `*.${applicationConfig.domain}`
-    )
-  ]
+    ))
+  }
 
   if (environmentSelection.githubApprovers.trim()) {
     variables.unshift(
@@ -1159,13 +1298,13 @@ function getGithubUpdates(includeSecretValues = false) {
   }
 
   const configuredVariables = CONFIGURATION_FIELDS.flatMap((field) => {
-    if (!isConfigurationFieldActive(field)) {
+    if (!isFieldEnabledForDeployment(field) || !isConfigurationFieldActive(field)) {
       return []
     }
 
     const value = String(getConfigurationFieldValue(field)).trim()
 
-    return field.bindings
+    return getActiveFieldBindings(field)
       .filter((binding): binding is GithubBinding =>
         binding.target === 'github' && binding.type === 'VARIABLE'
       )
@@ -1180,7 +1319,9 @@ function getGithubUpdates(includeSecretValues = false) {
 
   variables.push(...configuredVariables)
 
-  const applicationUpdates = getApplicationGithubUpdates(applicationConfig)
+  const applicationUpdates = applicationConfig
+    ? getApplicationGithubUpdates(applicationConfig)
+    : { secrets: [] }
   const secrets = applicationUpdates.secrets.map((secret) =>
     planSecret(
       secret.scope as 'ENVIRONMENT' | 'REPOSITORY',
@@ -1199,11 +1340,11 @@ function getGithubUpdates(includeSecretValues = false) {
   )
 
   for (const field of getConfigurationFields('dependencies')) {
-    if (!isConfigurationFieldActive(field)) {
+    if (!isFieldEnabledForDeployment(field) || !isConfigurationFieldActive(field)) {
       continue
     }
 
-    for (const binding of field.bindings) {
+    for (const binding of getActiveFieldBindings(field)) {
       if (binding.target !== 'github' || binding.type !== 'SECRET') {
         continue
       }
@@ -1219,8 +1360,12 @@ function getGithubUpdates(includeSecretValues = false) {
     }
   }
 
-  for (const field of getConfigurationFields('advanced')) {
-    for (const binding of field.bindings) {
+  for (const field of getConfigurationFields('advanced').filter(isFieldEnabledForDeployment)) {
+    if (!isConfigurationFieldActive(field)) {
+      continue
+    }
+
+    for (const binding of getActiveFieldBindings(field)) {
       if (binding.target !== 'github' || binding.type !== 'SECRET') {
         continue
       }
@@ -1241,10 +1386,10 @@ function getGithubUpdates(includeSecretValues = false) {
       continue
     }
     for (const field of getConfigurationFields(definition.id)) {
-      if (!isConfigurationFieldActive(field)) {
+      if (!isFieldEnabledForDeployment(field) || !isConfigurationFieldActive(field)) {
         continue
       }
-      for (const binding of field.bindings) {
+      for (const binding of getActiveFieldBindings(field)) {
         if (binding.target !== 'github' || binding.type !== 'SECRET') {
           continue
         }
@@ -1260,7 +1405,7 @@ function getGithubUpdates(includeSecretValues = false) {
     }
   }
 
-  if (applicationConfig.backupRestoreMode === 'backup') {
+  if (applicationConfig?.backupRestoreMode === 'backup') {
     const passphraseExists = secretExists(
       'ENVIRONMENT',
       'BACKUP_ENCRYPTION_PASSPHRASE'
@@ -1314,7 +1459,7 @@ function getGithubUpdates(includeSecretValues = false) {
     )
   }
 
-  if (infrastructureConfig.enableDiskEncryption) {
+  if (infrastructureConfig?.enableDiskEncryption) {
     const exists = secretExists('ENVIRONMENT', 'ENCRYPTION_KEY')
 
     if (!exists && includeSecretValues && !generatedEncryptionKey) {
@@ -1386,10 +1531,18 @@ function valuesEqual(left: unknown, right: unknown) {
 }
 
 function getHelmUpdates(): HelmUpdate[] {
+  if (!hasDeploymentFeature('helm')) {
+    return []
+  }
+
   return CONFIGURATION_FIELDS.flatMap((field) => {
+    if (!isFieldEnabledForDeployment(field)) {
+      return []
+    }
+
     const value = getConfigurationFieldValue(field)
 
-    return field.bindings
+    return getActiveFieldBindings(field)
       .filter((binding): binding is HelmBinding => binding.target === 'helm')
       .map((binding) => {
         const currentValue = getNestedValue(
@@ -1437,7 +1590,7 @@ function saveAdvancedConfig(payload: AdvancedRequest) {
     }
 
     const value = field.readonly || submitted === undefined ? current : submitted
-    const githubSecret = field.bindings.find(
+    const githubSecret = getActiveFieldBindings(field).find(
       (binding): binding is GithubBinding =>
         binding.target === 'github' && binding.type === 'SECRET'
     )
@@ -1481,7 +1634,7 @@ function saveDependenciesConfig(payload: DependenciesRequest) {
   }
 
   const submittedValues = payload.values || {}
-  const fields = getConfigurationFields('dependencies')
+  const fields = getConfigurationFields('dependencies').filter(isFieldEnabledForDeployment)
   const nextConfig: Record<string, ConfigurationValue> = { ...dependenciesConfig }
 
   for (const field of fields.filter(({ control }) => control === 'checkbox')) {
@@ -1502,7 +1655,7 @@ function saveDependenciesConfig(payload: DependenciesRequest) {
     const value = field.readonly || submitted === undefined
       ? dependenciesConfig[field.id]
       : submitted
-    const githubSecret = field.bindings.find(
+    const githubSecret = getActiveFieldBindings(field).find(
       (binding): binding is GithubBinding =>
         binding.target === 'github' && binding.type === 'SECRET'
     )
@@ -1550,7 +1703,7 @@ function saveGenericScreenConfig(
   screenId: string,
   submittedValues: Record<string, unknown>
 ) {
-  const fields = getConfigurationFields(screenId)
+  const fields = getConfigurationFields(screenId).filter(isFieldEnabledForDeployment)
   const currentConfig = genericScreenConfigs[screenId] || {}
   const nextConfig: Record<string, ConfigurationValue> = { ...currentConfig }
 
@@ -1571,7 +1724,7 @@ function saveGenericScreenConfig(
     const value = field.readonly || submitted === undefined
       ? currentConfig[field.id] ?? field.defaultValue ?? ''
       : submitted
-    const githubSecret = field.bindings.find(
+    const githubSecret = getActiveFieldBindings(field).find(
       (binding): binding is GithubBinding =>
         binding.target === 'github' && binding.type === 'SECRET'
     )
@@ -1661,18 +1814,26 @@ function getFilesToUpdate() {
     'traefik/values.yaml',
     'traefik/values.override.yaml'
   ].map((file) => `environments/${environment}/${file}`)
+  const inventoryFiles = hasDeploymentFeature('ansible')
+    ? [`infrastructure/server-setup/inventory/${environment}.yml`]
+    : []
+  const workflowFiles = hasDeploymentFeature('github')
+    ? [
+        '.github/workflows/provision.yml',
+        '.github/workflows/reset-2fa.yml',
+        '.github/workflows/deploy-dependencies.yml',
+        '.github/workflows/deploy-opencrvs.yml',
+        '.github/workflows/clear-all-data.yml',
+        '.github/workflows/seed-data.yml',
+        '.github/workflows/reindex.yml',
+        '.github/workflows/github-to-k8s-sync-env.yml'
+      ]
+    : []
 
   return [
-    `infrastructure/server-setup/inventory/${environment}.yml`,
-    ...chartFiles,
-    '.github/workflows/provision.yml',
-    '.github/workflows/reset-2fa.yml',
-    '.github/workflows/deploy-dependencies.yml',
-    '.github/workflows/deploy-opencrvs.yml',
-    '.github/workflows/clear-all-data.yml',
-    '.github/workflows/seed-data.yml',
-    '.github/workflows/reindex.yml',
-    '.github/workflows/github-to-k8s-sync-env.yml'
+    ...inventoryFiles,
+    ...(hasDeploymentFeature('helm') ? chartFiles : []),
+    ...workflowFiles
   ]
 }
 
@@ -1685,14 +1846,19 @@ function getReviewPlan(includeSecretValues = false) {
     secrets: includeSecretValues
       ? githubUpdates.secrets
       : githubUpdates.secrets.map(({ value, ...secret }) => secret),
-    inventoryValues: infrastructureConfig ? getInventoryValues(infrastructureConfig) : null,
-    chartValues: applicationConfig ? getChartValues(applicationConfig) : null,
+    deploymentFeatures: getDeploymentFeatures(),
+    inventoryValues: hasDeploymentFeature('ansible') && infrastructureConfig
+      ? getInventoryValues(infrastructureConfig)
+      : null,
+    chartValues: hasDeploymentFeature('helm') && applicationConfig
+      ? getChartValues(applicationConfig)
+      : null,
     helmUpdates: getHelmUpdates()
   }
 }
 
 function assertReadyToFinalize() {
-  if (!verifiedConnection || !repositoryId) {
+  if (hasDeploymentFeature('github') && (!verifiedConnection || !repositoryId)) {
     throw new Error('Connect to GitHub before finalizing setup.')
   }
 
@@ -1700,11 +1866,11 @@ function assertReadyToFinalize() {
     throw new Error('Select an environment before finalizing setup.')
   }
 
-  if (!infrastructureConfig) {
+  if (hasDeploymentFeature('ansible') && !infrastructureConfig) {
     throw new Error('Save infrastructure configuration before finalizing setup.')
   }
 
-  if (!applicationConfig) {
+  if (hasDeploymentFeature('helm') && !applicationConfig) {
     throw new Error('Save application configuration before finalizing setup.')
   }
 }
@@ -1714,9 +1880,13 @@ function shellQuote(value: string) {
 }
 
 function getNextSteps() {
-  const organisation = verifiedConnection!.organisation!
-  const repository = verifiedConnection!.repository!
-  const token = verifiedConnection!.token!
+  if (!hasDeploymentFeature('ansible')) {
+    return null
+  }
+
+  const organisation = verifiedConnection?.organisation || '<org name>'
+  const repository = verifiedConnection?.repository || '<repo name>'
+  const token = verifiedConnection?.token || '<github token>'
   const environment = environmentSelection!.environmentName
   const primaryHost = infrastructureConfig!.kubeAPIHost || 'KUBE_API_HOST'
   const workerNodes = (infrastructureConfig!.kubeWorkerNodes || '')
@@ -1829,8 +1999,12 @@ async function finalizeSetup() {
   assertReadyToFinalize()
 
   const environment = environmentSelection!.environmentName
-  const inventoryValues = getInventoryValues(infrastructureConfig!)
-  const chartValues = getChartValues(applicationConfig!)
+  const inventoryValues = infrastructureConfig
+    ? getInventoryValues(infrastructureConfig)
+    : null
+  const chartValues = applicationConfig
+    ? getChartValues(applicationConfig)
+    : null
   const debugPlan = getReviewPlan(true)
   const githubUpdates = getGithubUpdates(true)
   const performedActions: string[] = []
@@ -1838,29 +2012,37 @@ async function finalizeSetup() {
   console.log('\nOpenCRVS environment:init GitHub debug payload')
   console.log(JSON.stringify(debugPlan, null, 2))
 
-  generateInventory(environment, inventoryValues)
-  performedActions.push(`Generated inventory file infrastructure/server-setup/inventory/${environment}.yml`)
-  copyChartsValues(environment, chartValues as Record<string, string | boolean>)
-  performedActions.push(`Generated Helm chart values under environments/${environment}`)
-  writeHelmOverrides(environment)
-  performedActions.push('Applied managed Helm chart overrides')
-  await updateWorkflowEnvironments()
-  performedActions.push('Updated GitHub workflow environment options')
+  if (hasDeploymentFeature('ansible') && inventoryValues) {
+    generateInventory(environment, inventoryValues)
+    performedActions.push(`Generated inventory file infrastructure/server-setup/inventory/${environment}.yml`)
+  }
 
-  const octokit = new Octokit({ auth: verifiedConnection!.token })
-  await createEnvironment(
-    octokit,
-    environment,
-    verifiedConnection!.organisation!,
-    verifiedConnection!.repository!
-  )
-  performedActions.push(`Created or updated GitHub environment ${environment}`)
-  performedActions.push(
-    ...(await applyGithubUpdates(octokit, [
-      ...githubUpdates.variables,
-      ...githubUpdates.secrets
-    ]))
-  )
+  if (hasDeploymentFeature('helm') && chartValues) {
+    copyChartsValues(environment, chartValues as Record<string, string | boolean>)
+    performedActions.push(`Generated Helm chart values under environments/${environment}`)
+    writeHelmOverrides(environment)
+    performedActions.push('Applied managed Helm chart overrides')
+  }
+
+  if (hasDeploymentFeature('github')) {
+    await updateWorkflowEnvironments()
+    performedActions.push('Updated GitHub workflow environment options')
+
+    const octokit = new Octokit({ auth: verifiedConnection!.token })
+    await createEnvironment(
+      octokit,
+      environment,
+      verifiedConnection!.organisation!,
+      verifiedConnection!.repository!
+    )
+    performedActions.push(`Created or updated GitHub environment ${environment}`)
+    performedActions.push(
+      ...(await applyGithubUpdates(octokit, [
+        ...githubUpdates.variables,
+        ...githubUpdates.secrets
+      ]))
+    )
+  }
 
   return {
     ...getReviewPlan(false),
@@ -1870,7 +2052,7 @@ async function finalizeSetup() {
 }
 
 function saveApplicationConfig(payload: ApplicationRequest) {
-  if (!verifiedConnection) {
+  if (hasDeploymentFeature('github') && !verifiedConnection) {
     throw new Error('Connect to GitHub before configuring application settings.')
   }
 
@@ -1878,7 +2060,7 @@ function saveApplicationConfig(payload: ApplicationRequest) {
     throw new Error('Select an environment before configuring application settings.')
   }
 
-  if (!payload.domain?.trim()) {
+  if (isFieldIdEnabled('domain') && !payload.domain?.trim()) {
     throw new Error('DOMAIN is required.')
   }
 
@@ -1886,7 +2068,12 @@ function saveApplicationConfig(payload: ApplicationRequest) {
   const sslCrt = parseSubmittedSecret('ENVIRONMENT', 'SSL_CRT', payload.sslCrt)
   const sslKey = parseSubmittedSecret('ENVIRONMENT', 'SSL_KEY', payload.sslKey)
 
-  if (traefikMode === 'static_ssl' && (!sslCrt.available || !sslKey.available)) {
+  if (
+    hasDeploymentFeature('github') &&
+    isFieldIdEnabled('sslCrt') &&
+    traefikMode === 'static_ssl' &&
+    (!sslCrt.available || !sslKey.available)
+  ) {
     throw new Error('SSL certificate and key are required for static SSL.')
   }
 
@@ -1912,7 +2099,7 @@ function saveApplicationConfig(payload: ApplicationRequest) {
     payload.dockerhubToken
   )
 
-  if (dockerhubMode === 'custom') {
+  if (hasDeploymentFeature('github') && isFieldIdEnabled('dockerhubMode') && dockerhubMode === 'custom') {
     const required = [
       dockerhubOrganisation,
       dockerhubRepository,
@@ -1925,7 +2112,7 @@ function saveApplicationConfig(payload: ApplicationRequest) {
     }
   }
 
-  const smtpEnabled = Boolean(payload.smtpEnabled)
+  const smtpEnabled = hasDeploymentFeature('github') && Boolean(payload.smtpEnabled)
   const smtpSecrets = {
     smtpHost: parseSubmittedSecret('ENVIRONMENT', 'SMTP_HOST', payload.smtpHost),
     smtpUsername: parseSubmittedSecret(
@@ -1953,6 +2140,7 @@ function saveApplicationConfig(payload: ApplicationRequest) {
   }
 
   if (
+    hasDeploymentFeature('github') &&
     smtpEnabled &&
     Object.values(smtpSecrets).some((secret) => !secret.available)
   ) {
@@ -1974,6 +2162,7 @@ function saveApplicationConfig(payload: ApplicationRequest) {
     existingEnvironments.includes(environmentSelection.environmentName)
 
   if (
+    hasDeploymentFeature('github') &&
     backupRestoreLocked &&
     requestedBackupRestoreMode !== persistedBackupRestoreMode
   ) {
@@ -1993,13 +2182,14 @@ function saveApplicationConfig(payload: ApplicationRequest) {
   const restoreType = payload.restoreType === 'differential' ? 'differential' : 'dump'
 
   if (
+    hasDeploymentFeature('github') &&
     requestedBackupRestoreMode === 'backup' &&
     (!backupHost || !backupUser.available)
   ) {
     throw new Error('Backup host and backup server user are required for backups.')
   }
 
-  if (requestedBackupRestoreMode === 'restore') {
+  if (hasDeploymentFeature('github') && requestedBackupRestoreMode === 'restore') {
     if (!restoreEnvironmentName) {
       throw new Error('Restore environment name is required for restore.')
     }
@@ -2008,8 +2198,12 @@ function saveApplicationConfig(payload: ApplicationRequest) {
     }
   }
 
+  const backupRestoreMode = hasDeploymentFeature('github')
+    ? requestedBackupRestoreMode
+    : 'none'
+
   applicationConfig = {
-    domain: payload.domain.trim(),
+    domain: payload.domain?.trim() || '',
     traefikMode,
     sslCrt: traefikMode === 'static_ssl' ? sslCrt.value : '',
     sslKey: traefikMode === 'static_ssl' ? sslKey.value : '',
@@ -2028,21 +2222,21 @@ function saveApplicationConfig(payload: ApplicationRequest) {
     smtpSecure: smtpEnabled ? smtpSecrets.smtpSecure.value : '',
     senderEmailAddress: smtpEnabled ? smtpSecrets.senderEmailAddress.value : '',
     alertEmail: smtpEnabled ? smtpSecrets.alertEmail.value : '',
-    backupRestoreMode: requestedBackupRestoreMode,
-    backupHost: requestedBackupRestoreMode === 'backup' ? backupHost : '',
-    backupUser: requestedBackupRestoreMode === 'backup' ? backupUser.value : '',
-    backupType: requestedBackupRestoreMode === 'backup' ? backupType : '',
+    backupRestoreMode,
+    backupHost: backupRestoreMode === 'backup' ? backupHost : '',
+    backupUser: backupRestoreMode === 'backup' ? backupUser.value : '',
+    backupType: backupRestoreMode === 'backup' ? backupType : '',
     restoreEnvironmentName:
-      requestedBackupRestoreMode === 'restore' ? restoreEnvironmentName : '',
-    restoreType: requestedBackupRestoreMode === 'restore' ? restoreType : ''
+      backupRestoreMode === 'restore' ? restoreEnvironmentName : '',
+    restoreType: backupRestoreMode === 'restore' ? restoreType : ''
   }
 
   return applicationConfig
 }
 
 function saveInfrastructureConfig(payload: InfrastructureRequest) {
-  if (!verifiedConnection) {
-    throw new Error('Connect to GitHub before configuring infrastructure.')
+  if (!hasDeploymentFeature('ansible')) {
+    throw new Error('Infrastructure configuration is disabled for this setup type.')
   }
 
   if (!environmentSelection) {
@@ -2053,7 +2247,10 @@ function saveInfrastructureConfig(payload: InfrastructureRequest) {
     throw new Error('Allowed CIDRs must be valid comma-separated CIDR ranges.')
   }
 
-  if (payload.enableDiskEncryption && !payload.diskSpace?.trim()) {
+  const enableDiskEncryption =
+    hasDeploymentFeature('github') && Boolean(payload.enableDiskEncryption)
+
+  if (enableDiskEncryption && !payload.diskSpace?.trim()) {
     throw new Error('Disk space is required when disk encryption is enabled.')
   }
 
@@ -2064,8 +2261,8 @@ function saveInfrastructureConfig(payload: InfrastructureRequest) {
     kubeAPIHost: payload.kubeAPIHost?.trim() || '',
     kubeWorkerNodes: payload.kubeWorkerNodes?.trim() || '',
     kubeApiAllowedCidrs: payload.kubeApiAllowedCidrs?.trim() || '',
-    enableDiskEncryption: Boolean(payload.enableDiskEncryption),
-    diskSpace: payload.enableDiskEncryption ? payload.diskSpace?.trim() || '' : '',
+    enableDiskEncryption,
+    diskSpace: enableDiskEncryption ? payload.diskSpace?.trim() || '' : '',
     users
   }
 
@@ -2174,7 +2371,22 @@ async function handleRequest(
     if (method === 'GET' && url.pathname === '/api/github/defaults') {
       sendJson(response, 200, {
         ...getGitHubDefaults(),
+        setupOptions,
+        deploymentFeatures: getDeploymentFeatures(),
         currentSystemUserAvailable: CURRENT_SYSTEM_USER_AVAILABLE
+      })
+      return
+    }
+
+    if (method === 'POST' && url.pathname === '/api/setup-options') {
+      const body = await readRequestBody(request)
+      const payload = JSON.parse(body || '{}') as SetupOptionsRequest
+      const options = saveSetupOptions(payload)
+
+      sendJson(response, 200, {
+        saved: true,
+        setupOptions: options,
+        configuration: environmentSelection ? getConfigurationResponse() : []
       })
       return
     }
@@ -2202,6 +2414,8 @@ async function handleRequest(
         existingSecrets: getExistingSecretState(),
         secretSentinel: EXISTING_SECRET_SENTINEL,
         githubApprovers: getRepositoryVariableValue('GH_APPROVERS'),
+        setupOptions,
+        deploymentFeatures: getDeploymentFeatures(),
         environmentSelection,
         users,
         infrastructure: infrastructureConfig,
@@ -2246,6 +2460,8 @@ async function handleRequest(
       sendJson(response, 200, {
         saved: true,
         environmentSelection: selection,
+        setupOptions,
+        deploymentFeatures: getDeploymentFeatures(),
         approvalRequired: selection.approvalRequired,
         environmentVariableCount: environmentVariables.length,
         environmentSecretCount: environmentSecrets.length,
@@ -2270,6 +2486,11 @@ async function handleRequest(
 
       if (!environmentName) {
         throw new Error('Environment name is required.')
+      }
+
+      if (!hasDeploymentFeature('github')) {
+        sendJson(response, 200, { approvalRequired: false })
+        return
       }
 
       await loadEnvironmentValues(environmentName)
