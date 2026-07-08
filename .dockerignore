@@ -1,0 +1,8 @@
+*
+!package.json
+!yarn.lock
+!tsconfig.json
+!infrastructure/
+infrastructure/*
+!infrastructure/environments/
+!infrastructure/environments/**

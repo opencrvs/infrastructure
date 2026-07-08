@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenCRVS Environment Setup</title>
+    <link rel="stylesheet" href="/ui/bootstrap.min.css" />
+    <link rel="stylesheet" href="/ui/styles.css" />
+  </head>
+  <body class="bg-body-tertiary">
+    <main class="container py-4 py-md-5">
+      <div class="shell bg-body border rounded-3 shadow-sm overflow-hidden">
+        <aside>
+          <p class="brand fw-bold">OpenCRVS setup</p>
+          <ol class="steps nav nav-pills flex-column">
+            <li class="step active nav-link" data-screen="github">GitHub configuration</li>
+            <li><button id="review-navigation" class="step nav-link" type="button" data-screen="review" disabled>Review</button></li>
+          </ol>
+        </aside>
+        <section id="github-screen" class="screen active">
+          <h1>GitHub configuration</h1>
+          <p class="lede text-body-secondary small">
+            Connect the infrastructure repository, then choose the environment
+            to configure.
+          </p>
+          <div id="authentication-part">
+            <form id="github-form" class="configuration-form">
+              <label class="form-label fw-semibold">
+                Organisation
+                <input id="organisation" class="form-control" name="organisation" autocomplete="organization" required />
+                <span class="form-text fw-normal">
+                  GitHub organisation that owns the infrastructure repository.
+                </span>
+              </label>
+              <label class="form-label fw-semibold">
+                Repository
+                <input id="repository" class="form-control" name="repository" autocomplete="off" required />
+                <span class="form-text fw-normal">
+                  Infrastructure repository to configure with this setup process.
+                </span>
+              </label>
+              <label class="form-label fw-semibold">
+                GitHub token
+                <input id="token" class="form-control" name="token" type="password" autocomplete="off" required />
+                <span class="form-text fw-normal">
+                  Token to access Infrastructure repository. Used only by this local setup process to verify repository access and is used later by self-hosted runners.
+                </span>
+              </label>
+              <div class="actions d-flex gap-2">
+                <button id="connect-button" class="btn btn-primary" type="submit">Login</button>
+              </div>
+            </form>
+            <div id="status" class="status alert d-none" role="status" aria-live="polite"></div>
+          </div>
+          <div id="environment-part" class="configuration-part d-none">
+            <div id="connection-summary" class="connection-summary alert alert-success"></div>
+            <h2>Environment</h2>
+            <p class="lede text-body-secondary small">
+              Choose the target GitHub environment and configure the repository
+              approval settings used by deployment workflows.
+            </p>
+            <form id="environment-form" class="configuration-form">
+              <label class="form-label fw-semibold">
+                Environment name
+                <select id="environmentName" class="form-select" name="environmentName" required></select>
+              </label>
+              <label id="customEnvironmentField" class="form-label fw-semibold d-none">
+                Custom environment name
+                <input id="customEnvironmentName" class="form-control" name="customEnvironmentName" autocomplete="off" />
+              </label>
+              <label class="form-label fw-semibold">
+                Environment type
+                <select id="environmentType" class="form-select" name="environmentType" required>
+                  <option value="non-production">Development/Quality assurance/Testing (no PII data)</option>
+                  <option value="production">Staging/Production (hosts PII data, requires frequent backups)</option>
+                </select>
+              </label>
+              <label class="form-check">
+                <input id="approvalRequired" class="form-check-input" name="approvalRequired" type="checkbox" />
+                <span class="form-check-label">Enable approvals for GitHub action workflows</span>
+              </label>
+              <label class="form-label fw-semibold">
+                GH_APPROVERS
+                <textarea id="githubApprovers" class="form-control" name="githubApprovers" autocomplete="off"></textarea>
+                <span class="form-text fw-normal">Comma-separated GitHub usernames or teams.</span>
+              </label>
+              <div class="actions d-flex gap-2">
+                <button id="environment-button" class="btn btn-primary" type="submit">Save environment</button>
+              </div>
+            </form>
+            <div id="environment-status" class="status alert d-none" role="status" aria-live="polite"></div>
+          </div>
+        </section>
+        <div id="configuration-screens"></div>
+        <div id="custom-configuration-components" class="d-none">
+          <div id="users-configuration-component" class="form-group configuration-section">
+              <h2 class="group-title h5 border-top pt-3">Users</h2>
+              <div class="user-toolbar d-flex flex-wrap gap-2">
+                <button id="add-user-button" class="btn btn-outline-secondary" type="button">Add user</button>
+                <button id="add-current-user-button" class="btn btn-outline-secondary" type="button">Add current system user</button>
+              </div>
+              <div class="table-responsive"><table class="users-table table table-bordered table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>State</th>
+                    <th>SSH keys</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTableBody"></tbody>
+              </table></div>
+              <div id="user-editor" class="editor-panel border rounded bg-body-tertiary p-3 d-none">
+                <label class="form-label fw-semibold">
+                  Username
+                  <input id="userName" class="form-control" autocomplete="off" />
+                </label>
+                <label class="form-label fw-semibold">
+                  Role
+                  <select id="userRole" class="form-select">
+                    <option value="admin">Admin (full OS and Kubernetes access)</option>
+                    <option value="operator">Operator (read-only OS, full Kubernetes access)</option>
+                  </select>
+                </label>
+                <label class="form-check">
+                  <input id="userPresent" class="form-check-input" type="checkbox" checked />
+                  <span class="form-check-label">Present (allowed to log in)</span>
+                </label>
+                <label class="form-label fw-semibold">
+                  SSH public keys
+                  <textarea id="userKeys" class="form-control"></textarea>
+                  <span class="form-text fw-normal">One SSH public key per line.</span>
+                </label>
+                <div class="actions d-flex gap-2">
+                  <button id="save-user-button" class="btn btn-primary" type="button">Save user</button>
+                  <button id="cancel-user-button" class="btn btn-outline-secondary" type="button">Cancel</button>
+                </div>
+              </div>
+          </div>
+        </div>
+        <section id="review-screen" class="screen">
+          <h1>Review</h1>
+          <p class="lede text-body-secondary small">
+            Review local files, GitHub variables, and GitHub secrets before
+            generating files and creating or updating the GitHub environment.
+          </p>
+          <details class="review-section form-group configuration-section" open>
+            <summary class="group-title h5 border-top pt-3">Files to update</summary>
+            <ul id="reviewFiles"></ul>
+          </details>
+          <details class="review-section form-group configuration-section" open>
+            <summary class="group-title h5 border-top pt-3">GitHub variables</summary>
+            <div class="table-responsive"><table class="users-table table table-bordered table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Scope</th>
+                  <th>Name</th>
+                  <th>Value</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="reviewVariables"></tbody>
+            </table></div>
+          </details>
+          <details class="review-section form-group configuration-section" open>
+            <summary class="group-title h5 border-top pt-3">GitHub secrets</summary>
+            <div class="table-responsive"><table class="users-table table table-bordered table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Scope</th>
+                  <th>Name</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="reviewSecrets"></tbody>
+            </table></div>
+          </details>
+          <details class="review-section form-group configuration-section" open>
+            <summary class="group-title h5 border-top pt-3">Helm chart values</summary>
+            <div class="table-responsive"><table class="users-table table table-bordered table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Chart</th>
+                  <th>Path</th>
+                  <th>Value</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="reviewHelmValues"></tbody>
+            </table></div>
+          </details>
+          <div class="actions d-flex gap-2 pt-3">
+            <button id="finalize-button" class="btn btn-primary" type="button">Finalize setup</button>
+          </div>
+          <div id="finalize-summary" class="finalize-summary d-none"></div>
+          <div id="review-status" class="status alert d-none" role="status" aria-live="polite"></div>
+        </section>
+      </div>
+    </main>
+    <script src="/ui/configuration-schema.js"></script>
+    <script src="/ui/form-renderer.js" defer></script>
+    <script src="/ui/application.js" defer></script>
+  </body>
+</html>

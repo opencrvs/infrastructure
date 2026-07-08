@@ -4,6 +4,9 @@ import { log, success, warn } from './logger'
 
 import Handlebars from 'handlebars';
 
+const repositoryDirectory =
+  process.env.OPENCRVS_REPOSITORY_PATH || path.resolve(__dirname, '..', '..')
+
 // Register a helper to increment numbers
 Handlebars.registerHelper('data_label_idx', function(value) {
   return parseInt(value) + 2;
@@ -76,7 +79,7 @@ export function extractWorkerNodes(data: any): string[] {
  */
 export function copyChartsValues(env: string, values: Record<string, string | boolean>) {
   const srcDir = path.resolve(__dirname, "templates", "charts-values");
-  const destDir = path.resolve(__dirname, "..", "..", "environments", env);
+  const destDir = path.resolve(repositoryDirectory, "environments", env);
   fs.mkdirSync(destDir, { recursive: true });
   values['lets_encrypt'] = values['traefik_mode'] === "lets_encrypt" ? true : false
   values['static_ssl'] = values['traefik_mode'] === "static_ssl" ? true : false
@@ -119,7 +122,13 @@ export function copyChartsValues(env: string, values: Record<string, string | bo
 export function generateInventory(env: string, values: Record<string, any>){
   // Template and output paths
   const templatePath = path.join(__dirname, "templates", "inventory", "inventory.template.yml");
-  const outputPath = path.join(__dirname, "..", "server-setup", "inventory", `${env}.yml`);
+  const outputPath = path.join(
+    repositoryDirectory,
+    "infrastructure",
+    "server-setup",
+    "inventory",
+    `${env}.yml`
+  );
 
   const templateFile = fs.readFileSync(templatePath, "utf-8");
   const template = Handlebars.compile(templateFile);

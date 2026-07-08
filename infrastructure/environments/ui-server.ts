@@ -1,11 +1,23 @@
 import { spawn } from 'child_process'
+import { randomInt } from 'crypto'
 import fs from 'fs'
 import http, { IncomingMessage, ServerResponse } from 'http'
 import { AddressInfo } from 'net'
 import os from 'os'
 import path from 'path'
 import { Octokit } from '@octokit/core'
+import { dump as dumpYaml, load as loadYaml } from 'js-yaml'
 
+import {
+  CONFIGURATION_FIELDS,
+  CONFIGURATION_SCREENS,
+  ConfigurationField,
+  GithubBinding,
+  HelmBinding,
+  HelmChart,
+  getConfigurationFields,
+  validateConfigurationSchema
+} from './configuration-fields'
 import { getRepoInfo } from './git'
 import {
   Secret,
@@ -27,6 +39,7 @@ import {
 import { copyChartsValues, generateInventory, getUsers } from './templates'
 import { updateWorkflowEnvironments } from './update-workflows'
 import { generateLongPassword, readYamlFile } from './utils'
+import { generateSSHKeyPair } from './ssh-keygen'
 
 type GitHubConnectionRequest = {
   organisation?: string
@@ -53,6 +66,20 @@ type ApplicationRequest = {
   dockerhubRepository?: string
   dockerhubUsername?: string
   dockerhubToken?: string
+  smtpEnabled?: boolean
+  smtpHost?: string
+  smtpUsername?: string
+  smtpPassword?: string
+  smtpPort?: string
+  smtpSecure?: string | boolean
+  senderEmailAddress?: string
+  alertEmail?: string
+  backupRestoreMode?: 'none' | 'backup' | 'restore'
+  backupHost?: string
+  backupUser?: string
+  backupType?: string
+  restoreEnvironmentName?: string
+  restoreType?: string
 }
 
 type EnvironmentSelectionRequest = {
@@ -61,6 +88,30 @@ type EnvironmentSelectionRequest = {
   environmentType?: string
   approvalRequired?: boolean
   githubApprovers?: string
+}
+
+type ConfigurationValue = string | number | boolean
+
+type AdvancedRequest = {
+  values?: Record<string, unknown>
+}
+
+type DependenciesRequest = {
+  values?: Record<string, unknown>
+}
+
+type ConfigurationScreenRequest = {
+  values?: Record<string, unknown>
+  custom?: {
+    users?: User[]
+  }
+}
+
+type HelmUpdate = {
+  chart: HelmChart
+  path: string
+  value: ConfigurationValue
+  action: 'remove' | 'set' | 'unchanged'
 }
 
 type User = {
@@ -91,8 +142,19 @@ const DEFAULT_ENVIRONMENT_CHOICES = [
   }
 ]
 
-const HOST = '127.0.0.1'
+const HOST = process.env.ENVIRONMENT_INIT_UI_HOST || '127.0.0.1'
+const PUBLIC_HOST =
+  process.env.ENVIRONMENT_INIT_UI_PUBLIC_HOST ||
+  (HOST === '0.0.0.0' ? '127.0.0.1' : HOST)
 const DEFAULT_PORT = Number(process.env.ENVIRONMENT_INIT_UI_PORT || 0)
+const OPEN_BROWSER = process.env.ENVIRONMENT_INIT_UI_OPEN_BROWSER !== 'false'
+const CURRENT_SYSTEM_USER_AVAILABLE =
+  process.env.ENVIRONMENT_INIT_UI_CONTAINER !== 'true'
+const EXISTING_SECRET_SENTINEL = '__OPENCRVS_EXISTING_SECRET_4F7A9C2D__'
+const UI_DIRECTORY = path.join(__dirname, 'ui')
+const BOOTSTRAP_CSS = require.resolve('bootstrap/dist/css/bootstrap.min.css')
+
+validateConfigurationSchema()
 
 let verifiedConnection: GitHubConnectionRequest | null = null
 let infrastructureConfig: InfrastructureRequest | null = null
@@ -106,6 +168,14 @@ let environmentSelection: Required<EnvironmentSelectionRequest> | null = null
 let users: User[] = []
 let applicationConfig: ApplicationRequest | null = null
 let generatedEncryptionKey = ''
+let generatedBackupEncryptionPassphrase = ''
+let generatedBackupHostPrivateKey = ''
+let generatedBackupHostPublicKey = ''
+let advancedConfig: Record<string, ConfigurationValue> = {}
+let dependenciesConfig: Record<string, ConfigurationValue> = {}
+let genericScreenConfigs: Record<string, Record<string, ConfigurationValue>> = {}
+const generatedFieldValues = new Map<string, string>()
+let helmBaseOverrides: Partial<Record<HelmChart, Record<string, unknown>>> = {}
 
 function sendJson(
   response: ServerResponse,
@@ -119,12 +189,24 @@ function sendJson(
   response.end(JSON.stringify(payload))
 }
 
-function sendHtml(response: ServerResponse) {
+function sendUiFile(
+  response: ServerResponse,
+  filename: string,
+  contentType: string
+) {
   response.writeHead(200, {
-    'content-type': 'text/html; charset=utf-8',
+    'content-type': `${contentType}; charset=utf-8`,
     'cache-control': 'no-store'
   })
-  response.end(renderAuthScreen())
+  response.end(fs.readFileSync(path.join(UI_DIRECTORY, filename)))
+}
+
+function sendBootstrapCss(response: ServerResponse) {
+  response.writeHead(200, {
+    'content-type': 'text/css; charset=utf-8',
+    'cache-control': 'public, max-age=86400'
+  })
+  response.end(fs.readFileSync(BOOTSTRAP_CSS))
 }
 
 async function readRequestBody(request: IncomingMessage): Promise<string> {
@@ -182,6 +264,20 @@ async function verifyGitHubConnection({
   return repositoryId
 }
 
+function getGitHubConnectionResponse() {
+  return {
+    connected: true,
+    repositoryId,
+    organisation: verifiedConnection?.organisation,
+    repository: verifiedConnection?.repository,
+    environmentChoices: getEnvironmentChoices(),
+    existingEnvironments,
+    repositoryVariableCount: repositoryVariables.length,
+    repositorySecretCount: repositorySecrets.length,
+    githubApprovers: getRepositoryVariableValue('GH_APPROVERS')
+  }
+}
+
 function getEnvironmentChoices() {
   return [
     ...DEFAULT_ENVIRONMENT_CHOICES,
@@ -223,6 +319,10 @@ function getEnvironmentVariableValue(name: string) {
   return environmentVariables.find((variable) => variable.name === name)?.value || ''
 }
 
+function getEnvironmentBooleanVariable(name: string) {
+  return getEnvironmentVariableValue(name).trim().toLowerCase() === 'true'
+}
+
 function hasEnvironmentSecret(name: string) {
   return Boolean(environmentSecrets.find((secret) => secret.name === name))
 }
@@ -235,7 +335,7 @@ function getInfrastructureConfigFromGitHub(): InfrastructureRequest {
     kubeWorkerNodes: getEnvironmentVariableValue('KUBE_WORKER_NODES'),
     kubeApiAllowedCidrs: getEnvironmentVariableValue('KUBE_API_ALLOWED_CIDRS'),
     enableDiskEncryption,
-    diskSpace: enableDiskEncryption ? getEnvironmentVariableValue('DISK_SPACE') : '',
+    diskSpace: getEnvironmentVariableValue('DISK_SPACE') || '200g',
     users
   }
 }
@@ -246,6 +346,16 @@ function getApplicationConfigFromGitHub(): ApplicationRequest {
   const hasDockerhubRepo = hasRepositorySecret('DOCKERHUB_REPO')
   const hasDockerhubCredentials =
     hasRepositorySecret('DOCKER_USERNAME') || hasRepositorySecret('DOCKER_TOKEN')
+  const backupHost = getEnvironmentVariableValue('BACKUP_HOST')
+  const restoreEnvironmentName = getEnvironmentVariableValue('RESTORE_ENVIRONMENT_NAME')
+  const hasSmtpConfiguration =
+    hasEnvironmentSecret('SMTP_HOST') ||
+    hasEnvironmentSecret('SMTP_USERNAME') ||
+    hasEnvironmentSecret('SMTP_PASSWORD') ||
+    hasEnvironmentSecret('SMTP_PORT') ||
+    hasEnvironmentSecret('SMTP_SECURE') ||
+    hasEnvironmentSecret('SENDER_EMAIL_ADDRESS') ||
+    hasEnvironmentSecret('ALERT_EMAIL')
 
   return {
     domain: getEnvironmentVariableValue('DOMAIN'),
@@ -261,7 +371,25 @@ function getApplicationConfigFromGitHub(): ApplicationRequest {
     dockerhubRepository:
       hasDockerhubRepo && !hasDockerhubCredentials ? 'ocrvs-countryconfig' : '',
     dockerhubUsername: '',
-    dockerhubToken: ''
+    dockerhubToken: '',
+    smtpEnabled: hasSmtpConfiguration,
+    smtpHost: '',
+    smtpUsername: '',
+    smtpPassword: '',
+    smtpPort: '',
+    smtpSecure: hasEnvironmentSecret('SMTP_SECURE') ? '' : false,
+    senderEmailAddress: '',
+    alertEmail: '',
+    backupRestoreMode: backupHost
+      ? 'backup'
+      : restoreEnvironmentName
+        ? 'restore'
+        : 'none',
+    backupHost,
+    backupUser: hasEnvironmentSecret('BACKUP_SERVER_USER') ? '' : 'backup',
+    backupType: getEnvironmentVariableValue('BACKUP_ENVIRONMENT_MODE') || 'dump',
+    restoreEnvironmentName,
+    restoreType: getEnvironmentVariableValue('RESTORE_ENVIRONMENT_MODE') || 'dump',
   }
 }
 
@@ -290,16 +418,381 @@ function loadUsersFromInventory(environmentName: string) {
   }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+function getNestedValue(source: Record<string, unknown>, pathValue: string) {
+  return pathValue.split('.').reduce<unknown>((current, segment) => {
+    return isRecord(current) ? current[segment] : undefined
+  }, source)
+}
+
+function setNestedValue(
+  target: Record<string, unknown>,
+  pathValue: string,
+  value: ConfigurationValue
+) {
+  const segments = pathValue.split('.')
+  const finalSegment = segments.pop()!
+  let current = target
+
+  for (const segment of segments) {
+    if (!isRecord(current[segment])) {
+      current[segment] = {}
+    }
+    current = current[segment] as Record<string, unknown>
+  }
+
+  current[finalSegment] = value
+}
+
+function deleteNestedValue(target: Record<string, unknown>, pathValue: string) {
+  const segments = pathValue.split('.')
+
+  function remove(current: Record<string, unknown>, index: number): boolean {
+    const segment = segments[index]
+
+    if (index === segments.length - 1) {
+      delete current[segment]
+    } else if (isRecord(current[segment])) {
+      const child = current[segment] as Record<string, unknown>
+      if (remove(child, index + 1)) {
+        delete current[segment]
+      }
+    }
+
+    return Object.keys(current).length === 0
+  }
+
+  remove(target, 0)
+}
+
+function validateConfigurationFieldBindings() {
+  const corePaths = [
+    process.env.OPENCRVS_CORE_PATH,
+    path.resolve(process.cwd(), '..', 'opencrvs-core')
+  ].filter((candidate): candidate is string => Boolean(candidate))
+  const corePath = corePaths.find((candidate) =>
+    fs.existsSync(path.join(candidate, 'charts'))
+  )
+
+  if (!corePath) {
+    return
+  }
+
+  const chartValues = new Map<HelmChart, Record<string, unknown>>()
+
+  for (const field of CONFIGURATION_FIELDS) {
+    for (const binding of field.bindings) {
+      if (binding.target !== 'helm') {
+        continue
+      }
+
+      if (binding.skipPathValidation) {
+        continue
+      }
+
+      if (!chartValues.has(binding.chart)) {
+        const valuesPath = path.join(
+          corePath,
+          'charts',
+          binding.chart,
+          'values.yaml'
+        )
+        if (!fs.existsSync(valuesPath)) {
+          throw new Error(`Missing Helm chart values file: ${valuesPath}`)
+        }
+        const parsed = loadYaml(fs.readFileSync(valuesPath, 'utf8'))
+        chartValues.set(binding.chart, isRecord(parsed) ? parsed : {})
+      }
+
+      const chartValue = getNestedValue(chartValues.get(binding.chart)!, binding.path)
+      if (chartValue === undefined) {
+        throw new Error(
+          `Configuration field ${field.id} targets missing Helm value ${binding.chart}.${binding.path}`
+        )
+      }
+
+      if (
+        field.defaultValue !== undefined &&
+        typeof chartValue !== typeof field.defaultValue
+      ) {
+        throw new Error(
+          `Configuration field ${field.id} has a different type from ${binding.chart}.${binding.path}`
+        )
+      }
+    }
+  }
+}
+
+function getHelmOverridePath(environmentName: string, chart: HelmChart) {
+  return path.join(
+    process.cwd(),
+    'environments',
+    environmentName,
+    chart,
+    'values.override.yaml'
+  )
+}
+
+function readHelmOverride(environmentName: string, chart: HelmChart) {
+  const overridePath = getHelmOverridePath(environmentName, chart)
+
+  if (!fs.existsSync(overridePath)) {
+    return {}
+  }
+
+  const parsed = loadYaml(fs.readFileSync(overridePath, 'utf8'))
+  return isRecord(parsed) ? parsed : {}
+}
+
+function loadAdvancedConfig(environmentName: string) {
+  const advancedFields = getConfigurationFields('advanced')
+  const charts = [...new Set(CONFIGURATION_FIELDS.flatMap((field) =>
+    field.bindings
+      .filter((binding): binding is HelmBinding => binding.target === 'helm')
+      .map((binding) => binding.chart)
+  ))]
+
+  helmBaseOverrides = Object.fromEntries(
+    charts.map((chart) => [chart, readHelmOverride(environmentName, chart)])
+  )
+  advancedConfig = Object.fromEntries(
+    advancedFields.map((field) => {
+      const source = field.source
+      const override = source.target === 'helm'
+        ? getNestedValue(helmBaseOverrides[source.chart] || {}, source.path)
+        : source.target === 'github'
+          ? secretExists(source.scope, source.name)
+            ? ''
+            : undefined
+          : undefined
+      const resolvedValue =
+        typeof override === 'string' ||
+        typeof override === 'number' ||
+        typeof override === 'boolean'
+          ? override
+          : getFieldDefaultValue(field, environmentName)
+
+      return [field.id, resolvedValue]
+    })
+  )
+  loadDependenciesConfig(environmentName)
+  loadGenericScreenConfigs(environmentName)
+}
+
+function generateCredential(kind: 'username' | 'password') {
+  const characters = kind === 'username'
+    ? 'abcdefghijklmnopqrstuvwxyz'
+    : 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  const length = kind === 'username' ? 8 : 16
+
+  return Array.from(
+    { length },
+    () => characters[randomInt(characters.length)]
+  ).join('')
+}
+
+function getFieldDefaultValue(field: ConfigurationField, environmentName = '') {
+  if (field.generatedDefault) {
+    const cacheKey = `${environmentName}:${field.id}`
+    const existingValue = generatedFieldValues.get(cacheKey)
+    if (existingValue) {
+      return existingValue
+    }
+
+    const generatedValue = generateCredential(field.generatedDefault)
+    generatedFieldValues.set(cacheKey, generatedValue)
+    return generatedValue
+  }
+
+  if (typeof field.defaultValue === 'string' && environmentName) {
+    return field.defaultValue.replace(
+      'opencrvs-deps-dev',
+      `opencrvs-deps-${environmentName}`
+    )
+  }
+
+  return field.defaultValue ?? ''
+}
+
+function loadDependenciesConfig(environmentName: string) {
+  dependenciesConfig = Object.fromEntries(
+    getConfigurationFields('dependencies').map((field) => {
+      const source = field.source
+      let value: unknown
+
+      if (source.target === 'helm') {
+        value = getNestedValue(helmBaseOverrides[source.chart] || {}, source.path)
+      } else if (
+        source.target === 'github' &&
+        source.scope === 'ENVIRONMENT' &&
+        secretExists('ENVIRONMENT', source.name)
+      ) {
+        value = ''
+      } else if (
+        source.target === 'github' &&
+        source.scope === 'REPOSITORY' &&
+        secretExists('REPOSITORY', source.name)
+      ) {
+        value = ''
+      }
+
+      const resolvedValue =
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean'
+          ? value
+          : getFieldDefaultValue(field, environmentName)
+
+      return [field.id, resolvedValue]
+    })
+  )
+}
+
+function loadGenericScreenConfigs(environmentName: string) {
+  const specializedScreens = new Set([
+    'infrastructure',
+    'application',
+    'dependencies',
+    'advanced'
+  ])
+
+  genericScreenConfigs = Object.fromEntries(
+    CONFIGURATION_SCREENS
+      .filter(({ id }) => !specializedScreens.has(id))
+      .map(({ id }) => [
+        id,
+        Object.fromEntries(
+          getConfigurationFields(id).map((field) => {
+            const source = field.source
+            let value: unknown
+            if (source.target === 'helm') {
+              value = getNestedValue(helmBaseOverrides[source.chart] || {}, source.path)
+            } else if (
+              source.target === 'github' &&
+              secretExists(source.scope, source.name)
+            ) {
+              value = ''
+            } else if (source.target === 'github') {
+              value = source.scope === 'ENVIRONMENT'
+                ? getEnvironmentVariableValue(source.name)
+                : getRepositoryVariableValue(source.name)
+            }
+
+            const resolvedValue =
+              typeof value === 'string' ||
+              typeof value === 'number' ||
+              typeof value === 'boolean'
+                ? value
+                : getFieldDefaultValue(field, environmentName)
+            return [field.id, resolvedValue]
+          })
+        )
+      ])
+  )
+}
+
+function getAdvancedResponse() {
+  return {
+    fields: getConfigurationFields('advanced'),
+    values: advancedConfig,
+    existingSecrets: Object.fromEntries(
+      getConfigurationFields('advanced').map((field) => {
+        const source = field.source
+        return [
+          field.id,
+          source.target === 'github' && secretExists(source.scope, source.name)
+        ]
+      })
+    )
+  }
+}
+
+function getDependenciesResponse() {
+  return {
+    fields: getConfigurationFields('dependencies'),
+    values: dependenciesConfig,
+    existingSecrets: Object.fromEntries(
+      getConfigurationFields('dependencies').map((field) => {
+        const source = field.source
+        const exists = source.target === 'github' && source.scope === 'ENVIRONMENT'
+          ? secretExists('ENVIRONMENT', source.name)
+          : source.target === 'github' && source.scope === 'REPOSITORY'
+            ? secretExists('REPOSITORY', source.name)
+            : false
+        return [field.id, exists]
+      })
+    ),
+    secretSentinel: EXISTING_SECRET_SENTINEL
+  }
+}
+
+function getConfigurationScreenResponse(screenId: string) {
+  const definition = CONFIGURATION_SCREENS.find(({ id }) => id === screenId)
+  if (!definition) {
+    throw new Error(`Unknown configuration screen: ${screenId}`)
+  }
+
+  const fields = screenId === 'application'
+    ? getApplicationFields()
+    : getConfigurationFields(screenId)
+  const existingSecrets = Object.fromEntries(
+    fields.map((field) => {
+      const source = field.source
+      return [
+        field.id,
+        source.target === 'github' && secretExists(source.scope, source.name)
+      ]
+    })
+  )
+  const values = screenId === 'infrastructure'
+    ? { ...(infrastructureConfig || {}) }
+    : screenId === 'application'
+      ? { ...(applicationConfig || {}) }
+      : screenId === 'dependencies'
+        ? { ...dependenciesConfig }
+        : screenId === 'advanced'
+          ? { ...advancedConfig }
+          : { ...(genericScreenConfigs[screenId] || {}) }
+
+  return {
+    definition,
+    fields,
+    values,
+    existingSecrets,
+    secretSentinel: EXISTING_SECRET_SENTINEL,
+    context: {
+      environmentType: environmentSelection?.environmentType || 'non-production'
+    },
+    custom: definition.customComponents?.includes('users') ? { users } : {}
+  }
+}
+
+function getConfigurationResponse() {
+  return CONFIGURATION_SCREENS
+    .slice()
+    .sort((left, right) => left.order - right.order)
+    .map(({ id }) => getConfigurationScreenResponse(id))
+}
+
 async function loadEnvironmentValues(environmentName: string) {
   if (!verifiedConnection || !repositoryId) {
     throw new Error('Connect to GitHub before loading environment values.')
   }
+
+  generatedBackupEncryptionPassphrase = ''
+  generatedBackupHostPrivateKey = ''
+  generatedBackupHostPublicKey = ''
 
   if (!existingEnvironments.includes(environmentName)) {
     environmentVariables = []
     environmentSecrets = []
     loadUsersFromInventory(environmentName)
     infrastructureConfig = getInfrastructureConfigFromGitHub()
+    applicationConfig = getApplicationConfigFromGitHub()
+    loadAdvancedConfig(environmentName)
     return
   }
 
@@ -319,6 +812,7 @@ async function loadEnvironmentValues(environmentName: string) {
   loadUsersFromInventory(environmentName)
   infrastructureConfig = getInfrastructureConfigFromGitHub()
   applicationConfig = getApplicationConfigFromGitHub()
+  loadAdvancedConfig(environmentName)
 }
 
 async function saveEnvironmentSelection(payload: EnvironmentSelectionRequest) {
@@ -405,7 +899,10 @@ function getInventoryValues(config: InfrastructureRequest) {
     kube_worker_nodes: config.kubeWorkerNodes
       ? config.kubeWorkerNodes.split(',').map((host) => host.trim()).filter(Boolean)
       : [],
-    backup_host: '',
+    backup_host:
+      applicationConfig?.backupRestoreMode === 'backup'
+        ? applicationConfig.backupHost || ''
+        : '',
     users: config.users || []
   }
 }
@@ -418,12 +915,13 @@ function getChartValues(config: ApplicationRequest) {
     env: environment,
     environment_type: environmentType,
     two_fa_enabled: environment !== 'production' ? false : true,
-    backup_enabled: false,
-    restore_enabled: false,
-    restore_environment_name: '',
-    restore_type: '',
+    backup_enabled: config.backupRestoreMode === 'backup',
+    restore_enabled: config.backupRestoreMode === 'restore',
+    restore_environment_name:
+      config.backupRestoreMode === 'restore' ? config.restoreEnvironmentName || '' : '',
+    restore_type: config.backupRestoreMode === 'restore' ? config.restoreType || 'dump' : '',
     traefik_mode: config.traefikMode || 'lets_encrypt',
-    backup_type: '',
+    backup_type: config.backupRestoreMode === 'backup' ? config.backupType || 'dump' : '',
     lets_encrypt: config.traefikMode === 'lets_encrypt',
     static_ssl: config.traefikMode === 'static_ssl'
   }
@@ -451,11 +949,39 @@ function getApplicationGithubUpdates(config: ApplicationRequest) {
         ]
       : []
 
+  const smtpSecrets = config.smtpEnabled
+    ? [
+        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SMTP_HOST', value: config.smtpHost || '' },
+        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SMTP_USERNAME', value: config.smtpUsername || '' },
+        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SMTP_PASSWORD', value: config.smtpPassword || '' },
+        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SMTP_PORT', value: config.smtpPort || '' },
+        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SMTP_SECURE', value: String(config.smtpSecure ?? '') },
+        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SENDER_EMAIL_ADDRESS', value: config.senderEmailAddress || '' },
+        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'ALERT_EMAIL', value: config.alertEmail || '' }
+      ].filter((secret) => secret.value || hasEnvironmentSecret(secret.name))
+    : []
+
+  const backupSecrets = config.backupRestoreMode === 'backup'
+    ? [
+        {
+          scope: 'ENVIRONMENT',
+          type: 'SECRET',
+          name: 'BACKUP_SERVER_USER',
+          value: config.backupUser || ''
+        }
+      ]
+    : []
+
   return {
     variables: [
       { scope: 'ENVIRONMENT', type: 'VARIABLE', name: 'DOMAIN', value: config.domain || '' }
     ],
-    secrets: [...dockerhubSecrets, ...sslSecrets]
+    secrets: [
+      ...dockerhubSecrets,
+      ...sslSecrets,
+      ...smtpSecrets,
+      ...backupSecrets
+    ]
   }
 }
 
@@ -467,6 +993,108 @@ function variableExists(scope: 'ENVIRONMENT' | 'REPOSITORY', name: string) {
 function secretExists(scope: 'ENVIRONMENT' | 'REPOSITORY', name: string) {
   const source = scope === 'ENVIRONMENT' ? environmentSecrets : repositorySecrets
   return Boolean(source.find((secret) => secret.name === name))
+}
+
+function getExistingSecretState() {
+  return {
+    sslCrt: hasEnvironmentSecret('SSL_CRT'),
+    sslKey: hasEnvironmentSecret('SSL_KEY'),
+    dockerhubOrganisation: hasRepositorySecret('DOCKERHUB_ACCOUNT'),
+    dockerhubRepository: hasRepositorySecret('DOCKERHUB_REPO'),
+    dockerhubUsername: hasRepositorySecret('DOCKER_USERNAME'),
+    dockerhubToken: hasRepositorySecret('DOCKER_TOKEN'),
+    smtpHost: hasEnvironmentSecret('SMTP_HOST'),
+    smtpUsername: hasEnvironmentSecret('SMTP_USERNAME'),
+    smtpPassword: hasEnvironmentSecret('SMTP_PASSWORD'),
+    smtpPort: hasEnvironmentSecret('SMTP_PORT'),
+    smtpSecure: hasEnvironmentSecret('SMTP_SECURE'),
+    senderEmailAddress: hasEnvironmentSecret('SENDER_EMAIL_ADDRESS'),
+    alertEmail: hasEnvironmentSecret('ALERT_EMAIL'),
+    kibanaUsername: hasEnvironmentSecret('KIBANA_USERNAME'),
+    kibanaPassword: hasEnvironmentSecret('KIBANA_PASSWORD'),
+    sentryDsn: hasEnvironmentSecret('SENTRY_DSN'),
+    backupUser: hasEnvironmentSecret('BACKUP_SERVER_USER'),
+    metabaseAdminEmail: hasEnvironmentSecret('OPENCRVS_METABASE_ADMIN_EMAIL'),
+    metabaseAdminPassword: hasEnvironmentSecret(
+      'OPENCRVS_METABASE_ADMIN_PASSWORD'
+    )
+  }
+}
+
+function getBackupRestoreState() {
+  const environmentName = environmentSelection?.environmentName || ''
+  const hasConfiguredBackupOrRestore = Boolean(
+    getEnvironmentVariableValue('BACKUP_HOST') ||
+    getEnvironmentVariableValue('RESTORE_ENVIRONMENT_NAME')
+  )
+
+  return {
+    locked: Boolean(
+      environmentName &&
+      existingEnvironments.includes(environmentName) &&
+      hasConfiguredBackupOrRestore
+    ),
+    restoreEnvironmentChoices: existingEnvironments.filter(
+      (environment) => environment !== environmentName
+    )
+  }
+}
+
+function getApplicationFields() {
+  const backupRestoreState = getBackupRestoreState()
+  const backupRestoreMode = applicationConfig?.backupRestoreMode || 'none'
+
+  return getConfigurationFields('application').map((field) => {
+    if (field.id === 'backupRestoreMode' && backupRestoreState.locked) {
+      return {
+        ...field,
+        disabled: true,
+        description: 'The backup or restore mode is fixed after the GitHub environment is configured.',
+        options: field.options?.filter(({ value }) => value === backupRestoreMode)
+      }
+    }
+
+    if (field.id === 'restoreEnvironmentName') {
+      return {
+        ...field,
+        suggestions: backupRestoreState.restoreEnvironmentChoices
+      }
+    }
+
+    return field
+  })
+}
+
+function parseSubmittedSecret(
+  scope: 'ENVIRONMENT' | 'REPOSITORY',
+  name: string,
+  input?: string | boolean
+) {
+  const value = input === undefined ? '' : String(input).trim()
+  const exists = secretExists(scope, name)
+
+  if (!value && exists) {
+    return {
+      available: true,
+      value: ''
+    }
+  }
+
+  if (value !== EXISTING_SECRET_SENTINEL) {
+    return {
+      available: Boolean(value),
+      value
+    }
+  }
+
+  if (!exists) {
+    throw new Error(`Invalid existing-secret placeholder for ${name}.`)
+  }
+
+  return {
+    available: true,
+    value: ''
+  }
 }
 
 function planVariable(
@@ -512,17 +1140,45 @@ function getGithubUpdates(includeSecretValues = false) {
   }
 
   const variables = [
-    planVariable('REPOSITORY', 'GH_APPROVERS', environmentSelection.githubApprovers),
     planVariable('ENVIRONMENT', 'APPROVAL_REQUIRED', environmentSelection.approvalRequired ? 'true' : 'false'),
-    planVariable('ENVIRONMENT', 'KUBE_API_HOST', infrastructureConfig.kubeAPIHost || ''),
-    planVariable('ENVIRONMENT', 'KUBE_WORKER_NODES', infrastructureConfig.kubeWorkerNodes || ''),
-    planVariable('ENVIRONMENT', 'KUBE_API_ALLOWED_CIDRS', infrastructureConfig.kubeApiAllowedCidrs || ''),
-    planVariable('ENVIRONMENT', 'DOMAIN', applicationConfig.domain || '')
+    planVariable(
+      'ENVIRONMENT',
+      'CONTENT_SECURITY_POLICY_WILDCARD',
+      `*.${applicationConfig.domain}`
+    )
   ]
 
-  if (infrastructureConfig.enableDiskEncryption) {
-    variables.push(planVariable('ENVIRONMENT', 'DISK_SPACE', infrastructureConfig.diskSpace || ''))
+  if (environmentSelection.githubApprovers.trim()) {
+    variables.unshift(
+      planVariable(
+        'REPOSITORY',
+        'GH_APPROVERS',
+        environmentSelection.githubApprovers
+      )
+    )
   }
+
+  const configuredVariables = CONFIGURATION_FIELDS.flatMap((field) => {
+    if (!isConfigurationFieldActive(field)) {
+      return []
+    }
+
+    const value = String(getConfigurationFieldValue(field)).trim()
+
+    return field.bindings
+      .filter((binding): binding is GithubBinding =>
+        binding.target === 'github' && binding.type === 'VARIABLE'
+      )
+      .flatMap((binding) => {
+        if (binding.omitWhenEmpty && !value) {
+          return []
+        }
+
+        return [planVariable(binding.scope, binding.name, value)]
+      })
+  })
+
+  variables.push(...configuredVariables)
 
   const applicationUpdates = getApplicationGithubUpdates(applicationConfig)
   const secrets = applicationUpdates.secrets.map((secret) =>
@@ -532,6 +1188,131 @@ function getGithubUpdates(includeSecretValues = false) {
       includeSecretValues ? secret.value : secret.value ? '[provided on submit]' : ''
     )
   )
+
+  const githubToken = verifiedConnection?.token || ''
+  secrets.push(
+    planSecret(
+      'REPOSITORY',
+      'GH_TOKEN',
+      includeSecretValues ? githubToken : githubToken ? '[provided at login]' : ''
+    )
+  )
+
+  for (const field of getConfigurationFields('dependencies')) {
+    if (!isConfigurationFieldActive(field)) {
+      continue
+    }
+
+    for (const binding of field.bindings) {
+      if (binding.target !== 'github' || binding.type !== 'SECRET') {
+        continue
+      }
+
+      const value = String(dependenciesConfig[field.id] ?? '')
+      secrets.push(
+        planSecret(
+          binding.scope,
+          binding.name,
+          includeSecretValues ? value : value ? '[provided on submit]' : ''
+        )
+      )
+    }
+  }
+
+  for (const field of getConfigurationFields('advanced')) {
+    for (const binding of field.bindings) {
+      if (binding.target !== 'github' || binding.type !== 'SECRET') {
+        continue
+      }
+
+      const value = String(advancedConfig[field.id] ?? '')
+      secrets.push(
+        planSecret(
+          binding.scope,
+          binding.name,
+          includeSecretValues ? value : value ? '[provided on submit]' : ''
+        )
+      )
+    }
+  }
+
+  for (const definition of CONFIGURATION_SCREENS) {
+    if (['infrastructure', 'application', 'dependencies', 'advanced'].includes(definition.id)) {
+      continue
+    }
+    for (const field of getConfigurationFields(definition.id)) {
+      if (!isConfigurationFieldActive(field)) {
+        continue
+      }
+      for (const binding of field.bindings) {
+        if (binding.target !== 'github' || binding.type !== 'SECRET') {
+          continue
+        }
+        const value = String(genericScreenConfigs[definition.id]?.[field.id] ?? '')
+        secrets.push(
+          planSecret(
+            binding.scope,
+            binding.name,
+            includeSecretValues ? value : value ? '[provided on submit]' : ''
+          )
+        )
+      }
+    }
+  }
+
+  if (applicationConfig.backupRestoreMode === 'backup') {
+    const passphraseExists = secretExists(
+      'ENVIRONMENT',
+      'BACKUP_ENCRYPTION_PASSPHRASE'
+    )
+    const privateKeyExists = secretExists('ENVIRONMENT', 'BACKUP_HOST_PRIVATE_KEY')
+    const publicKeyExists = secretExists('ENVIRONMENT', 'BACKUP_HOST_PUBLIC_KEY')
+    const needsBackupKeyPair = !privateKeyExists || !publicKeyExists
+
+    if (includeSecretValues && !passphraseExists && !generatedBackupEncryptionPassphrase) {
+      generatedBackupEncryptionPassphrase = generateLongPassword()
+    }
+
+    if (
+      includeSecretValues &&
+      needsBackupKeyPair &&
+      !generatedBackupHostPrivateKey
+    ) {
+      const keyPair = generateSSHKeyPair()
+      generatedBackupHostPrivateKey = keyPair.privateKey
+      generatedBackupHostPublicKey = keyPair.publicKey
+    }
+
+    secrets.push(
+      planSecret(
+        'ENVIRONMENT',
+        'BACKUP_ENCRYPTION_PASSPHRASE',
+        passphraseExists
+          ? ''
+          : includeSecretValues
+            ? generatedBackupEncryptionPassphrase
+            : '[generated on finalize]'
+      ),
+      planSecret(
+        'ENVIRONMENT',
+        'BACKUP_HOST_PRIVATE_KEY',
+        !needsBackupKeyPair
+          ? ''
+          : includeSecretValues
+            ? generatedBackupHostPrivateKey
+            : '[generated on finalize]'
+      ),
+      planSecret(
+        'ENVIRONMENT',
+        'BACKUP_HOST_PUBLIC_KEY',
+        !needsBackupKeyPair
+          ? ''
+          : includeSecretValues
+            ? generatedBackupHostPublicKey
+            : '[generated on finalize]'
+      )
+    )
+  }
 
   if (infrastructureConfig.enableDiskEncryption) {
     const exists = secretExists('ENVIRONMENT', 'ENCRYPTION_KEY')
@@ -552,6 +1333,321 @@ function getGithubUpdates(includeSecretValues = false) {
   return {
     variables,
     secrets
+  }
+}
+
+function getConfigurationFieldValue(field: ConfigurationField): ConfigurationValue {
+  const configuredValues: Record<string, ConfigurationValue> = {
+    kubeAPIHost: infrastructureConfig?.kubeAPIHost || '',
+    kubeWorkerNodes: infrastructureConfig?.kubeWorkerNodes || '',
+    kubeApiAllowedCidrs: infrastructureConfig?.kubeApiAllowedCidrs || '',
+    enableDiskEncryption: Boolean(infrastructureConfig?.enableDiskEncryption),
+    diskSpace: infrastructureConfig?.diskSpace || '200g',
+    domain: applicationConfig?.domain || '',
+    traefikMode: applicationConfig?.traefikMode || 'lets_encrypt',
+    dockerhubMode: applicationConfig?.dockerhubMode || 'opencrvs',
+    smtpEnabled: Boolean(applicationConfig?.smtpEnabled),
+    backupRestoreMode: applicationConfig?.backupRestoreMode || 'none',
+    backupHost: applicationConfig?.backupHost || '',
+    backupType:
+      applicationConfig?.backupRestoreMode === 'backup'
+        ? applicationConfig.backupType || 'dump'
+        : '',
+    restoreEnvironmentName: applicationConfig?.restoreEnvironmentName || '',
+    restoreType:
+      applicationConfig?.backupRestoreMode === 'restore'
+        ? applicationConfig.restoreType || 'dump'
+        : ''
+  }
+
+  return configuredValues[field.id] ??
+    dependenciesConfig[field.id] ??
+    advancedConfig[field.id] ??
+    genericScreenConfigs[field.screen]?.[field.id] ??
+    field.defaultValue ??
+    ''
+}
+
+function isConfigurationFieldActive(field: ConfigurationField) {
+  if (!field.visibleWhen) {
+    return true
+  }
+
+  return valuesEqual(
+    getConfigurationFieldValue(
+      CONFIGURATION_FIELDS.find(({ id }) => id === field.visibleWhen!.fieldId)!
+    ),
+    field.visibleWhen.equals
+  )
+}
+
+function valuesEqual(left: unknown, right: unknown) {
+  return JSON.stringify(left) === JSON.stringify(right)
+}
+
+function getHelmUpdates(): HelmUpdate[] {
+  return CONFIGURATION_FIELDS.flatMap((field) => {
+    const value = getConfigurationFieldValue(field)
+
+    return field.bindings
+      .filter((binding): binding is HelmBinding => binding.target === 'helm')
+      .map((binding) => {
+        const currentValue = getNestedValue(
+          helmBaseOverrides[binding.chart] || {},
+          binding.path
+        )
+        const shouldRemove =
+          !isConfigurationFieldActive(field) ||
+          Boolean(binding.omitWhenDefault && valuesEqual(value, field.defaultValue))
+        const action = shouldRemove
+          ? currentValue === undefined
+            ? 'unchanged'
+            : 'remove'
+          : valuesEqual(currentValue, value)
+            ? 'unchanged'
+            : 'set'
+
+        return {
+          chart: binding.chart,
+          path: binding.path,
+          value,
+          action
+        }
+      })
+  })
+}
+
+function saveAdvancedConfig(payload: AdvancedRequest) {
+  if (!environmentSelection) {
+    throw new Error('Select an environment before configuring Helm values.')
+  }
+
+  const submittedValues = payload.values || {}
+  const nextConfig: Record<string, ConfigurationValue> = {}
+
+  for (const field of getConfigurationFields('advanced')) {
+    const submitted = submittedValues[field.id]
+    const current = advancedConfig[field.id] ?? field.defaultValue ?? ''
+
+    if (field.control === 'checkbox') {
+      nextConfig[field.id] = field.readonly || submitted === undefined
+        ? Boolean(current)
+        : Boolean(submitted)
+      continue
+    }
+
+    const value = field.readonly || submitted === undefined ? current : submitted
+    const githubSecret = field.bindings.find(
+      (binding): binding is GithubBinding =>
+        binding.target === 'github' && binding.type === 'SECRET'
+    )
+
+    if (githubSecret) {
+      const secret = parseSubmittedSecret(
+        githubSecret.scope,
+        githubSecret.name,
+        typeof value === 'string' ? value : ''
+      )
+      if (field.required && !secret.available) {
+        throw new Error(`${field.label} is required.`)
+      }
+      nextConfig[field.id] = secret.value
+      continue
+    }
+
+    if (field.control === 'number' || field.validator === 'positive-integer') {
+      const numberValue = Number(value)
+      if (!Number.isInteger(numberValue) || numberValue < 1) {
+        throw new Error(`${field.label} must be a positive integer.`)
+      }
+      nextConfig[field.id] = numberValue
+      continue
+    }
+
+    const textValue = String(value).trim()
+    if (field.validator === 'kubernetes-memory' && !/^\d+(?:\.\d+)?(?:[KMGT]i?)?$/.test(textValue)) {
+      throw new Error(`${field.label} must be a Kubernetes memory quantity, for example 512Mi or 8Gi.`)
+    }
+    nextConfig[field.id] = textValue
+  }
+
+  advancedConfig = nextConfig
+  return getAdvancedResponse()
+}
+
+function saveDependenciesConfig(payload: DependenciesRequest) {
+  if (!environmentSelection) {
+    throw new Error('Select an environment before configuring dependencies.')
+  }
+
+  const submittedValues = payload.values || {}
+  const fields = getConfigurationFields('dependencies')
+  const nextConfig: Record<string, ConfigurationValue> = { ...dependenciesConfig }
+
+  for (const field of fields.filter(({ control }) => control === 'checkbox')) {
+    const submitted = submittedValues[field.id]
+    nextConfig[field.id] = field.readonly || submitted === undefined
+      ? Boolean(dependenciesConfig[field.id] ?? field.defaultValue)
+      : Boolean(submitted)
+  }
+
+  dependenciesConfig = nextConfig
+
+  for (const field of fields.filter(({ control }) => control !== 'checkbox')) {
+    if (!isConfigurationFieldActive(field)) {
+      continue
+    }
+
+    const submitted = submittedValues[field.id]
+    const value = field.readonly || submitted === undefined
+      ? dependenciesConfig[field.id]
+      : submitted
+    const githubSecret = field.bindings.find(
+      (binding): binding is GithubBinding =>
+        binding.target === 'github' && binding.type === 'SECRET'
+    )
+
+    if (githubSecret) {
+      const secret = parseSubmittedSecret(
+        githubSecret.scope,
+        githubSecret.name,
+        typeof value === 'string' ? value : ''
+      )
+      if (field.required && !secret.available) {
+        throw new Error(`${field.label} is required.`)
+      }
+      nextConfig[field.id] = secret.value
+      continue
+    }
+
+    if (field.control === 'number' || field.validator === 'positive-integer') {
+      const numberValue = Number(value)
+      if (!Number.isInteger(numberValue) || numberValue < 1) {
+        throw new Error(`${field.label} must be a positive integer.`)
+      }
+      nextConfig[field.id] = numberValue
+      continue
+    }
+
+    const textValue = String(value ?? '').trim()
+    if (field.required && !textValue) {
+      throw new Error(`${field.label} is required.`)
+    }
+    if (
+      field.control === 'select' &&
+      !field.options?.some((option) => option.value === textValue)
+    ) {
+      throw new Error(`${field.label} has an invalid value.`)
+    }
+    nextConfig[field.id] = textValue
+  }
+
+  dependenciesConfig = nextConfig
+  return getDependenciesResponse()
+}
+
+function saveGenericScreenConfig(
+  screenId: string,
+  submittedValues: Record<string, unknown>
+) {
+  const fields = getConfigurationFields(screenId)
+  const currentConfig = genericScreenConfigs[screenId] || {}
+  const nextConfig: Record<string, ConfigurationValue> = { ...currentConfig }
+
+  for (const field of fields.filter(({ control }) => control === 'checkbox')) {
+    const submitted = submittedValues[field.id]
+    nextConfig[field.id] = field.readonly || submitted === undefined
+      ? Boolean(currentConfig[field.id] ?? field.defaultValue)
+      : Boolean(submitted)
+  }
+  genericScreenConfigs[screenId] = nextConfig
+
+  for (const field of fields.filter(({ control }) => control !== 'checkbox')) {
+    if (!isConfigurationFieldActive(field)) {
+      continue
+    }
+
+    const submitted = submittedValues[field.id]
+    const value = field.readonly || submitted === undefined
+      ? currentConfig[field.id] ?? field.defaultValue ?? ''
+      : submitted
+    const githubSecret = field.bindings.find(
+      (binding): binding is GithubBinding =>
+        binding.target === 'github' && binding.type === 'SECRET'
+    )
+
+    if (githubSecret) {
+      const secret = parseSubmittedSecret(
+        githubSecret.scope,
+        githubSecret.name,
+        typeof value === 'string' ? value : ''
+      )
+      if (field.required && !secret.available) {
+        throw new Error(`${field.label} is required.`)
+      }
+      nextConfig[field.id] = secret.value
+      continue
+    }
+
+    if (field.control === 'number' || field.validator === 'positive-integer') {
+      const numberValue = Number(value)
+      if (!Number.isInteger(numberValue) || numberValue < 1) {
+        throw new Error(`${field.label} must be a positive integer.`)
+      }
+      nextConfig[field.id] = numberValue
+      continue
+    }
+
+    const textValue = String(value ?? '').trim()
+    if (field.required && !textValue) {
+      throw new Error(`${field.label} is required.`)
+    }
+    if (field.validator === 'kubernetes-memory' && !/^\d+(?:\.\d+)?(?:[KMGT]i?)?$/.test(textValue)) {
+      throw new Error(`${field.label} must be a Kubernetes memory quantity, for example 512Mi or 8Gi.`)
+    }
+    if (
+      field.control === 'select' &&
+      !field.options?.some((option) => option.value === textValue)
+    ) {
+      throw new Error(`${field.label} has an invalid value.`)
+    }
+    nextConfig[field.id] = textValue
+  }
+
+  genericScreenConfigs[screenId] = nextConfig
+}
+
+function writeHelmOverrides(environmentName: string) {
+  const updates = getHelmUpdates()
+  const charts = [...new Set(updates.map((update) => update.chart))]
+
+  for (const chart of charts) {
+    const output = structuredClone(helmBaseOverrides[chart] || {})
+    const chartUpdates = updates.filter((update) => update.chart === chart)
+
+    for (const update of chartUpdates) {
+      if (update.action === 'remove') {
+        deleteNestedValue(output, update.path)
+      } else if (update.action === 'set') {
+        setNestedValue(output, update.path, update.value)
+      }
+    }
+
+    const header = [
+      '##################################################################################',
+      '# Environment-specific Helm overrides managed by yarn environment:init',
+      '# Unmanaged keys are preserved when this file is updated.',
+      '##################################################################################',
+      ''
+    ].join('\n')
+    const yaml = Object.keys(output).length
+      ? dumpYaml(output, { noRefs: true, lineWidth: 100 })
+      : ''
+    const outputPath = getHelmOverridePath(environmentName, chart)
+
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true })
+    fs.writeFileSync(outputPath, `${header}${yaml}`, 'utf8')
+    helmBaseOverrides[chart] = output
   }
 }
 
@@ -590,7 +1686,8 @@ function getReviewPlan(includeSecretValues = false) {
       ? githubUpdates.secrets
       : githubUpdates.secrets.map(({ value, ...secret }) => secret),
     inventoryValues: infrastructureConfig ? getInventoryValues(infrastructureConfig) : null,
-    chartValues: applicationConfig ? getChartValues(applicationConfig) : null
+    chartValues: applicationConfig ? getChartValues(applicationConfig) : null,
+    helmUpdates: getHelmUpdates()
   }
 }
 
@@ -609,6 +1706,43 @@ function assertReadyToFinalize() {
 
   if (!applicationConfig) {
     throw new Error('Save application configuration before finalizing setup.')
+  }
+}
+
+function shellQuote(value: string) {
+  return `'${value.replace(/'/g, `'"'"'`)}'`
+}
+
+function getNextSteps() {
+  const organisation = verifiedConnection!.organisation!
+  const repository = verifiedConnection!.repository!
+  const token = verifiedConnection!.token!
+  const environment = environmentSelection!.environmentName
+  const primaryHost = infrastructureConfig!.kubeAPIHost || 'KUBE_API_HOST'
+  const workerNodes = (infrastructureConfig!.kubeWorkerNodes || '')
+    .split(',')
+    .map((host) => host.trim())
+    .filter(Boolean)
+  const backupHost = applicationConfig!.backupRestoreMode === 'backup'
+    ? applicationConfig!.backupHost || ''
+    : ''
+
+  return {
+    primaryHost,
+    primaryCommand: [
+      'curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh \\',
+      '     -o opencrvs-bootstrap.sh && \\',
+      `bash opencrvs-bootstrap.sh --owner ${shellQuote(organisation)} \\`,
+      `            --repo ${shellQuote(repository)} \\`,
+      `            --env ${shellQuote(environment)} \\`,
+      `            --token ${shellQuote(token)} \\`,
+      '            --enable-runner'
+    ].join('\n'),
+    additionalHosts: [...new Set([...workerNodes, backupHost].filter(Boolean))],
+    additionalCommand: [
+      'curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\',
+      '    bash opencrvs-bootstrap.sh --ssh-public-key "<public key from master node>"'
+    ].join('\n')
   }
 }
 
@@ -708,6 +1842,8 @@ async function finalizeSetup() {
   performedActions.push(`Generated inventory file infrastructure/server-setup/inventory/${environment}.yml`)
   copyChartsValues(environment, chartValues as Record<string, string | boolean>)
   performedActions.push(`Generated Helm chart values under environments/${environment}`)
+  writeHelmOverrides(environment)
+  performedActions.push('Applied managed Helm chart overrides')
   await updateWorkflowEnvironments()
   performedActions.push('Updated GitHub workflow environment options')
 
@@ -728,7 +1864,8 @@ async function finalizeSetup() {
 
   return {
     ...getReviewPlan(false),
-    performedActions
+    performedActions,
+    nextSteps: getNextSteps()
   }
 }
 
@@ -746,38 +1883,158 @@ function saveApplicationConfig(payload: ApplicationRequest) {
   }
 
   const traefikMode = payload.traefikMode || 'lets_encrypt'
+  const sslCrt = parseSubmittedSecret('ENVIRONMENT', 'SSL_CRT', payload.sslCrt)
+  const sslKey = parseSubmittedSecret('ENVIRONMENT', 'SSL_KEY', payload.sslKey)
 
-  if (traefikMode === 'static_ssl' && (!payload.sslCrt?.trim() || !payload.sslKey?.trim())) {
+  if (traefikMode === 'static_ssl' && (!sslCrt.available || !sslKey.available)) {
     throw new Error('SSL certificate and key are required for static SSL.')
   }
 
   const dockerhubMode = payload.dockerhubMode || 'opencrvs'
+  const dockerhubOrganisation = parseSubmittedSecret(
+    'REPOSITORY',
+    'DOCKERHUB_ACCOUNT',
+    payload.dockerhubOrganisation
+  )
+  const dockerhubRepository = parseSubmittedSecret(
+    'REPOSITORY',
+    'DOCKERHUB_REPO',
+    payload.dockerhubRepository
+  )
+  const dockerhubUsername = parseSubmittedSecret(
+    'REPOSITORY',
+    'DOCKER_USERNAME',
+    payload.dockerhubUsername
+  )
+  const dockerhubToken = parseSubmittedSecret(
+    'REPOSITORY',
+    'DOCKER_TOKEN',
+    payload.dockerhubToken
+  )
 
   if (dockerhubMode === 'custom') {
     const required = [
-      payload.dockerhubOrganisation,
-      payload.dockerhubRepository,
-      payload.dockerhubUsername,
-      payload.dockerhubToken
+      dockerhubOrganisation,
+      dockerhubRepository,
+      dockerhubUsername,
+      dockerhubToken
     ]
 
-    if (required.some((value) => !value?.trim())) {
+    if (required.some((secret) => !secret.available)) {
       throw new Error('All custom Docker Hub fields are required.')
+    }
+  }
+
+  const smtpEnabled = Boolean(payload.smtpEnabled)
+  const smtpSecrets = {
+    smtpHost: parseSubmittedSecret('ENVIRONMENT', 'SMTP_HOST', payload.smtpHost),
+    smtpUsername: parseSubmittedSecret(
+      'ENVIRONMENT',
+      'SMTP_USERNAME',
+      payload.smtpUsername
+    ),
+    smtpPassword: parseSubmittedSecret(
+      'ENVIRONMENT',
+      'SMTP_PASSWORD',
+      payload.smtpPassword
+    ),
+    smtpPort: parseSubmittedSecret('ENVIRONMENT', 'SMTP_PORT', payload.smtpPort),
+    smtpSecure: parseSubmittedSecret(
+      'ENVIRONMENT',
+      'SMTP_SECURE',
+      payload.smtpSecure
+    ),
+    senderEmailAddress: parseSubmittedSecret(
+      'ENVIRONMENT',
+      'SENDER_EMAIL_ADDRESS',
+      payload.senderEmailAddress
+    ),
+    alertEmail: parseSubmittedSecret('ENVIRONMENT', 'ALERT_EMAIL', payload.alertEmail)
+  }
+
+  if (
+    smtpEnabled &&
+    Object.values(smtpSecrets).some((secret) => !secret.available)
+  ) {
+    throw new Error('All SMTP configuration fields are required when SMTP is enabled.')
+  }
+
+  const requestedBackupRestoreMode = ['backup', 'restore'].includes(
+    payload.backupRestoreMode || ''
+  )
+    ? payload.backupRestoreMode as 'backup' | 'restore'
+    : 'none'
+  const persistedBackupRestoreMode = getEnvironmentVariableValue('BACKUP_HOST')
+    ? 'backup'
+    : getEnvironmentVariableValue('RESTORE_ENVIRONMENT_NAME')
+      ? 'restore'
+      : 'none'
+  const backupRestoreLocked =
+    persistedBackupRestoreMode !== 'none' &&
+    existingEnvironments.includes(environmentSelection.environmentName)
+
+  if (
+    backupRestoreLocked &&
+    requestedBackupRestoreMode !== persistedBackupRestoreMode
+  ) {
+    throw new Error(
+      'Backup or restore mode cannot be changed after it has been configured.'
+    )
+  }
+
+  const backupUser = parseSubmittedSecret(
+    'ENVIRONMENT',
+    'BACKUP_SERVER_USER',
+    payload.backupUser
+  )
+  const backupHost = payload.backupHost?.trim() || ''
+  const backupType = payload.backupType === 'differential' ? 'differential' : 'dump'
+  const restoreEnvironmentName = payload.restoreEnvironmentName?.trim() || ''
+  const restoreType = payload.restoreType === 'differential' ? 'differential' : 'dump'
+
+  if (
+    requestedBackupRestoreMode === 'backup' &&
+    (!backupHost || !backupUser.available)
+  ) {
+    throw new Error('Backup host and backup server user are required for backups.')
+  }
+
+  if (requestedBackupRestoreMode === 'restore') {
+    if (!restoreEnvironmentName) {
+      throw new Error('Restore environment name is required for restore.')
+    }
+    if (restoreEnvironmentName === environmentSelection.environmentName) {
+      throw new Error('An environment cannot restore a backup from itself.')
     }
   }
 
   applicationConfig = {
     domain: payload.domain.trim(),
     traefikMode,
-    sslCrt: traefikMode === 'static_ssl' ? payload.sslCrt?.trim() || '' : '',
-    sslKey: traefikMode === 'static_ssl' ? payload.sslKey?.trim() || '' : '',
+    sslCrt: traefikMode === 'static_ssl' ? sslCrt.value : '',
+    sslKey: traefikMode === 'static_ssl' ? sslKey.value : '',
     dockerhubMode,
     dockerhubOrganisation:
-      dockerhubMode === 'opencrvs' ? 'opencrvs' : payload.dockerhubOrganisation?.trim() || '',
+      dockerhubMode === 'opencrvs' ? 'opencrvs' : dockerhubOrganisation.value,
     dockerhubRepository:
-      dockerhubMode === 'opencrvs' ? 'ocrvs-countryconfig' : payload.dockerhubRepository?.trim() || '',
-    dockerhubUsername: dockerhubMode === 'custom' ? payload.dockerhubUsername?.trim() || '' : '',
-    dockerhubToken: dockerhubMode === 'custom' ? payload.dockerhubToken?.trim() || '' : ''
+      dockerhubMode === 'opencrvs' ? 'ocrvs-countryconfig' : dockerhubRepository.value,
+    dockerhubUsername: dockerhubMode === 'custom' ? dockerhubUsername.value : '',
+    dockerhubToken: dockerhubMode === 'custom' ? dockerhubToken.value : '',
+    smtpEnabled,
+    smtpHost: smtpEnabled ? smtpSecrets.smtpHost.value : '',
+    smtpUsername: smtpEnabled ? smtpSecrets.smtpUsername.value : '',
+    smtpPassword: smtpEnabled ? smtpSecrets.smtpPassword.value : '',
+    smtpPort: smtpEnabled ? smtpSecrets.smtpPort.value : '',
+    smtpSecure: smtpEnabled ? smtpSecrets.smtpSecure.value : '',
+    senderEmailAddress: smtpEnabled ? smtpSecrets.senderEmailAddress.value : '',
+    alertEmail: smtpEnabled ? smtpSecrets.alertEmail.value : '',
+    backupRestoreMode: requestedBackupRestoreMode,
+    backupHost: requestedBackupRestoreMode === 'backup' ? backupHost : '',
+    backupUser: requestedBackupRestoreMode === 'backup' ? backupUser.value : '',
+    backupType: requestedBackupRestoreMode === 'backup' ? backupType : '',
+    restoreEnvironmentName:
+      requestedBackupRestoreMode === 'restore' ? restoreEnvironmentName : '',
+    restoreType: requestedBackupRestoreMode === 'restore' ? restoreType : ''
   }
 
   return applicationConfig
@@ -813,6 +2070,32 @@ function saveInfrastructureConfig(payload: InfrastructureRequest) {
   }
 
   return infrastructureConfig
+}
+
+function saveConfigurationScreen(
+  screenId: string,
+  payload: ConfigurationScreenRequest
+) {
+  const values = payload.values || {}
+
+  if (screenId === 'infrastructure') {
+    saveInfrastructureConfig({
+      ...(values as InfrastructureRequest),
+      users: payload.custom?.users || users
+    })
+  } else if (screenId === 'application') {
+    saveApplicationConfig(values as ApplicationRequest)
+  } else if (screenId === 'dependencies') {
+    saveDependenciesConfig({ values })
+  } else if (screenId === 'advanced') {
+    saveAdvancedConfig({ values })
+  } else if (CONFIGURATION_SCREENS.some(({ id }) => id === screenId)) {
+    saveGenericScreenConfig(screenId, values)
+  } else {
+    throw new Error(`Unknown configuration screen: ${screenId}`)
+  }
+
+  return getConfigurationScreenResponse(screenId)
 }
 
 function getCurrentSystemUser() {
@@ -851,12 +2134,56 @@ async function handleRequest(
     const url = new URL(request.url || '/', `http://${HOST}`)
 
     if (method === 'GET' && url.pathname === '/') {
-      sendHtml(response)
+      sendUiFile(response, 'index.html', 'text/html')
+      return
+    }
+
+    if (method === 'GET' && url.pathname === '/ui/styles.css') {
+      sendUiFile(response, 'styles.css', 'text/css')
+      return
+    }
+
+    if (method === 'GET' && url.pathname === '/ui/bootstrap.min.css') {
+      sendBootstrapCss(response)
+      return
+    }
+
+    if (method === 'GET' && url.pathname === '/ui/application.js') {
+      sendUiFile(response, 'application.js', 'text/javascript')
+      return
+    }
+
+    if (method === 'GET' && url.pathname === '/ui/form-renderer.js') {
+      sendUiFile(response, 'form-renderer.js', 'text/javascript')
+      return
+    }
+
+    if (method === 'GET' && url.pathname === '/ui/configuration-schema.js') {
+      response.writeHead(200, {
+        'content-type': 'text/javascript; charset=utf-8',
+        'cache-control': 'no-store'
+      })
+      response.end(
+        `window.OpenCRVSConfigurationSchema = ${JSON.stringify(
+          CONFIGURATION_SCREENS.slice().sort((left, right) => left.order - right.order)
+        )};`
+      )
       return
     }
 
     if (method === 'GET' && url.pathname === '/api/github/defaults') {
-      sendJson(response, 200, getGitHubDefaults())
+      sendJson(response, 200, {
+        ...getGitHubDefaults(),
+        currentSystemUserAvailable: CURRENT_SYSTEM_USER_AVAILABLE
+      })
+      return
+    }
+
+    if (method === 'GET' && url.pathname === '/api/configuration-schema') {
+      sendJson(response, 200, {
+        screens: CONFIGURATION_SCREENS,
+        fields: CONFIGURATION_FIELDS
+      })
       return
     }
 
@@ -872,16 +2199,30 @@ async function handleRequest(
         repositorySecretCount: repositorySecrets.length,
         environmentVariableCount: environmentVariables.length,
         environmentSecretCount: environmentSecrets.length,
+        existingSecrets: getExistingSecretState(),
+        secretSentinel: EXISTING_SECRET_SENTINEL,
         githubApprovers: getRepositoryVariableValue('GH_APPROVERS'),
         environmentSelection,
         users,
         infrastructure: infrastructureConfig,
-        application: applicationConfig
+        infrastructureFields: getConfigurationFields('infrastructure'),
+        application: applicationConfig,
+        applicationFields: getApplicationFields(),
+        dependencies: getDependenciesResponse(),
+        advanced: getAdvancedResponse(),
+        configuration: getConfigurationResponse()
       })
       return
     }
 
     if (method === 'GET' && url.pathname === '/api/current-user') {
+      if (!CURRENT_SYSTEM_USER_AVAILABLE) {
+        sendJson(response, 404, {
+          error: 'The current system user is not available in container mode.'
+        })
+        return
+      }
+
       sendJson(response, 200, {
         user: getCurrentSystemUser()
       })
@@ -891,19 +2232,9 @@ async function handleRequest(
     if (method === 'POST' && url.pathname === '/api/github/connect') {
       const body = await readRequestBody(request)
       const payload = JSON.parse(body || '{}') as GitHubConnectionRequest
-      const repositoryId = await verifyGitHubConnection(payload)
+      await verifyGitHubConnection(payload)
 
-      sendJson(response, 200, {
-        connected: true,
-        repositoryId,
-        organisation: payload.organisation,
-        repository: payload.repository,
-        environmentChoices: getEnvironmentChoices(),
-        existingEnvironments,
-        repositoryVariableCount: repositoryVariables.length,
-        repositorySecretCount: repositorySecrets.length,
-        githubApprovers: getRepositoryVariableValue('GH_APPROVERS')
-      })
+      sendJson(response, 200, getGitHubConnectionResponse())
       return
     }
 
@@ -915,12 +2246,52 @@ async function handleRequest(
       sendJson(response, 200, {
         saved: true,
         environmentSelection: selection,
-        approvalRequired: getEnvironmentVariableValue('APPROVAL_REQUIRED'),
+        approvalRequired: selection.approvalRequired,
         environmentVariableCount: environmentVariables.length,
         environmentSecretCount: environmentSecrets.length,
+        existingSecrets: getExistingSecretState(),
+        secretSentinel: EXISTING_SECRET_SENTINEL,
         users,
         infrastructure: infrastructureConfig,
-        application: applicationConfig
+        infrastructureFields: getConfigurationFields('infrastructure'),
+        application: applicationConfig,
+        applicationFields: getApplicationFields(),
+        dependencies: getDependenciesResponse(),
+        advanced: getAdvancedResponse(),
+        configuration: getConfigurationResponse()
+      })
+      return
+    }
+
+    if (method === 'POST' && url.pathname === '/api/environment-preview') {
+      const body = await readRequestBody(request)
+      const payload = JSON.parse(body || '{}') as { environmentName?: string }
+      const environmentName = payload.environmentName?.trim() || ''
+
+      if (!environmentName) {
+        throw new Error('Environment name is required.')
+      }
+
+      await loadEnvironmentValues(environmentName)
+      sendJson(response, 200, {
+        approvalRequired: getEnvironmentBooleanVariable('APPROVAL_REQUIRED')
+      })
+      return
+    }
+
+    const configurationRoute = url.pathname.match(/^\/api\/configuration\/([^/]+)$/)
+    if (method === 'POST' && configurationRoute) {
+      const body = await readRequestBody(request)
+      const payload = JSON.parse(body || '{}') as ConfigurationScreenRequest
+      const screen = saveConfigurationScreen(
+        decodeURIComponent(configurationRoute[1]),
+        payload
+      )
+
+      sendJson(response, 200, {
+        saved: true,
+        screen,
+        helmUpdates: getHelmUpdates()
       })
       return
     }
@@ -948,6 +2319,32 @@ async function handleRequest(
         application,
         chartValues: getChartValues(application),
         githubUpdates: getApplicationGithubUpdates(application)
+      })
+      return
+    }
+
+    if (method === 'POST' && url.pathname === '/api/advanced') {
+      const body = await readRequestBody(request)
+      const payload = JSON.parse(body || '{}') as AdvancedRequest
+      const advanced = saveAdvancedConfig(payload)
+
+      sendJson(response, 200, {
+        saved: true,
+        advanced,
+        helmUpdates: getHelmUpdates()
+      })
+      return
+    }
+
+    if (method === 'POST' && url.pathname === '/api/dependencies') {
+      const body = await readRequestBody(request)
+      const payload = JSON.parse(body || '{}') as DependenciesRequest
+      const dependencies = saveDependenciesConfig(payload)
+
+      sendJson(response, 200, {
+        saved: true,
+        dependencies,
+        helmUpdates: getHelmUpdates()
       })
       return
     }
@@ -995,1241 +2392,20 @@ function openBrowser(url: string) {
   child.unref()
 }
 
-function renderAuthScreen() {
-  return `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>OpenCRVS Environment Setup</title>
-    <style>
-      :root {
-        color-scheme: light;
-        --bg: #f6f7f9;
-        --panel: #ffffff;
-        --text: #17202a;
-        --muted: #5b6775;
-        --line: #d8dee6;
-        --accent: #0969da;
-        --accent-dark: #0759b8;
-        --success-bg: #e8f7ef;
-        --success: #137333;
-        --error-bg: #fce8e6;
-        --error: #b3261e;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        min-height: 100vh;
-        font-family:
-          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-          "Segoe UI", sans-serif;
-        background: var(--bg);
-        color: var(--text);
-      }
-
-      main {
-        width: min(960px, calc(100vw - 32px));
-        margin: 0 auto;
-        padding: 40px 0;
-      }
-
-      .shell {
-        display: grid;
-        grid-template-columns: 280px minmax(0, 1fr);
-        min-height: 680px;
-        border: 1px solid var(--line);
-        background: var(--panel);
-      }
-
-      aside {
-        border-right: 1px solid var(--line);
-        background: #eef2f6;
-        padding: 28px 24px;
-      }
-
-      .brand {
-        margin: 0 0 28px;
-        font-size: 20px;
-        font-weight: 700;
-      }
-
-      .steps {
-        display: grid;
-        gap: 10px;
-        margin: 0;
-        padding: 0;
-        list-style: none;
-      }
-
-      .step {
-        padding: 12px;
-        border: 1px solid transparent;
-        color: var(--muted);
-        font-size: 14px;
-      }
-
-      .step.active {
-        border-color: #b8c7dc;
-        background: #ffffff;
-        color: var(--text);
-        font-weight: 650;
-      }
-
-      section {
-        padding: 36px;
-      }
-
-      h1 {
-        margin: 0 0 8px;
-        font-size: 26px;
-        line-height: 1.2;
-      }
-
-      .lede {
-        max-width: 620px;
-        margin: 0 0 28px;
-        color: var(--muted);
-        line-height: 1.5;
-      }
-
-      form {
-        display: grid;
-        gap: 18px;
-        max-width: 620px;
-      }
-
-      label {
-        display: grid;
-        gap: 8px;
-        font-size: 14px;
-        font-weight: 650;
-      }
-
-      input {
-        width: 100%;
-        min-height: 44px;
-        border: 1px solid var(--line);
-        padding: 10px 12px;
-        font: inherit;
-        color: var(--text);
-        background: #ffffff;
-      }
-
-      input:focus {
-        outline: 2px solid rgba(9, 105, 218, 0.22);
-        border-color: var(--accent);
-      }
-
-      .screen {
-        display: none;
-      }
-
-      .screen.active {
-        display: block;
-      }
-
-      .form-group {
-        display: grid;
-        gap: 12px;
-      }
-
-      .group-title {
-        margin: 10px 0 0;
-        padding-top: 8px;
-        border-top: 1px solid var(--line);
-        font-size: 16px;
-      }
-
-      .toggle {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-weight: 650;
-      }
-
-      .toggle input {
-        width: 18px;
-        min-height: 18px;
-        accent-color: var(--accent);
-      }
-
-      select,
-      textarea {
-        width: 100%;
-        min-height: 44px;
-        border: 1px solid var(--line);
-        padding: 10px 12px;
-        font: inherit;
-        color: var(--text);
-        background: #ffffff;
-      }
-
-      textarea {
-        min-height: 88px;
-        resize: vertical;
-      }
-
-      select:focus,
-      textarea:focus {
-        outline: 2px solid rgba(9, 105, 218, 0.22);
-        border-color: var(--accent);
-      }
-
-      .hidden {
-        display: none;
-      }
-
-      .user-toolbar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-      }
-
-      .secondary {
-        border-color: var(--line);
-        color: var(--text);
-        background: #ffffff;
-      }
-
-      .secondary:hover {
-        background: #f4f6f8;
-      }
-
-      .danger {
-        border-color: #b3261e;
-        color: #ffffff;
-        background: #b3261e;
-      }
-
-      .danger:hover {
-        background: #921d18;
-      }
-
-      .users-table {
-        width: 100%;
-        border-collapse: collapse;
-        border: 1px solid var(--line);
-        font-size: 14px;
-      }
-
-      .users-table th,
-      .users-table td {
-        padding: 10px;
-        border-bottom: 1px solid var(--line);
-        text-align: left;
-        vertical-align: top;
-      }
-
-      .users-table th {
-        background: #f4f6f8;
-        color: var(--muted);
-        font-weight: 700;
-      }
-
-      .row-actions {
-        display: flex;
-        gap: 8px;
-      }
-
-      .inline-button {
-        min-height: 34px;
-        padding: 0 10px;
-        font-size: 13px;
-      }
-
-      .editor-panel {
-        display: grid;
-        gap: 14px;
-        padding: 16px;
-        border: 1px solid var(--line);
-        background: #fbfcfd;
-      }
-
-      .hint {
-        color: var(--muted);
-        font-size: 13px;
-        font-weight: 400;
-      }
-
-      .actions {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-top: 8px;
-      }
-
-      button {
-        min-height: 44px;
-        border: 1px solid var(--accent);
-        padding: 0 18px;
-        font: inherit;
-        font-weight: 700;
-        color: #ffffff;
-        background: var(--accent);
-        cursor: pointer;
-      }
-
-      button:hover {
-        background: var(--accent-dark);
-      }
-
-      button:disabled {
-        border-color: #aeb8c4;
-        background: #aeb8c4;
-        cursor: wait;
-      }
-
-      .status {
-        display: none;
-        max-width: 620px;
-        margin-top: 20px;
-        padding: 14px 16px;
-        border: 1px solid transparent;
-        line-height: 1.45;
-      }
-
-      .status.visible {
-        display: block;
-      }
-
-      .status.success {
-        border-color: #b7e1c9;
-        background: var(--success-bg);
-        color: var(--success);
-      }
-
-      .status.error {
-        border-color: #f2b8b5;
-        background: var(--error-bg);
-        color: var(--error);
-      }
-
-      @media (max-width: 760px) {
-        main {
-          width: 100%;
-          padding: 0;
-        }
-
-        .shell {
-          min-height: 100vh;
-          grid-template-columns: 1fr;
-          border: 0;
-        }
-
-        aside {
-          border-right: 0;
-          border-bottom: 1px solid var(--line);
-        }
-
-        section {
-          padding: 28px 20px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <main>
-      <div class="shell">
-        <aside>
-          <p class="brand">OpenCRVS setup</p>
-          <ol class="steps">
-            <li class="step active">GitHub connection</li>
-            <li class="step">Environment</li>
-            <li class="step">Infrastructure</li>
-            <li class="step">Application</li>
-            <li class="step">Review</li>
-          </ol>
-        </aside>
-        <section id="github-screen" class="screen active">
-          <h1>Connect to GitHub</h1>
-          <p class="lede">
-            Confirm the infrastructure repository and verify access before
-            generating environment configuration.
-          </p>
-          <form id="github-form">
-            <label>
-              Organisation
-              <input id="organisation" name="organisation" autocomplete="organization" required />
-            </label>
-            <label>
-              Repository
-              <input id="repository" name="repository" autocomplete="off" required />
-            </label>
-            <label>
-              GitHub token
-              <input id="token" name="token" type="password" autocomplete="off" required />
-              <span class="hint">
-                Used only by this local setup process to verify repository access.
-              </span>
-            </label>
-            <div class="actions">
-              <button id="connect-button" type="submit">Test connection</button>
-            </div>
-          </form>
-          <div id="status" class="status" role="status" aria-live="polite"></div>
-        </section>
-        <section id="environment-screen" class="screen">
-          <h1>Environment</h1>
-          <p class="lede">
-            Choose the target GitHub environment and configure the repository
-            approval settings used by deployment workflows.
-          </p>
-          <form id="environment-form">
-            <label>
-              Environment name
-              <select id="environmentName" name="environmentName" required></select>
-            </label>
-            <label id="customEnvironmentField" class="hidden">
-              Custom environment name
-              <input id="customEnvironmentName" name="customEnvironmentName" autocomplete="off" />
-            </label>
-            <label>
-              Environment type
-              <select id="environmentType" name="environmentType" required>
-                <option value="non-production">Development/Quality assurance/Testing (no PII data)</option>
-                <option value="production">Staging/Production (hosts PII data, requires frequent backups)</option>
-              </select>
-            </label>
-            <label class="toggle">
-              <input id="approvalRequired" name="approvalRequired" type="checkbox" />
-              Enable approvals for GitHub action workflows
-            </label>
-            <label>
-              GH_APPROVERS
-              <textarea id="githubApprovers" name="githubApprovers" autocomplete="off"></textarea>
-              <span class="hint">Comma-separated GitHub usernames or teams.</span>
-            </label>
-            <div class="actions">
-              <button id="environment-button" type="submit">Save environment</button>
-            </div>
-          </form>
-          <div id="environment-status" class="status" role="status" aria-live="polite"></div>
-        </section>
-        <section id="infrastructure-screen" class="screen">
-          <h1>Infrastructure</h1>
-          <p class="lede">
-            Configure the Kubernetes endpoint, worker nodes, API access ranges,
-            and disk encryption settings for this environment.
-          </p>
-          <form id="infrastructure-form">
-            <div class="form-group">
-              <h2 class="group-title">Kubernetes</h2>
-              <label>
-                KUBE_API_HOST
-                <input id="kubeAPIHost" name="kubeAPIHost" autocomplete="off" />
-                <span class="hint">Leave empty to let the setup auto-detect the Kubernetes API endpoint.</span>
-              </label>
-              <label>
-                KUBE_WORKER_NODES
-                <input id="kubeWorkerNodes" name="kubeWorkerNodes" autocomplete="off" />
-                <span class="hint">Comma-separated hostnames or IP addresses. Leave empty for a single-node setup.</span>
-              </label>
-              <label>
-                KUBE_API_ALLOWED_CIDRS
-                <input id="kubeApiAllowedCidrs" name="kubeApiAllowedCidrs" autocomplete="off" />
-                <span class="hint">Comma-separated CIDR ranges, for example 10.0.0.0/24.</span>
-              </label>
-            </div>
-            <div class="form-group">
-              <h2 class="group-title">Disk Encryption</h2>
-              <label class="toggle">
-                <input id="enableDiskEncryption" name="enableDiskEncryption" type="checkbox" />
-                Enable disk encryption
-              </label>
-              <label id="diskSpaceField" class="hidden">
-                DISK_SPACE
-                <input id="diskSpace" name="diskSpace" autocomplete="off" value="200g" />
-                <span class="hint">Amount of disk space to dedicate to encrypted OpenCRVS data.</span>
-              </label>
-            </div>
-            <div class="form-group">
-              <h2 class="group-title">Users</h2>
-              <div class="user-toolbar">
-                <button id="add-user-button" class="secondary" type="button">Add user</button>
-                <button id="add-current-user-button" class="secondary" type="button">Add current system user</button>
-              </div>
-              <table class="users-table">
-                <thead>
-                  <tr>
-                    <th>Username</th>
-                    <th>Role</th>
-                    <th>State</th>
-                    <th>SSH keys</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="usersTableBody"></tbody>
-              </table>
-              <div id="user-editor" class="editor-panel hidden">
-                <label>
-                  Username
-                  <input id="userName" autocomplete="off" />
-                </label>
-                <label>
-                  Role
-                  <select id="userRole">
-                    <option value="admin">Admin (full OS and Kubernetes access)</option>
-                    <option value="operator">Operator (read-only OS, full Kubernetes access)</option>
-                  </select>
-                </label>
-                <label>
-                  State
-                  <select id="userState">
-                    <option value="present">Present (allowed to log in)</option>
-                    <option value="absent">Absent (account disabled)</option>
-                  </select>
-                </label>
-                <label>
-                  SSH public keys
-                  <textarea id="userKeys"></textarea>
-                  <span class="hint">One SSH public key per line.</span>
-                </label>
-                <div class="actions">
-                  <button id="save-user-button" type="button">Save user</button>
-                  <button id="cancel-user-button" class="secondary" type="button">Cancel</button>
-                </div>
-              </div>
-            </div>
-            <div class="actions">
-              <button id="infrastructure-button" type="submit">Save infrastructure</button>
-            </div>
-          </form>
-          <div id="infrastructure-status" class="status" role="status" aria-live="polite"></div>
-        </section>
-        <section id="application-screen" class="screen">
-          <h1>Application</h1>
-          <p class="lede">
-            Configure OpenCRVS domain, Traefik TLS mode, and the country
-            configuration Docker image source.
-          </p>
-          <form id="application-form">
-            <div class="form-group">
-              <h2 class="group-title">OpenCRVS</h2>
-              <label>
-                DOMAIN
-                <input id="domain" name="domain" autocomplete="off" required />
-                <span class="hint">Base domain used after OpenCRVS subdomains.</span>
-              </label>
-            </div>
-            <div class="form-group">
-              <h2 class="group-title">Traefik SSL Certificate</h2>
-              <label>
-                Certificate mode
-                <select id="traefikMode" name="traefikMode">
-                  <option value="lets_encrypt">Let's Encrypt certificate</option>
-                  <option value="static_ssl">Static SSL certificate</option>
-                  <option value="custom">Custom configuration</option>
-                </select>
-              </label>
-              <div id="staticSslFields" class="form-group hidden">
-                <label>
-                  SSL_CRT
-                  <textarea id="sslCrt" name="sslCrt"></textarea>
-                </label>
-                <label>
-                  SSL_KEY
-                  <textarea id="sslKey" name="sslKey"></textarea>
-                </label>
-              </div>
-            </div>
-            <div class="form-group">
-              <h2 class="group-title">Docker Hub</h2>
-              <label>
-                Country config image source
-                <select id="dockerhubMode" name="dockerhubMode">
-                  <option value="opencrvs">Use Farajaland repository provided by OpenCRVS</option>
-                  <option value="custom">Provide own repository</option>
-                </select>
-              </label>
-              <div id="dockerhubOpencrvsInfo" class="hint">
-                Will use DOCKERHUB_ACCOUNT=opencrvs and DOCKERHUB_REPO=ocrvs-countryconfig.
-              </div>
-              <div id="dockerhubCustomFields" class="form-group hidden">
-                <label>
-                  DOCKERHUB_ACCOUNT
-                  <input id="dockerhubOrganisation" autocomplete="off" />
-                </label>
-                <label>
-                  DOCKERHUB_REPO
-                  <input id="dockerhubRepository" autocomplete="off" />
-                </label>
-                <label>
-                  DOCKER_USERNAME
-                  <input id="dockerhubUsername" autocomplete="off" />
-                </label>
-                <label>
-                  DOCKER_TOKEN
-                  <input id="dockerhubToken" type="password" autocomplete="off" />
-                </label>
-              </div>
-            </div>
-            <div class="actions">
-              <button id="application-button" type="submit">Save application</button>
-            </div>
-          </form>
-          <div id="application-status" class="status" role="status" aria-live="polite"></div>
-        </section>
-        <section id="review-screen" class="screen">
-          <h1>Review</h1>
-          <p class="lede">
-            Review local files, GitHub variables, and GitHub secrets before
-            generating files and creating or updating the GitHub environment.
-          </p>
-          <div class="form-group">
-            <h2 class="group-title">Files to update</h2>
-            <ul id="reviewFiles"></ul>
-          </div>
-          <div class="form-group">
-            <h2 class="group-title">GitHub variables</h2>
-            <table class="users-table">
-              <thead>
-                <tr>
-                  <th>Scope</th>
-                  <th>Name</th>
-                  <th>Value</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="reviewVariables"></tbody>
-            </table>
-          </div>
-          <div class="form-group">
-            <h2 class="group-title">GitHub secrets</h2>
-            <table class="users-table">
-              <thead>
-                <tr>
-                  <th>Scope</th>
-                  <th>Name</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="reviewSecrets"></tbody>
-            </table>
-          </div>
-          <div class="actions">
-            <button id="finalize-button" type="button">Finalize setup</button>
-          </div>
-          <div id="finalize-summary" class="status success hidden"></div>
-          <div id="review-status" class="status" role="status" aria-live="polite"></div>
-        </section>
-      </div>
-    </main>
-    <script>
-      const form = document.querySelector('#github-form');
-      const environmentForm = document.querySelector('#environment-form');
-      const infrastructureForm = document.querySelector('#infrastructure-form');
-      const applicationForm = document.querySelector('#application-form');
-      const organisationInput = document.querySelector('#organisation');
-      const repositoryInput = document.querySelector('#repository');
-      const tokenInput = document.querySelector('#token');
-      const button = document.querySelector('#connect-button');
-      const environmentButton = document.querySelector('#environment-button');
-      const infrastructureButton = document.querySelector('#infrastructure-button');
-      const applicationButton = document.querySelector('#application-button');
-      const finalizeButton = document.querySelector('#finalize-button');
-      const statusBox = document.querySelector('#status');
-      const environmentStatusBox = document.querySelector('#environment-status');
-      const infrastructureStatusBox = document.querySelector('#infrastructure-status');
-      const applicationStatusBox = document.querySelector('#application-status');
-      const reviewStatusBox = document.querySelector('#review-status');
-      const githubScreen = document.querySelector('#github-screen');
-      const environmentScreen = document.querySelector('#environment-screen');
-      const infrastructureScreen = document.querySelector('#infrastructure-screen');
-      const applicationScreen = document.querySelector('#application-screen');
-      const reviewScreen = document.querySelector('#review-screen');
-      const steps = Array.from(document.querySelectorAll('.step'));
-      const environmentNameInput = document.querySelector('#environmentName');
-      const customEnvironmentField = document.querySelector('#customEnvironmentField');
-      const customEnvironmentNameInput = document.querySelector('#customEnvironmentName');
-      const environmentTypeInput = document.querySelector('#environmentType');
-      const approvalRequiredInput = document.querySelector('#approvalRequired');
-      const githubApproversInput = document.querySelector('#githubApprovers');
-      const enableDiskEncryptionInput = document.querySelector('#enableDiskEncryption');
-      const diskSpaceField = document.querySelector('#diskSpaceField');
-      const diskSpaceInput = document.querySelector('#diskSpace');
-      const kubeAPIHostInput = document.querySelector('#kubeAPIHost');
-      const kubeWorkerNodesInput = document.querySelector('#kubeWorkerNodes');
-      const kubeApiAllowedCidrsInput = document.querySelector('#kubeApiAllowedCidrs');
-      const usersTableBody = document.querySelector('#usersTableBody');
-      const addUserButton = document.querySelector('#add-user-button');
-      const addCurrentUserButton = document.querySelector('#add-current-user-button');
-      const userEditor = document.querySelector('#user-editor');
-      const userNameInput = document.querySelector('#userName');
-      const userRoleInput = document.querySelector('#userRole');
-      const userStateInput = document.querySelector('#userState');
-      const userKeysInput = document.querySelector('#userKeys');
-      const saveUserButton = document.querySelector('#save-user-button');
-      const cancelUserButton = document.querySelector('#cancel-user-button');
-      const domainInput = document.querySelector('#domain');
-      const traefikModeInput = document.querySelector('#traefikMode');
-      const staticSslFields = document.querySelector('#staticSslFields');
-      const sslCrtInput = document.querySelector('#sslCrt');
-      const sslKeyInput = document.querySelector('#sslKey');
-      const dockerhubModeInput = document.querySelector('#dockerhubMode');
-      const dockerhubOpencrvsInfo = document.querySelector('#dockerhubOpencrvsInfo');
-      const dockerhubCustomFields = document.querySelector('#dockerhubCustomFields');
-      const dockerhubOrganisationInput = document.querySelector('#dockerhubOrganisation');
-      const dockerhubRepositoryInput = document.querySelector('#dockerhubRepository');
-      const dockerhubUsernameInput = document.querySelector('#dockerhubUsername');
-      const dockerhubTokenInput = document.querySelector('#dockerhubToken');
-      const reviewFiles = document.querySelector('#reviewFiles');
-      const reviewVariables = document.querySelector('#reviewVariables');
-      const reviewSecrets = document.querySelector('#reviewSecrets');
-      const finalizeSummary = document.querySelector('#finalize-summary');
-      let users = [];
-      let editingUserIndex = null;
-
-      function showStatus(type, message) {
-        statusBox.className = 'status visible ' + type;
-        statusBox.textContent = message;
-      }
-
-      function showInfrastructureStatus(type, message) {
-        infrastructureStatusBox.className = 'status visible ' + type;
-        infrastructureStatusBox.textContent = message;
-      }
-
-      function showApplicationStatus(type, message) {
-        applicationStatusBox.className = 'status visible ' + type;
-        applicationStatusBox.textContent = message;
-      }
-
-      function showReviewStatus(type, message) {
-        reviewStatusBox.className = 'status visible ' + type;
-        reviewStatusBox.textContent = message;
-      }
-
-      function showEnvironmentStatus(type, message) {
-        environmentStatusBox.className = 'status visible ' + type;
-        environmentStatusBox.textContent = message;
-      }
-
-      function showScreen(screenName) {
-        githubScreen.classList.toggle('active', screenName === 'github');
-        environmentScreen.classList.toggle('active', screenName === 'environment');
-        infrastructureScreen.classList.toggle('active', screenName === 'infrastructure');
-        applicationScreen.classList.toggle('active', screenName === 'application');
-        reviewScreen.classList.toggle('active', screenName === 'review');
-        steps[0].classList.toggle('active', screenName === 'github');
-        steps[1].classList.toggle('active', screenName === 'environment');
-        steps[2].classList.toggle('active', screenName === 'infrastructure');
-        steps[3].classList.toggle('active', screenName === 'application');
-        steps[4].classList.toggle('active', screenName === 'review');
-      }
-
-      function syncDiskEncryptionFields() {
-        const enabled = enableDiskEncryptionInput.checked;
-        diskSpaceField.classList.toggle('hidden', !enabled);
-        diskSpaceInput.required = enabled;
-      }
-
-      function syncApplicationFields() {
-        const usesStaticSsl = traefikModeInput.value === 'static_ssl';
-        const usesCustomDockerhub = dockerhubModeInput.value === 'custom';
-
-        staticSslFields.classList.toggle('hidden', !usesStaticSsl);
-        sslCrtInput.required = usesStaticSsl;
-        sslKeyInput.required = usesStaticSsl;
-        dockerhubOpencrvsInfo.classList.toggle('hidden', usesCustomDockerhub);
-        dockerhubCustomFields.classList.toggle('hidden', !usesCustomDockerhub);
-        dockerhubOrganisationInput.required = usesCustomDockerhub;
-        dockerhubRepositoryInput.required = usesCustomDockerhub;
-        dockerhubUsernameInput.required = usesCustomDockerhub;
-        dockerhubTokenInput.required = usesCustomDockerhub;
-      }
-
-      function renderUsers() {
-        usersTableBody.innerHTML = '';
-
-        if (users.length === 0) {
-          const row = document.createElement('tr');
-          row.innerHTML = '<td colspan="5">No users configured.</td>';
-          usersTableBody.appendChild(row);
-          return;
-        }
-
-        users.forEach((user, index) => {
-          const row = document.createElement('tr');
-          row.innerHTML = [
-            '<td>' + user.name + '</td>',
-            '<td>' + user.role + '</td>',
-            '<td>' + user.state + '</td>',
-            '<td>' + (user.ssh_keys || []).length + '</td>',
-            '<td><div class="row-actions">' +
-              '<button class="secondary inline-button" type="button" data-action="edit" data-index="' + index + '">Edit</button>' +
-              '<button class="danger inline-button" type="button" data-action="remove" data-index="' + index + '">Remove</button>' +
-            '</div></td>'
-          ].join('');
-          usersTableBody.appendChild(row);
-        });
-      }
-
-      function openUserEditor(user, index) {
-        editingUserIndex = index;
-        userNameInput.value = user?.name || '';
-        userNameInput.disabled = index !== null;
-        userRoleInput.value = user?.role || 'operator';
-        userStateInput.value = user?.state || 'present';
-        userKeysInput.value = (user?.ssh_keys || []).join('\\n');
-        userEditor.classList.remove('hidden');
-      }
-
-      function closeUserEditor() {
-        editingUserIndex = null;
-        userEditor.classList.add('hidden');
-      }
-
-      function parseUserKeys() {
-        return userKeysInput.value
-          .split('\\n')
-          .map((key) => key.trim())
-          .filter((key) => key && !key.startsWith('#'));
-      }
-
-      function validateUserInput(nextUser) {
-        if (!nextUser.name) {
-          throw new Error('Username required.');
-        }
-
-        if (!/^[a-z_][a-z0-9_-]*[$]?$/.test(nextUser.name)) {
-          throw new Error('Invalid username format.');
-        }
-
-        const duplicate = users.find((user, index) => {
-          return user.name === nextUser.name && index !== editingUserIndex;
-        });
-
-        if (duplicate) {
-          throw new Error('User "' + nextUser.name + '" already exists.');
-        }
-      }
-
-      function inferEnvironmentType(environmentName) {
-        if (environmentName === 'staging' || environmentName === 'production') {
-          return 'production';
-        }
-
-        return 'non-production';
-      }
-
-      function syncCustomEnvironmentField() {
-        const isCustom = environmentNameInput.value === '__custom__';
-        customEnvironmentField.classList.toggle('hidden', !isCustom);
-        customEnvironmentNameInput.required = isCustom;
-        if (!isCustom) {
-          environmentTypeInput.value = inferEnvironmentType(environmentNameInput.value);
-        }
-      }
-
-      function populateEnvironmentScreen(result) {
-        const choices = result.environmentChoices || [];
-        environmentNameInput.innerHTML = '';
-
-        for (const choice of choices) {
-          const option = document.createElement('option');
-          option.value = choice.value;
-          option.textContent = choice.name;
-          environmentNameInput.appendChild(option);
-        }
-
-        const customOption = document.createElement('option');
-        customOption.value = '__custom__';
-        customOption.textContent = 'Custom environment';
-        environmentNameInput.appendChild(customOption);
-
-        githubApproversInput.value = result.githubApprovers || '';
-        approvalRequiredInput.checked = false;
-        syncCustomEnvironmentField();
-      }
-
-      function populateInfrastructureScreen(infrastructure) {
-        const values = infrastructure || {};
-
-        kubeAPIHostInput.value = values.kubeAPIHost || '';
-        kubeWorkerNodesInput.value = values.kubeWorkerNodes || '';
-        kubeApiAllowedCidrsInput.value = values.kubeApiAllowedCidrs || '';
-        enableDiskEncryptionInput.checked = Boolean(values.enableDiskEncryption);
-        diskSpaceInput.value = values.diskSpace || '200g';
-        users = Array.isArray(values.users) ? values.users : [];
-        renderUsers();
-        syncDiskEncryptionFields();
-      }
-
-      function populateApplicationScreen(application) {
-        const values = application || {};
-
-        domainInput.value = values.domain || '';
-        traefikModeInput.value = values.traefikMode || 'lets_encrypt';
-        sslCrtInput.value = values.sslCrt || '';
-        sslKeyInput.value = values.sslKey || '';
-        dockerhubModeInput.value = values.dockerhubMode || 'opencrvs';
-        dockerhubOrganisationInput.value = values.dockerhubOrganisation || '';
-        dockerhubRepositoryInput.value = values.dockerhubRepository || '';
-        dockerhubUsernameInput.value = values.dockerhubUsername || '';
-        dockerhubTokenInput.value = values.dockerhubToken || '';
-        syncApplicationFields();
-      }
-
-      function renderReview(plan) {
-        reviewFiles.innerHTML = '';
-        reviewVariables.innerHTML = '';
-        reviewSecrets.innerHTML = '';
-
-        for (const file of plan.files || []) {
-          const item = document.createElement('li');
-          item.textContent = file;
-          reviewFiles.appendChild(item);
-        }
-
-        for (const variable of plan.variables || []) {
-          const row = document.createElement('tr');
-          row.innerHTML = [
-            '<td>' + variable.scope + '</td>',
-            '<td>' + variable.name + '</td>',
-            '<td>' + variable.value + '</td>',
-            '<td>' + variable.action + '</td>'
-          ].join('');
-          reviewVariables.appendChild(row);
-        }
-
-        for (const secret of plan.secrets || []) {
-          const row = document.createElement('tr');
-          const status = secret.exists ? 'Exists in GitHub' : 'Missing in GitHub';
-          row.innerHTML = [
-            '<td>' + secret.scope + '</td>',
-            '<td>' + secret.name + '</td>',
-            '<td>' + status + '</td>',
-            '<td>' + secret.action + '</td>'
-          ].join('');
-          reviewSecrets.appendChild(row);
-        }
-      }
-
-      function renderFinalizeSummary(actions) {
-        const performedActions = actions || [];
-        finalizeSummary.classList.remove('hidden');
-        finalizeSummary.innerHTML = '<strong>Performed actions</strong><ul>' +
-          performedActions.map((action) => '<li>' + action + '</li>').join('') +
-          '</ul>';
-      }
-
-      async function loadReview() {
-        const response = await fetch('/api/review');
-        const plan = await response.json();
-
-        if (!response.ok) {
-          throw new Error(plan.error || 'Could not load review plan.');
-        }
-
-        renderReview(plan);
-      }
-
-      async function loadDefaults() {
-        const response = await fetch('/api/github/defaults');
-        const defaults = await response.json();
-
-        organisationInput.value = defaults.organisation || '';
-        repositoryInput.value = defaults.repository || '';
-      }
-
-      form.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        button.disabled = true;
-        button.textContent = 'Testing...';
-        showStatus('', 'Checking repository access...');
-
-        try {
-          const response = await fetch('/api/github/connect', {
-            method: 'POST',
-            headers: {
-              'content-type': 'application/json'
-            },
-            body: JSON.stringify({
-              organisation: organisationInput.value.trim(),
-              repository: repositoryInput.value.trim(),
-              token: tokenInput.value.trim()
-            })
-          });
-          const result = await response.json();
-
-          if (!response.ok) {
-            throw new Error(result.error || 'GitHub connection failed.');
-          }
-
-          showStatus(
-            'success',
-            'Connected to ' + result.organisation + '/' + result.repository + '.'
-          );
-          populateEnvironmentScreen(result);
-          showScreen('environment');
-        } catch (error) {
-          showStatus('error', error.message || 'GitHub connection failed.');
-        } finally {
-          button.disabled = false;
-          button.textContent = 'Test connection';
-        }
-      });
-
-      environmentForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        environmentButton.disabled = true;
-        environmentButton.textContent = 'Saving...';
-        showEnvironmentStatus('', 'Saving environment selection...');
-
-        try {
-          const response = await fetch('/api/environment-selection', {
-            method: 'POST',
-            headers: {
-              'content-type': 'application/json'
-            },
-            body: JSON.stringify({
-              environmentName: environmentNameInput.value,
-              customEnvironmentName: customEnvironmentNameInput.value.trim(),
-              environmentType: environmentTypeInput.value,
-              approvalRequired: approvalRequiredInput.checked,
-              githubApprovers: githubApproversInput.value.trim()
-            })
-          });
-          const result = await response.json();
-
-          if (!response.ok) {
-            throw new Error(result.error || 'Environment selection failed.');
-          }
-
-          if (result.approvalRequired) {
-            approvalRequiredInput.checked = result.approvalRequired === 'true';
-          }
-          populateInfrastructureScreen(result.infrastructure);
-          populateApplicationScreen(result.application);
-          showEnvironmentStatus('success', 'Environment selection saved.');
-          showScreen('infrastructure');
-        } catch (error) {
-          showEnvironmentStatus('error', error.message || 'Environment selection failed.');
-        } finally {
-          environmentButton.disabled = false;
-          environmentButton.textContent = 'Save environment';
-        }
-      });
-
-      infrastructureForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        infrastructureButton.disabled = true;
-        infrastructureButton.textContent = 'Saving...';
-        showInfrastructureStatus('', 'Saving infrastructure configuration...');
-
-        try {
-          const response = await fetch('/api/infrastructure', {
-            method: 'POST',
-            headers: {
-              'content-type': 'application/json'
-            },
-            body: JSON.stringify({
-              kubeAPIHost: kubeAPIHostInput.value.trim(),
-              kubeWorkerNodes: kubeWorkerNodesInput.value.trim(),
-              kubeApiAllowedCidrs: kubeApiAllowedCidrsInput.value.trim(),
-              enableDiskEncryption: enableDiskEncryptionInput.checked,
-              diskSpace: diskSpaceInput.value.trim(),
-              users
-            })
-          });
-          const result = await response.json();
-
-          if (!response.ok) {
-            throw new Error(result.error || 'Infrastructure configuration failed.');
-          }
-
-          showInfrastructureStatus('success', 'Infrastructure configuration saved.');
-          showScreen('application');
-        } catch (error) {
-          showInfrastructureStatus('error', error.message || 'Infrastructure configuration failed.');
-        } finally {
-          infrastructureButton.disabled = false;
-          infrastructureButton.textContent = 'Save infrastructure';
-        }
-      });
-
-      applicationForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        applicationButton.disabled = true;
-        applicationButton.textContent = 'Saving...';
-        showApplicationStatus('', 'Saving application configuration...');
-
-        try {
-          const response = await fetch('/api/application', {
-            method: 'POST',
-            headers: {
-              'content-type': 'application/json'
-            },
-            body: JSON.stringify({
-              domain: domainInput.value.trim(),
-              traefikMode: traefikModeInput.value,
-              sslCrt: sslCrtInput.value.trim(),
-              sslKey: sslKeyInput.value.trim(),
-              dockerhubMode: dockerhubModeInput.value,
-              dockerhubOrganisation: dockerhubOrganisationInput.value.trim(),
-              dockerhubRepository: dockerhubRepositoryInput.value.trim(),
-              dockerhubUsername: dockerhubUsernameInput.value.trim(),
-              dockerhubToken: dockerhubTokenInput.value.trim()
-            })
-          });
-          const result = await response.json();
-
-          if (!response.ok) {
-            throw new Error(result.error || 'Application configuration failed.');
-          }
-
-          showApplicationStatus('success', 'Application configuration saved.');
-          await loadReview();
-          showScreen('review');
-        } catch (error) {
-          showApplicationStatus('error', error.message || 'Application configuration failed.');
-        } finally {
-          applicationButton.disabled = false;
-          applicationButton.textContent = 'Save application';
-        }
-      });
-
-      finalizeButton.addEventListener('click', async () => {
-        finalizeButton.disabled = true;
-        finalizeButton.textContent = 'Finalizing...';
-        showReviewStatus('', 'Generating files and updating GitHub environment...');
-
-        try {
-          const response = await fetch('/api/finalize', {
-            method: 'POST'
-          });
-          const result = await response.json();
-
-          if (!response.ok) {
-            throw new Error(result.error || 'Finalize failed.');
-          }
-
-          renderReview(result);
-          renderFinalizeSummary(result.performedActions);
-          finalizeButton.classList.add('hidden');
-          showReviewStatus('success', 'Setup finalized. Debug GitHub payload was printed to the terminal.');
-        } catch (error) {
-          showReviewStatus('error', error.message || 'Finalize failed.');
-          finalizeButton.disabled = false;
-          finalizeButton.textContent = 'Finalize setup';
-        } finally {
-        }
-      });
-
-      usersTableBody.addEventListener('click', (event) => {
-        const button = event.target.closest('button[data-action]');
-        if (!button) {
-          return;
-        }
-
-        const index = Number(button.dataset.index);
-        const action = button.dataset.action;
-
-        if (action === 'edit') {
-          openUserEditor(users[index], index);
-        }
-
-        if (action === 'remove') {
-          users.splice(index, 1);
-          renderUsers();
-          closeUserEditor();
-        }
-      });
-
-      addUserButton.addEventListener('click', () => {
-        openUserEditor({
-          name: '',
-          ssh_keys: [],
-          state: 'present',
-          role: 'operator'
-        }, null);
-      });
-
-      addCurrentUserButton.addEventListener('click', async () => {
-        try {
-          const response = await fetch('/api/current-user');
-          const result = await response.json();
-
-          if (!response.ok) {
-            throw new Error(result.error || 'Could not load current system user.');
-          }
-
-          if (!result.user.ssh_keys.length) {
-            showInfrastructureStatus('error', 'No SSH public keys found for the current system user.');
-            return;
-          }
-
-          if (users.some((user) => user.name === result.user.name)) {
-            showInfrastructureStatus('error', 'Current system user already exists.');
-            return;
-          }
-
-          users.push(result.user);
-          renderUsers();
-          showInfrastructureStatus('success', 'Current system user added.');
-        } catch (error) {
-          showInfrastructureStatus('error', error.message || 'Could not load current system user.');
-        }
-      });
-
-      saveUserButton.addEventListener('click', () => {
-        try {
-          const nextUser = {
-            name: userNameInput.value.trim(),
-            ssh_keys: parseUserKeys(),
-            state: userStateInput.value,
-            role: userRoleInput.value
-          };
-
-          validateUserInput(nextUser);
-
-          if (editingUserIndex === null) {
-            users.push(nextUser);
-          } else {
-            users[editingUserIndex] = nextUser;
-          }
-
-          renderUsers();
-          closeUserEditor();
-          showInfrastructureStatus('success', 'User saved.');
-        } catch (error) {
-          showInfrastructureStatus('error', error.message || 'Could not save user.');
-        }
-      });
-
-      cancelUserButton.addEventListener('click', closeUserEditor);
-
-      environmentNameInput.addEventListener('change', syncCustomEnvironmentField);
-      enableDiskEncryptionInput.addEventListener('change', syncDiskEncryptionFields);
-      traefikModeInput.addEventListener('change', syncApplicationFields);
-      dockerhubModeInput.addEventListener('change', syncApplicationFields);
-      syncDiskEncryptionFields();
-      syncApplicationFields();
-      renderUsers();
-
-      loadDefaults().catch(() => {
-        showStatus('error', 'Could not load repository defaults.');
-      });
-    </script>
-  </body>
-</html>`
-}
-
 export function startEnvironmentInitUi() {
+  validateConfigurationFieldBindings()
   const server = http.createServer(handleRequest)
 
   server.listen(DEFAULT_PORT, HOST, () => {
     const address = server.address() as AddressInfo
-    const url = `http://${HOST}:${address.port}`
+    const url = `http://${PUBLIC_HOST}:${address.port}`
 
     console.log(`OpenCRVS environment setup is running at ${url}`)
-    openBrowser(url)
+    if (OPEN_BROWSER) {
+      openBrowser(url)
+    } else {
+      console.log(`Open ${url} in your browser.`)
+    }
   })
 }
 

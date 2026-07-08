@@ -1,0 +1,211 @@
+:root {
+  color-scheme: light;
+  --installer-line: #d8dee6;
+  --installer-muted: #5b6775;
+}
+
+body {
+  min-height: 100vh;
+}
+
+main.container {
+  max-width: 992px;
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 680px;
+}
+
+aside {
+  padding: 28px 24px;
+  border-right: 1px solid var(--installer-line);
+  background: #eef2f6;
+}
+
+.brand {
+  margin: 0 0 28px;
+  font-size: 1.25rem;
+}
+
+.steps {
+  gap: 10px;
+}
+
+.step,
+.steps .nav-link {
+  width: 100%;
+  min-height: 44px;
+  padding: 12px;
+  border: 1px solid transparent;
+  border-radius: var(--bs-border-radius);
+  color: var(--installer-muted);
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 400;
+  text-align: left;
+}
+
+.step.active,
+.steps .nav-link.active {
+  border-color: #b8c7dc;
+  background: #ffffff;
+  color: var(--bs-body-color);
+  font-weight: 600;
+}
+
+.steps button.nav-link:not(:disabled):hover {
+  border-color: #c8d2df;
+  background: #f8fafc;
+  color: var(--bs-body-color);
+}
+
+.steps button.nav-link:disabled {
+  border-color: transparent;
+  background: transparent;
+  color: #8b96a4;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.dirty-indicator {
+  margin-left: 4px;
+  color: #b54708;
+  font-weight: 800;
+}
+
+.screen {
+  display: none;
+  padding: 36px;
+}
+
+.screen.active {
+  display: block;
+}
+
+.screen h1 {
+  margin-bottom: 8px;
+  font-size: 1.625rem;
+}
+
+.lede {
+  max-width: 620px;
+  margin: 0 0 28px;
+  line-height: 1.5;
+}
+
+.configuration-form,
+.form-group,
+.configuration-section,
+.advanced-section,
+.editor-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.configuration-form {
+  max-width: 620px;
+  gap: 18px;
+}
+
+.form-label {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+textarea.form-control {
+  min-height: 88px;
+}
+
+.configuration-part {
+  max-width: 620px;
+  margin-top: 36px;
+  padding-top: 32px;
+  border-top: 1px solid var(--installer-line);
+}
+
+.connection-summary,
+.status,
+.finalize-summary {
+  max-width: 620px;
+}
+
+.status,
+.finalize-summary {
+  margin-top: 20px;
+}
+
+.finalize-summary pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.finalize-summary details summary {
+  cursor: pointer;
+}
+
+.review-section summary {
+  cursor: pointer;
+}
+
+.finalize-summary details ul {
+  margin-top: 0.75rem;
+}
+
+.code-block {
+  margin-bottom: 1rem;
+}
+
+.copy-button {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+#configuration-screens {
+  display: contents;
+}
+
+.configuration-tabs {
+  max-width: 620px;
+  margin-bottom: 24px;
+}
+
+.configuration-tab {
+  flex: 1;
+}
+
+.secret-existing {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  main.container {
+    max-width: none;
+    padding: 0 !important;
+  }
+
+  .shell {
+    min-height: 100vh;
+    grid-template-columns: 1fr;
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  aside {
+    border-right: 0;
+    border-bottom: 1px solid var(--installer-line);
+  }
+
+  .screen {
+    padding: 28px 20px;
+  }
+}
