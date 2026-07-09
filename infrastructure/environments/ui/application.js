@@ -888,7 +888,11 @@ for (const [screenId, controller] of configurationControllers) {
         throw new Error(result.error || controller.definition.label + ' configuration failed.');
       }
 
-      populateConfigurationScreen(result.screen);
+      if (Array.isArray(result.configuration)) {
+        populateConfigurationScreens(result.configuration);
+      } else {
+        populateConfigurationScreen(result.screen);
+      }
       setConfigurationDirty(screenId, false);
       await loadReview();
       enableReviewNavigation();

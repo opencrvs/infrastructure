@@ -162,6 +162,55 @@ Expected field properties:
   - `generated` only explains where the value comes from.
   - Editability for existing environments is controlled by `updatable`.
 
+- `deriveValue`
+  - Optional list of rules that force a field value from another field or from configurator context.
+  - Used when a value is not user-selected in every situation.
+  - If a matching rule has `lock: true`, the resolved field should be shown as readonly/disabled in the UI.
+  - Derived values should be resolved:
+    - when loading screen state;
+    - before validation;
+    - before building Review/finalize plans.
+  - Example:
+
+```ts
+{
+  id: 'elastalertNotificationType',
+  source: { target: 'state', name: 'elastalertNotificationType' },
+  deriveValue: [
+    {
+      when: { fieldId: 'smtpEnabled', equals: false },
+      value: 'post2',
+      lock: true
+    }
+  ]
+}
+```
+
+In this example, when SMTP is disabled, Elastalert must use `post2`. When SMTP is enabled, the user may choose `email` or `post2`.
+
+Another example:
+
+```ts
+{
+  id: 'activateUsers',
+  source: { target: 'github', scope: 'ENVIRONMENT', name: 'ACTIVATE_USERS' },
+  deriveValue: [
+    {
+      when: { context: 'environmentType', equals: 'production' },
+      value: false,
+      lock: true
+    },
+    {
+      when: { context: 'environmentType', equals: 'non-production' },
+      value: true,
+      lock: true
+    }
+  ]
+}
+```
+
+In this example, `ACTIVATE_USERS` is always derived from the selected environment type.
+
 - `requires`
   - Backend or deployment outputs required for this field to be active.
   - Optional when `bindings` are defined, because active bindings can also prove that a field is relevant.

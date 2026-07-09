@@ -61,6 +61,22 @@ export type FieldSource =
       name: string
     }
 
+export type DerivedValueCondition =
+  | {
+      fieldId: string
+      equals: string | number | boolean
+    }
+  | {
+      context: 'environmentType'
+      equals: string | number | boolean
+    }
+
+export type DerivedValueRule = {
+  when: DerivedValueCondition
+  value: string | number | boolean
+  lock?: boolean
+}
+
 export type ConfigurationField = {
   id: string
   screen: ConfigurationScreen
@@ -70,9 +86,10 @@ export type ConfigurationField = {
   description: string
   control: 'checkbox' | 'number' | 'password' | 'select' | 'text' | 'textarea'
   requires?: DeploymentFeature[]
-  source: FieldSource
+  source?: FieldSource
   bindings: FieldBinding[]
   defaultValue?: string | number | boolean
+  deriveValue?: DerivedValueRule[]
   options?: Array<{
     label: string
     value: string
@@ -281,6 +298,36 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
         target: 'helm',
         chart: 'dependencies',
         path: 'hostname'
+      }
+    ]
+  },
+  {
+    id: 'activateUsers',
+    screen: 'application',
+    section: 'OpenCRVS',
+    label: 'ACTIVATE_USERS',
+    description: 'Whether newly created users should be activated automatically.',
+    control: 'checkbox',
+    requires: ['github'],
+    defaultValue: true,
+    deriveValue: [
+      {
+        when: { context: 'environmentType', equals: 'production' },
+        value: false,
+        lock: true
+      },
+      {
+        when: { context: 'environmentType', equals: 'non-production' },
+        value: true,
+        lock: true
+      }
+    ],
+    bindings: [
+      {
+        target: 'github',
+        type: 'VARIABLE',
+        scope: 'ENVIRONMENT',
+        name: 'ACTIVATE_USERS'
       }
     ]
   },
@@ -797,6 +844,13 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     options: [
       { label: 'email', value: 'email' },
       { label: 'Post call to Countryconfig', value: 'post2' },
+    ],
+    deriveValue: [
+      {
+        when: { fieldId: 'smtpEnabled', equals: false },
+        value: 'post2',
+        lock: true
+      }
     ],
     visibleWhen: { fieldId: 'dependenciesMonitoringEnabled', equals: true },
     source: { target: 'state', name: 'elastalertNotificationType' },

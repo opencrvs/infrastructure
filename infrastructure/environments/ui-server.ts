@@ -12,6 +12,8 @@ import {
   CONFIGURATION_FIELDS,
   CONFIGURATION_SCREENS,
   ConfigurationField,
+  DerivedValueCondition,
+  FieldSource,
   GithubBinding,
   HelmBinding,
   HelmChart,
@@ -103,6 +105,9 @@ type EnvironmentSelectionRequest = {
 }
 
 type ConfigurationValue = string | number | boolean
+type ConfigurationContext = {
+  environmentType: string
+}
 
 type SetupOptionsRequest = {
   enableGithubIntegration?: boolean
@@ -281,6 +286,35 @@ function getActiveFieldBindings(field: ConfigurationField) {
 
 function getFieldForCurrentDeployment(field: ConfigurationField) {
   return getFieldForDeploymentContext(getDeploymentContext(), field)
+}
+
+function getFieldSource(field: ConfigurationField): FieldSource | undefined {
+  if (field.source) {
+    return field.source
+  }
+
+  const [binding] = field.bindings
+  if (!binding) {
+    return undefined
+  }
+
+  if (binding.target === 'github') {
+    return {
+      target: 'github',
+      scope: binding.scope,
+      name: binding.name
+    }
+  }
+
+  if (binding.target === 'helm') {
+    return {
+      target: 'helm',
+      chart: binding.chart,
+      path: binding.path
+    }
+  }
+
+  return undefined
 }
 
 function isFieldIdEnabled(fieldId: string) {
@@ -725,10 +759,10 @@ function loadGenericScreenConfigs(environmentName: string) {
 function getAdvancedResponse() {
   const fields = getConfigurationFields('advanced')
     .filter(isFieldEnabledForDeployment)
-    .map(getFieldForCurrentDeployment)
+    .map(getFieldForResponse)
   return {
     fields,
-    values: advancedConfig,
+    values: getResponseValuesForFields(fields, advancedConfig),
     existingSecrets: Object.fromEntries(
       fields.map((field) => {
         const source = field.source
@@ -744,10 +778,10 @@ function getAdvancedResponse() {
 function getDependenciesResponse() {
   const fields = getConfigurationFields('dependencies')
     .filter(isFieldEnabledForDeployment)
-    .map(getFieldForCurrentDeployment)
+    .map(getFieldForResponse)
   return {
     fields,
-    values: dependenciesConfig,
+    values: getResponseValuesForFields(fields, dependenciesConfig),
     existingSecrets: Object.fromEntries(
       fields.map((field) => {
         const source = field.source
@@ -778,7 +812,7 @@ function getConfigurationScreenResponse(screenId: string) {
       ? getApplicationFields()
       : getConfigurationFields(screenId))
     .filter(isFieldEnabledForDeployment)
-    .map(getFieldForCurrentDeployment)
+    .map(getFieldForResponse)
   const existingSecrets = Object.fromEntries(
     fields.map((field) => {
       const source = field.source
@@ -788,7 +822,7 @@ function getConfigurationScreenResponse(screenId: string) {
       ]
     })
   )
-  const values = screenId === 'infrastructure'
+  const storedValues = screenId === 'infrastructure'
     ? { ...(infrastructureConfig || {}) }
     : screenId === 'application'
       ? { ...(applicationConfig || {}) }
@@ -797,6 +831,7 @@ function getConfigurationScreenResponse(screenId: string) {
         : screenId === 'advanced'
           ? { ...advancedConfig }
           : { ...(genericScreenConfigs[screenId] || {}) }
+  const values = getResponseValuesForFields(fields, storedValues)
 
   return {
     definition,
@@ -804,9 +839,7 @@ function getConfigurationScreenResponse(screenId: string) {
     values,
     existingSecrets,
     secretSentinel: EXISTING_SECRET_SENTINEL,
-    context: {
-      environmentType: environmentSelection?.environmentType || 'non-production'
-    },
+    context: getConfigurationContext(),
     custom: definition.customComponents?.includes('users') && hasDeploymentFeature('ansible')
       ? { users }
       : {}
@@ -978,7 +1011,7 @@ function getChartValues(config: ApplicationRequest) {
     restore_type: config.backupRestoreMode === 'restore' ? config.restoreType || 'dump' : '',
     traefik_mode: config.traefikMode || 'lets_encrypt',
     elastalert_notification_type:
-      String(dependenciesConfig.elastalertNotificationType || 'email'),
+      String(getConfigurationFieldValueById('elastalertNotificationType') || 'email'),
     backup_type: config.backupRestoreMode === 'backup' ? config.backupType || 'dump' : '',
     lets_encrypt: config.traefikMode === 'lets_encrypt',
     static_ssl: config.traefikMode === 'static_ssl',
@@ -1428,7 +1461,13 @@ function getGithubUpdates(includeSecretValues = false) {
   }
 }
 
-function getConfigurationFieldValue(field: ConfigurationField): ConfigurationValue {
+function getConfigurationContext(): ConfigurationContext {
+  return {
+    environmentType: environmentSelection?.environmentType || 'non-production'
+  }
+}
+
+function getRawConfigurationFieldValue(field: ConfigurationField): ConfigurationValue {
   const configuredValues: Record<string, ConfigurationValue> = {
     kubeAPIHost: infrastructureConfig?.kubeAPIHost || '',
     kubeWorkerNodes: infrastructureConfig?.kubeWorkerNodes || '',
@@ -1438,6 +1477,9 @@ function getConfigurationFieldValue(field: ConfigurationField): ConfigurationVal
     domain: applicationConfig?.domain || '',
     traefikMode: applicationConfig?.traefikMode || 'lets_encrypt',
     dockerhubMode: applicationConfig?.dockerhubMode || 'opencrvs',
+    activateUsers: environmentSelection?.environmentType === 'production'
+      ? false
+      : true,
     smtpEnabled: Boolean(applicationConfig?.smtpEnabled),
     backupRestoreMode: applicationConfig?.backupRestoreMode || 'none',
     backupHost: applicationConfig?.backupHost || '',
@@ -1458,6 +1500,80 @@ function getConfigurationFieldValue(field: ConfigurationField): ConfigurationVal
     genericScreenConfigs[field.screen]?.[field.id] ??
     field.defaultValue ??
     ''
+}
+
+function getRawConfigurationFieldValueById(fieldId: string): ConfigurationValue {
+  const field = CONFIGURATION_FIELDS.find(({ id }) => id === fieldId)
+  return field ? getRawConfigurationFieldValue(field) : ''
+}
+
+function getConfigurationFieldValueById(fieldId: string): ConfigurationValue {
+  const field = CONFIGURATION_FIELDS.find(({ id }) => id === fieldId)
+  return field ? getConfigurationFieldValue(field) : ''
+}
+
+function derivedValueConditionMatches(condition: DerivedValueCondition) {
+  if ('fieldId' in condition) {
+    return valuesEqual(
+      getRawConfigurationFieldValueById(condition.fieldId),
+      condition.equals
+    )
+  }
+
+  return valuesEqual(getConfigurationContext()[condition.context], condition.equals)
+}
+
+function getDerivedFieldState(field: ConfigurationField) {
+  const rule = field.deriveValue?.find(({ when }) =>
+    derivedValueConditionMatches(when)
+  )
+
+  return rule
+    ? {
+        value: rule.value,
+        locked: Boolean(rule.lock)
+      }
+    : null
+}
+
+function getConfigurationFieldValue(field: ConfigurationField): ConfigurationValue {
+  return getDerivedFieldState(field)?.value ?? getRawConfigurationFieldValue(field)
+}
+
+function getSubmittedOrDerivedFieldValue(
+  field: ConfigurationField,
+  submitted: unknown,
+  current: ConfigurationValue
+) {
+  const derivedState = getDerivedFieldState(field)
+  if (derivedState?.locked) {
+    return derivedState.value
+  }
+
+  return field.readonly || submitted === undefined ? current : submitted
+}
+
+function getFieldForResponse(field: ConfigurationField) {
+  const deploymentField = getFieldForCurrentDeployment(field)
+  const derivedState = getDerivedFieldState(field)
+
+  return {
+    ...deploymentField,
+    disabled: Boolean(deploymentField.disabled || derivedState?.locked)
+  }
+}
+
+function getResponseValuesForFields(
+  fields: ConfigurationField[],
+  values: Record<string, unknown>
+) {
+  const nextValues = { ...values }
+
+  for (const field of fields) {
+    nextValues[field.id] = getConfigurationFieldValue(field)
+  }
+
+  return nextValues
 }
 
 function isConfigurationFieldActive(field: ConfigurationField) {
@@ -1530,13 +1646,13 @@ function saveAdvancedConfig(payload: AdvancedRequest) {
     const current = advancedConfig[field.id] ?? field.defaultValue ?? ''
 
     if (field.control === 'checkbox') {
-      nextConfig[field.id] = field.readonly || submitted === undefined
-        ? Boolean(current)
-        : Boolean(submitted)
+      nextConfig[field.id] = Boolean(
+        getSubmittedOrDerivedFieldValue(field, submitted, Boolean(current))
+      )
       continue
     }
 
-    const value = field.readonly || submitted === undefined ? current : submitted
+    const value = getSubmittedOrDerivedFieldValue(field, submitted, current)
     const githubSecret = getActiveFieldBindings(field).find(
       (binding): binding is GithubBinding =>
         binding.target === 'github' && binding.type === 'SECRET'
@@ -1586,9 +1702,13 @@ function saveDependenciesConfig(payload: DependenciesRequest) {
 
   for (const field of fields.filter(({ control }) => control === 'checkbox')) {
     const submitted = submittedValues[field.id]
-    nextConfig[field.id] = field.readonly || submitted === undefined
-      ? Boolean(dependenciesConfig[field.id] ?? field.defaultValue)
-      : Boolean(submitted)
+    nextConfig[field.id] = Boolean(
+      getSubmittedOrDerivedFieldValue(
+        field,
+        submitted,
+        Boolean(dependenciesConfig[field.id] ?? field.defaultValue)
+      )
+    )
   }
 
   dependenciesConfig = nextConfig
@@ -1599,9 +1719,11 @@ function saveDependenciesConfig(payload: DependenciesRequest) {
     }
 
     const submitted = submittedValues[field.id]
-    const value = field.readonly || submitted === undefined
-      ? dependenciesConfig[field.id]
-      : submitted
+    const value = getSubmittedOrDerivedFieldValue(
+      field,
+      submitted,
+      dependenciesConfig[field.id] ?? field.defaultValue ?? ''
+    )
     const githubSecret = getActiveFieldBindings(field).find(
       (binding): binding is GithubBinding =>
         binding.target === 'github' && binding.type === 'SECRET'
@@ -1656,9 +1778,13 @@ function saveGenericScreenConfig(
 
   for (const field of fields.filter(({ control }) => control === 'checkbox')) {
     const submitted = submittedValues[field.id]
-    nextConfig[field.id] = field.readonly || submitted === undefined
-      ? Boolean(currentConfig[field.id] ?? field.defaultValue)
-      : Boolean(submitted)
+    nextConfig[field.id] = Boolean(
+      getSubmittedOrDerivedFieldValue(
+        field,
+        submitted,
+        Boolean(currentConfig[field.id] ?? field.defaultValue)
+      )
+    )
   }
   genericScreenConfigs[screenId] = nextConfig
 
@@ -1668,9 +1794,11 @@ function saveGenericScreenConfig(
     }
 
     const submitted = submittedValues[field.id]
-    const value = field.readonly || submitted === undefined
-      ? currentConfig[field.id] ?? field.defaultValue ?? ''
-      : submitted
+    const value = getSubmittedOrDerivedFieldValue(
+      field,
+      submitted,
+      currentConfig[field.id] ?? field.defaultValue ?? ''
+    )
     const githubSecret = getActiveFieldBindings(field).find(
       (binding): binding is GithubBinding =>
         binding.target === 'github' && binding.type === 'SECRET'
@@ -2462,6 +2590,7 @@ async function handleRequest(
       sendJson(response, 200, {
         saved: true,
         screen,
+        configuration: getConfigurationResponse(),
         helmUpdates: getHelmUpdates()
       })
       return
