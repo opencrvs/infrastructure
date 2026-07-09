@@ -1,5 +1,4 @@
 import { spawn } from 'child_process'
-import { randomInt } from 'crypto'
 import fs from 'fs'
 import http, { IncomingMessage, ServerResponse } from 'http'
 import { AddressInfo } from 'net'
@@ -31,6 +30,28 @@ import {
   isScreenEnabled as isScreenEnabledForContext,
   normalizeInfrastructureType
 } from './deployment-context'
+import {
+  ConfigurationContext,
+  ConfigurationValue,
+  createFieldDefaultValueResolver,
+  deleteNestedValue,
+  getDerivedFieldState as resolveDerivedFieldState,
+  getNestedValue,
+  getResponseValuesForFields as resolveResponseValuesForFields,
+  getSubmittedOrDerivedFieldValue as resolveSubmittedOrDerivedFieldValue,
+  isRecord,
+  setNestedValue,
+  valuesEqual
+} from './configuration-state'
+import { buildInventoryValues } from './ansible-plan'
+import {
+  GithubSecretPlanItem,
+  GithubUpdate,
+  buildApplicationSecretItems,
+  buildGithubUpdates
+} from './github-plan'
+import { HelmUpdate, buildHelmUpdates } from './helm-plan'
+import { buildReviewPlan } from './review-plan'
 import { getRepoInfo } from './git'
 import {
   Secret,
@@ -103,11 +124,6 @@ type EnvironmentSelectionRequest = {
   githubApprovers?: string
 }
 
-type ConfigurationValue = string | number | boolean
-type ConfigurationContext = {
-  environmentType: string
-}
-
 type SetupOptionsRequest = {
   enableGithubIntegration?: boolean
   infrastructureType?: InfrastructureType
@@ -128,27 +144,11 @@ type ConfigurationScreenRequest = {
   }
 }
 
-type HelmUpdate = {
-  chart: HelmChart
-  path: string
-  value: ConfigurationValue
-  action: 'remove' | 'set' | 'unchanged'
-}
-
 type User = {
   name: string
   ssh_keys: string[]
   state: 'present' | 'absent'
   role: 'admin' | 'operator'
-}
-
-type GithubUpdate = {
-  scope: 'ENVIRONMENT' | 'REPOSITORY'
-  type: 'VARIABLE' | 'SECRET'
-  name: string
-  value: string
-  exists: boolean
-  action: 'create' | 'update' | 'unchanged'
 }
 
 type JsonResponse = Record<string, unknown>
@@ -199,8 +199,8 @@ let generatedBackupHostPublicKey = ''
 let advancedConfig: Record<string, ConfigurationValue> = {}
 let dependenciesConfig: Record<string, ConfigurationValue> = {}
 let genericScreenConfigs: Record<string, Record<string, ConfigurationValue>> = {}
-const generatedFieldValues = new Map<string, string>()
 let helmBaseOverrides: Partial<Record<HelmChart, Record<string, unknown>>> = {}
+const getFieldDefaultValue = createFieldDefaultValueResolver()
 
 function sendJson(
   response: ServerResponse,
@@ -524,56 +524,6 @@ function loadUsersFromInventory(environmentName: string) {
   }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-}
-
-function getNestedValue(source: Record<string, unknown>, pathValue: string) {
-  return pathValue.split('.').reduce<unknown>((current, segment) => {
-    return isRecord(current) ? current[segment] : undefined
-  }, source)
-}
-
-function setNestedValue(
-  target: Record<string, unknown>,
-  pathValue: string,
-  value: ConfigurationValue
-) {
-  const segments = pathValue.split('.')
-  const finalSegment = segments.pop()!
-  let current = target
-
-  for (const segment of segments) {
-    if (!isRecord(current[segment])) {
-      current[segment] = {}
-    }
-    current = current[segment] as Record<string, unknown>
-  }
-
-  current[finalSegment] = value
-}
-
-function deleteNestedValue(target: Record<string, unknown>, pathValue: string) {
-  const segments = pathValue.split('.')
-
-  function remove(current: Record<string, unknown>, index: number): boolean {
-    const segment = segments[index]
-
-    if (index === segments.length - 1) {
-      delete current[segment]
-    } else if (isRecord(current[segment])) {
-      const child = current[segment] as Record<string, unknown>
-      if (remove(child, index + 1)) {
-        delete current[segment]
-      }
-    }
-
-    return Object.keys(current).length === 0
-  }
-
-  remove(target, 0)
-}
-
 function getHelmOverridePath(environmentName: string, chart: HelmChart) {
   return path.join(
     process.cwd(),
@@ -628,41 +578,6 @@ function loadAdvancedConfig(environmentName: string) {
   )
   loadDependenciesConfig(environmentName)
   loadGenericScreenConfigs(environmentName)
-}
-
-function generateCredential(kind: 'username' | 'password') {
-  const characters = kind === 'username'
-    ? 'abcdefghijklmnopqrstuvwxyz'
-    : 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-  const length = kind === 'username' ? 8 : 16
-
-  return Array.from(
-    { length },
-    () => characters[randomInt(characters.length)]
-  ).join('')
-}
-
-function getFieldDefaultValue(field: ConfigurationField, environmentName = '') {
-  if (field.generatedDefault) {
-    const cacheKey = `${environmentName}:${field.id}`
-    const existingValue = generatedFieldValues.get(cacheKey)
-    if (existingValue) {
-      return existingValue
-    }
-
-    const generatedValue = generateCredential(field.generatedDefault)
-    generatedFieldValues.set(cacheKey, generatedValue)
-    return generatedValue
-  }
-
-  if (typeof field.defaultValue === 'string' && environmentName) {
-    return field.defaultValue.replace(
-      'opencrvs-deps-dev',
-      `opencrvs-deps-${environmentName}`
-    )
-  }
-
-  return field.defaultValue ?? ''
 }
 
 function loadDependenciesConfig(environmentName: string) {
@@ -966,17 +881,7 @@ function validateUsers(inputUsers: User[]) {
 }
 
 function getInventoryValues(config: InfrastructureRequest) {
-  return {
-    kube_api_host: config.kubeAPIHost || '',
-    kube_worker_nodes: config.kubeWorkerNodes
-      ? config.kubeWorkerNodes.split(',').map((host) => host.trim()).filter(Boolean)
-      : [],
-    backup_host:
-      applicationConfig?.backupRestoreMode === 'backup'
-        ? applicationConfig.backupHost || ''
-        : '',
-    users: config.users || []
-  }
+  return buildInventoryValues(config, applicationConfig)
 }
 
 function getChartValues(config: ApplicationRequest) {
@@ -1002,40 +907,7 @@ function getChartValues(config: ApplicationRequest) {
 }
 
 function getApplicationGithubUpdates(config: ApplicationRequest) {
-  const dockerhubSecrets =
-    config.dockerhubMode === 'opencrvs'
-      ? [
-          { scope: 'REPOSITORY', type: 'SECRET', name: 'DOCKERHUB_ACCOUNT', value: 'opencrvs' },
-          { scope: 'REPOSITORY', type: 'SECRET', name: 'DOCKERHUB_REPO', value: 'ocrvs-countryconfig' }
-        ]
-      : [
-          { scope: 'REPOSITORY', type: 'SECRET', name: 'DOCKERHUB_ACCOUNT', value: config.dockerhubOrganisation || '' },
-          { scope: 'REPOSITORY', type: 'SECRET', name: 'DOCKERHUB_REPO', value: config.dockerhubRepository || '' },
-          { scope: 'REPOSITORY', type: 'SECRET', name: 'DOCKER_USERNAME', value: config.dockerhubUsername || '' },
-          { scope: 'REPOSITORY', type: 'SECRET', name: 'DOCKER_TOKEN', value: config.dockerhubToken || '' }
-        ]
-
-  const sslSecrets =
-    config.traefikMode === 'static_ssl'
-      ? [
-          { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SSL_CRT', value: config.sslCrt || '' },
-          { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SSL_KEY', value: config.sslKey || '' }
-        ]
-      : []
-
-  const smtpSecrets = config.smtpEnabled
-    ? [
-        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SMTP_HOST', value: config.smtpHost || '' },
-        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SMTP_USERNAME', value: config.smtpUsername || '' },
-        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SMTP_PASSWORD', value: config.smtpPassword || '' },
-        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SMTP_PORT', value: config.smtpPort || '' },
-        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SMTP_SECURE', value: String(config.smtpSecure ?? '') },
-        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SENDER_EMAIL_ADDRESS', value: config.senderEmailAddress || '' },
-        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'ALERT_EMAIL', value: config.alertEmail || '' }
-      ].filter((secret) => secret.value || hasEnvironmentSecret(secret.name))
-    : []
-
-  const backupSecrets = config.backupRestoreMode === 'backup'
+  const backupSecrets: GithubSecretPlanItem[] = config.backupRestoreMode === 'backup'
     ? [
         {
           scope: 'ENVIRONMENT',
@@ -1051,9 +923,7 @@ function getApplicationGithubUpdates(config: ApplicationRequest) {
       { scope: 'ENVIRONMENT', type: 'VARIABLE', name: 'DOMAIN', value: config.domain || '' }
     ],
     secrets: [
-      ...dockerhubSecrets,
-      ...sslSecrets,
-      ...smtpSecrets,
+      ...buildApplicationSecretItems(config, hasEnvironmentSecret),
       ...backupSecrets
     ]
   }
@@ -1196,252 +1066,64 @@ function parseSubmittedSecret(
   }
 }
 
-function planVariable(
-  scope: 'ENVIRONMENT' | 'REPOSITORY',
-  name: string,
-  value: string
-): GithubUpdate {
-  const exists = variableExists(scope, name)
-
-  return {
-    scope,
-    type: 'VARIABLE',
-    name,
-    value,
-    exists,
-    action: exists ? 'update' : 'create'
+function getGeneratedEncryptionKey() {
+  if (!generatedEncryptionKey) {
+    generatedEncryptionKey = generateLongPassword()
   }
+
+  return generatedEncryptionKey
 }
 
-function planSecret(
-  scope: 'ENVIRONMENT' | 'REPOSITORY',
-  name: string,
-  value: string
-): GithubUpdate {
-  const exists = secretExists(scope, name)
+function getGeneratedBackupEncryptionPassphrase() {
+  if (!generatedBackupEncryptionPassphrase) {
+    generatedBackupEncryptionPassphrase = generateLongPassword()
+  }
+
+  return generatedBackupEncryptionPassphrase
+}
+
+function getGeneratedBackupHostKeyPair() {
+  if (!generatedBackupHostPrivateKey) {
+    const keyPair = generateSSHKeyPair()
+    generatedBackupHostPrivateKey = keyPair.privateKey
+    generatedBackupHostPublicKey = keyPair.publicKey
+  }
 
   return {
-    scope,
-    type: 'SECRET',
-    name,
-    value,
-    exists,
-    action: value ? (exists ? 'update' : 'create') : exists ? 'unchanged' : 'create'
+    privateKey: generatedBackupHostPrivateKey,
+    publicKey: generatedBackupHostPublicKey
   }
 }
 
 function getGithubUpdates(includeSecretValues = false) {
-  if (!hasDeploymentFeature('github') || !environmentSelection) {
-    return {
-      variables: [] as GithubUpdate[],
-      secrets: [] as GithubUpdate[]
-    }
-  }
-
-  const variables = [
-    planVariable('ENVIRONMENT', 'APPROVAL_REQUIRED', environmentSelection.approvalRequired ? 'true' : 'false')
-  ]
-
-  if (applicationConfig?.domain) {
-    variables.push(planVariable(
-      'ENVIRONMENT',
-      'CONTENT_SECURITY_POLICY_WILDCARD',
-      `*.${applicationConfig.domain}`
-    ))
-  }
-
-  if (environmentSelection.githubApprovers.trim()) {
-    variables.unshift(
-      planVariable(
-        'REPOSITORY',
-        'GH_APPROVERS',
-        environmentSelection.githubApprovers
-      )
-    )
-  }
-
-  const configuredVariables = CONFIGURATION_FIELDS.flatMap((field) => {
-    if (!isFieldEnabledForDeployment(field) || !isConfigurationFieldActive(field)) {
-      return []
-    }
-
-    const value = String(getConfigurationFieldValue(field)).trim()
-
-    return getActiveFieldBindings(field)
-      .filter((binding): binding is GithubBinding =>
-        binding.target === 'github' && binding.type === 'VARIABLE'
-      )
-      .flatMap((binding) => {
-        if (binding.omitWhenEmpty && !value) {
-          return []
-        }
-
-        return [planVariable(binding.scope, binding.name, value)]
-      })
+  return buildGithubUpdates({
+    enabled: hasDeploymentFeature('github') && Boolean(environmentSelection),
+    includeSecretValues,
+    approvalRequired: Boolean(environmentSelection?.approvalRequired),
+    githubApprovers: environmentSelection?.githubApprovers || '',
+    applicationDomain: applicationConfig?.domain || '',
+    githubToken: verifiedConnection?.token || '',
+    applicationSecrets: applicationConfig
+      ? getApplicationGithubUpdates(applicationConfig).secrets
+      : [],
+    dependencyFields: getGeneralScreenFields('dependencies'),
+    advancedFields: getAdvancedFields(),
+    dependenciesConfig,
+    advancedConfig,
+    genericScreenConfigs,
+    backupEnabled: applicationConfig?.backupRestoreMode === 'backup',
+    diskEncryptionEnabled: Boolean(infrastructureConfig?.enableDiskEncryption),
+    isFieldEnabled: isFieldEnabledForDeployment,
+    isFieldActive: isConfigurationFieldActive,
+    getFieldValue: getConfigurationFieldValue,
+    getActiveBindings: getActiveFieldBindings,
+    variableExists,
+    secretExists,
+    hasEnvironmentSecret,
+    getEncryptionKey: getGeneratedEncryptionKey,
+    getBackupEncryptionPassphrase: getGeneratedBackupEncryptionPassphrase,
+    getBackupHostKeyPair: getGeneratedBackupHostKeyPair
   })
-
-  variables.push(...configuredVariables)
-
-  const applicationUpdates = applicationConfig
-    ? getApplicationGithubUpdates(applicationConfig)
-    : { secrets: [] }
-  const secrets = applicationUpdates.secrets.map((secret) =>
-    planSecret(
-      secret.scope as 'ENVIRONMENT' | 'REPOSITORY',
-      secret.name,
-      includeSecretValues ? secret.value : secret.value ? '[provided on submit]' : ''
-    )
-  )
-
-  const githubToken = verifiedConnection?.token || ''
-  secrets.push(
-    planSecret(
-      'REPOSITORY',
-      'GH_TOKEN',
-      includeSecretValues ? githubToken : githubToken ? '[provided at login]' : ''
-    )
-  )
-
-  for (const field of getGeneralScreenFields('dependencies')) {
-    if (!isFieldEnabledForDeployment(field) || !isConfigurationFieldActive(field)) {
-      continue
-    }
-
-    for (const binding of getActiveFieldBindings(field)) {
-      if (binding.target !== 'github' || binding.type !== 'SECRET') {
-        continue
-      }
-
-      const value = String(dependenciesConfig[field.id] ?? '')
-      secrets.push(
-        planSecret(
-          binding.scope,
-          binding.name,
-          includeSecretValues ? value : value ? '[provided on submit]' : ''
-        )
-      )
-    }
-  }
-
-  for (const field of getAdvancedFields().filter(isFieldEnabledForDeployment)) {
-    if (!isConfigurationFieldActive(field)) {
-      continue
-    }
-
-    for (const binding of getActiveFieldBindings(field)) {
-      if (binding.target !== 'github' || binding.type !== 'SECRET') {
-        continue
-      }
-
-      const value = String(advancedConfig[field.id] ?? '')
-      secrets.push(
-        planSecret(
-          binding.scope,
-          binding.name,
-          includeSecretValues ? value : value ? '[provided on submit]' : ''
-        )
-      )
-    }
-  }
-
-  for (const definition of CONFIGURATION_SCREENS) {
-    if (['infrastructure', 'application', 'dependencies'].includes(definition.id)) {
-      continue
-    }
-    for (const field of getConfigurationFields(definition.id)) {
-      if (!isFieldEnabledForDeployment(field) || !isConfigurationFieldActive(field)) {
-        continue
-      }
-      for (const binding of getActiveFieldBindings(field)) {
-        if (binding.target !== 'github' || binding.type !== 'SECRET') {
-          continue
-        }
-        const value = String(genericScreenConfigs[definition.id]?.[field.id] ?? '')
-        secrets.push(
-          planSecret(
-            binding.scope,
-            binding.name,
-            includeSecretValues ? value : value ? '[provided on submit]' : ''
-          )
-        )
-      }
-    }
-  }
-
-  if (applicationConfig?.backupRestoreMode === 'backup') {
-    const passphraseExists = secretExists(
-      'ENVIRONMENT',
-      'BACKUP_ENCRYPTION_PASSPHRASE'
-    )
-    const privateKeyExists = secretExists('ENVIRONMENT', 'BACKUP_HOST_PRIVATE_KEY')
-    const publicKeyExists = secretExists('ENVIRONMENT', 'BACKUP_HOST_PUBLIC_KEY')
-    const needsBackupKeyPair = !privateKeyExists || !publicKeyExists
-
-    if (includeSecretValues && !passphraseExists && !generatedBackupEncryptionPassphrase) {
-      generatedBackupEncryptionPassphrase = generateLongPassword()
-    }
-
-    if (
-      includeSecretValues &&
-      needsBackupKeyPair &&
-      !generatedBackupHostPrivateKey
-    ) {
-      const keyPair = generateSSHKeyPair()
-      generatedBackupHostPrivateKey = keyPair.privateKey
-      generatedBackupHostPublicKey = keyPair.publicKey
-    }
-
-    secrets.push(
-      planSecret(
-        'ENVIRONMENT',
-        'BACKUP_ENCRYPTION_PASSPHRASE',
-        passphraseExists
-          ? ''
-          : includeSecretValues
-            ? generatedBackupEncryptionPassphrase
-            : '[generated on finalize]'
-      ),
-      planSecret(
-        'ENVIRONMENT',
-        'BACKUP_HOST_PRIVATE_KEY',
-        !needsBackupKeyPair
-          ? ''
-          : includeSecretValues
-            ? generatedBackupHostPrivateKey
-            : '[generated on finalize]'
-      ),
-      planSecret(
-        'ENVIRONMENT',
-        'BACKUP_HOST_PUBLIC_KEY',
-        !needsBackupKeyPair
-          ? ''
-          : includeSecretValues
-            ? generatedBackupHostPublicKey
-            : '[generated on finalize]'
-      )
-    )
-  }
-
-  if (infrastructureConfig?.enableDiskEncryption) {
-    const exists = secretExists('ENVIRONMENT', 'ENCRYPTION_KEY')
-
-    if (!exists && includeSecretValues && !generatedEncryptionKey) {
-      generatedEncryptionKey = generateLongPassword()
-    }
-
-    secrets.push(
-      planSecret(
-        'ENVIRONMENT',
-        'ENCRYPTION_KEY',
-        exists ? '' : includeSecretValues ? generatedEncryptionKey : '[generated on finalize]'
-      )
-    )
-  }
-
-  return {
-    variables,
-    secrets
-  }
 }
 
 function getConfigurationContext(): ConfigurationContext {
@@ -1507,16 +1189,7 @@ function derivedValueConditionMatches(condition: DerivedValueCondition) {
 }
 
 function getDerivedFieldState(field: ConfigurationField) {
-  const rule = field.deriveValue?.find(({ when }) =>
-    derivedValueConditionMatches(when)
-  )
-
-  return rule
-    ? {
-        value: rule.value,
-        locked: Boolean(rule.lock)
-      }
-    : null
+  return resolveDerivedFieldState(field, derivedValueConditionMatches)
 }
 
 function getConfigurationFieldValue(field: ConfigurationField): ConfigurationValue {
@@ -1529,11 +1202,12 @@ function getSubmittedOrDerivedFieldValue(
   current: ConfigurationValue
 ) {
   const derivedState = getDerivedFieldState(field)
-  if (derivedState?.locked) {
-    return derivedState.value
-  }
-
-  return field.readonly || submitted === undefined ? current : submitted
+  return resolveSubmittedOrDerivedFieldValue(
+    field,
+    submitted,
+    current,
+    derivedState
+  )
 }
 
 function getFieldForResponse(field: ConfigurationField) {
@@ -1550,13 +1224,11 @@ function getResponseValuesForFields(
   fields: ConfigurationField[],
   values: Record<string, unknown>
 ) {
-  const nextValues = { ...values }
-
-  for (const field of fields) {
-    nextValues[field.id] = getConfigurationFieldValue(field)
-  }
-
-  return nextValues
+  return resolveResponseValuesForFields(
+    fields,
+    values,
+    getConfigurationFieldValue
+  )
 }
 
 function isConfigurationFieldActive(field: ConfigurationField) {
@@ -1572,47 +1244,15 @@ function isConfigurationFieldActive(field: ConfigurationField) {
   )
 }
 
-function valuesEqual(left: unknown, right: unknown) {
-  return JSON.stringify(left) === JSON.stringify(right)
-}
-
 function getHelmUpdates(): HelmUpdate[] {
-  if (!hasDeploymentFeature('helm')) {
-    return []
-  }
-
-  return CONFIGURATION_FIELDS.flatMap((field) => {
-    if (!isFieldEnabledForDeployment(field)) {
-      return []
-    }
-
-    const value = getConfigurationFieldValue(field)
-
-    return getActiveFieldBindings(field)
-      .filter((binding): binding is HelmBinding => binding.target === 'helm')
-      .map((binding) => {
-        const currentValue = getNestedValue(
-          helmBaseOverrides[binding.chart] || {},
-          binding.path
-        )
-        const shouldRemove =
-          !isConfigurationFieldActive(field) ||
-          Boolean(binding.omitWhenDefault && valuesEqual(value, field.defaultValue))
-        const action = shouldRemove
-          ? currentValue === undefined
-            ? 'unchanged'
-            : 'remove'
-          : valuesEqual(currentValue, value)
-            ? 'unchanged'
-            : 'set'
-
-        return {
-          chart: binding.chart,
-          path: binding.path,
-          value,
-          action
-        }
-      })
+  return buildHelmUpdates({
+    enabled: hasDeploymentFeature('helm'),
+    fields: CONFIGURATION_FIELDS,
+    helmBaseOverrides,
+    getFieldValue: getConfigurationFieldValue,
+    isFieldEnabled: isFieldEnabledForDeployment,
+    isFieldActive: isConfigurationFieldActive,
+    getActiveBindings: getActiveFieldBindings
   })
 }
 
@@ -1868,49 +1508,14 @@ function writeHelmOverrides(environmentName: string) {
   }
 }
 
-function getFilesToUpdate() {
-  const environment = environmentSelection?.environmentName || '<environment>'
-  const chartFiles = [
-    'dependencies/values.yaml',
-    'dependencies/values.override.yaml',
-    'opencrvs-services/values.yaml',
-    'opencrvs-services/values.override.yaml',
-    'traefik/values.yaml',
-    'traefik/values.override.yaml'
-  ].map((file) => `environments/${environment}/${file}`)
-  const inventoryFiles = hasDeploymentFeature('ansible')
-    ? [`infrastructure/server-setup/inventory/${environment}.yml`]
-    : []
-  const workflowFiles = hasDeploymentFeature('github')
-    ? [
-        '.github/workflows/provision.yml',
-        '.github/workflows/reset-2fa.yml',
-        '.github/workflows/deploy-dependencies.yml',
-        '.github/workflows/deploy-opencrvs.yml',
-        '.github/workflows/clear-all-data.yml',
-        '.github/workflows/seed-data.yml',
-        '.github/workflows/reindex.yml',
-        '.github/workflows/github-to-k8s-sync-env.yml'
-      ]
-    : []
-
-  return [
-    ...inventoryFiles,
-    ...(hasDeploymentFeature('helm') ? chartFiles : []),
-    ...workflowFiles
-  ]
-}
-
 function getReviewPlan(includeSecretValues = false) {
   const githubUpdates = getGithubUpdates(includeSecretValues)
 
-  return {
-    files: getFilesToUpdate(),
-    variables: githubUpdates.variables,
-    secrets: includeSecretValues
-      ? githubUpdates.secrets
-      : githubUpdates.secrets.map(({ value, ...secret }) => secret),
+  return buildReviewPlan({
+    environmentName: environmentSelection?.environmentName || '<environment>',
     deploymentFeatures: getDeploymentFeatures(),
+    includeSecretValues,
+    githubUpdates,
     inventoryValues: hasDeploymentFeature('ansible') && infrastructureConfig
       ? getInventoryValues(infrastructureConfig)
       : null,
@@ -1918,7 +1523,7 @@ function getReviewPlan(includeSecretValues = false) {
       ? getChartValues(applicationConfig)
       : null,
     helmUpdates: getHelmUpdates()
-  }
+  })
 }
 
 function assertReadyToFinalize() {
