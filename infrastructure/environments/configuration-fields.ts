@@ -71,6 +71,7 @@ export type ConfigurationField = {
   screen: ConfigurationScreen
   subScreen?: string
   section: string
+  order?: number
   label: string
   description: string
   control: 'checkbox' | 'number' | 'password' | 'select' | 'text' | 'textarea'
@@ -108,39 +109,37 @@ export const CONFIGURATION_SCREENS: ConfigurationScreenDefinition[] = [
     submitLabel: 'Save infrastructure',
     savedMessage: 'Infrastructure configuration saved.',
     nextScreen: 'application',
+    subScreens: [
+      { id: 'general', label: 'General', order: 10 },
+      { id: 'advanced', label: 'Advanced', order: 20 }
+    ],
     requires: ['ansible'],
     customComponents: ['users']
   },
   {
     id: 'application',
     label: 'Application',
-    description: 'Configure OpenCRVS domain, Traefik TLS mode, and the country configuration Docker image source.',
+    description: 'Configure OpenCRVS domain, Traefik TLS mode, country configuration Docker image source, and advanced application values.',
     order: 20,
     submitLabel: 'Save application',
     savedMessage: 'Application configuration saved.',
-    nextScreen: 'review'
+    nextScreen: 'dependencies',
+    subScreens: [
+      { id: 'general', label: 'General', order: 10 },
+      { id: 'advanced', label: 'Advanced', order: 20 }
+    ]
   },
   {
     id: 'dependencies',
     label: 'Dependencies',
-    description: 'Choose which supporting services are deployed with OpenCRVS and configure connections to external services.',
+    description: 'Choose supporting services, configure external service connections, and tune advanced dependency values.',
     order: 30,
     submitLabel: 'Save dependencies',
     savedMessage: 'Dependency configuration saved.',
-    nextScreen: 'review'
-  },
-  {
-    id: 'advanced',
-    label: 'Advanced',
-    description: 'Configure additional settings by OpenCRVS domain.',
-    order: 40,
-    submitLabel: 'Save advanced settings',
-    savedMessage: 'Advanced configuration saved.',
     nextScreen: 'review',
     subScreens: [
-      { id: 'application', label: 'Application', order: 10 },
-      { id: 'dependencies', label: 'Dependencies', order: 20 },
-      { id: 'infrastructure', label: 'Infrastructure', order: 30 }
+      { id: 'general', label: 'General', order: 10 },
+      { id: 'advanced', label: 'Advanced', order: 20 }
     ]
   }
 ]
@@ -213,6 +212,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     id: 'enableDiskEncryption',
     screen: 'infrastructure',
     section: 'Disk Encryption',
+    subScreen: 'advanced',
     label: 'Enable disk encryption',
     description: 'Create and store the environment encryption key in GitHub.',
     control: 'checkbox',
@@ -223,6 +223,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'diskSpace',
     screen: 'infrastructure',
+    subScreen: 'advanced',
     section: 'Disk Encryption',
     label: 'DISK_SPACE',
     description: 'Amount of disk space to dedicate to encrypted OpenCRVS data.',
@@ -270,7 +271,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     label: 'ACTIVATE_USERS',
     description: 'Whether newly created users should be activated automatically.',
     control: 'checkbox',
-    requires: ['github'],
     defaultValue: true,
     deriveValue: [
       {
@@ -300,7 +300,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     label: 'Certificate mode',
     description: 'Choose how Traefik obtains and serves the environment certificate.',
     control: 'select',
-    requires: ['helm'],
     required: true,
     defaultValue: 'lets_encrypt',
     options: [
@@ -420,47 +419,47 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   },
   {
     id: 'kibanaUsername',
-    screen: 'advanced',
-    subScreen: 'dependencies',
+    screen: 'dependencies',
     section: 'Monitoring',
     label: 'KIBANA_USERNAME',
     description: 'Username used to log in to Kibana.',
     control: 'password',
     required: true,
     defaultValue: 'opencrvs-admin',
+    visibleWhen: { fieldId: 'dependenciesMonitoringEnabled', equals: true },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'KIBANA_USERNAME' },
     ]
   },
   {
     id: 'kibanaPassword',
-    screen: 'advanced',
-    subScreen: 'dependencies',
+    screen: 'dependencies',
     section: 'Monitoring',
     label: 'KIBANA_PASSWORD',
     description: 'Password used to log in to Kibana.',
     control: 'password',
     required: true,
     generatedDefault: 'password',
+    visibleWhen: { fieldId: 'dependenciesMonitoringEnabled', equals: true },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'KIBANA_PASSWORD' }
     ]
   },
   {
     id: 'sentryDsn',
-    screen: 'advanced',
-    subScreen: 'dependencies',
+    screen: 'dependencies',
     section: 'Monitoring',
     label: 'SENTRY_DSN',
     description: 'Sentry DSN used for application error reporting.',
     control: 'password',
+    visibleWhen: { fieldId: 'dependenciesMonitoringEnabled', equals: true },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'SENTRY_DSN' }
     ]
   },
   {
     id: 'backupRestoreMode',
-    screen: 'application',
+    screen: 'dependencies',
     section: 'Backup and Restore',
     label: 'Configuration',
     description: 'Backup and restore are mutually exclusive. Either option can be selected until one is configured.',
@@ -476,7 +475,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   },
   {
     id: 'backupHost',
-    screen: 'application',
+    screen: 'dependencies',
     section: 'Backup and Restore',
     label: 'BACKUP_HOST',
     description: 'Backup server hostname or IP address.',
@@ -491,7 +490,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   },
   {
     id: 'backupUser',
-    screen: 'application',
+    screen: 'dependencies',
     section: 'Backup and Restore',
     label: 'BACKUP_SERVER_USER',
     description: 'Username used to connect to the backup server.',
@@ -506,7 +505,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   },
   {
     id: 'backupType',
-    screen: 'application',
+    screen: 'dependencies',
     section: 'Backup and Restore',
     label: 'BACKUP_ENVIRONMENT_MODE',
     description: 'Backup schedule and strategy for this environment.',
@@ -526,7 +525,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   },
   {
     id: 'restoreEnvironmentName',
-    screen: 'application',
+    screen: 'dependencies',
     section: 'Backup and Restore',
     label: 'RESTORE_ENVIRONMENT_NAME',
     description: 'Environment whose backup should be restored.',
@@ -541,7 +540,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   },
   {
     id: 'restoreType',
-    screen: 'application',
+    screen: 'dependencies',
     section: 'Backup and Restore',
     label: 'RESTORE_ENVIRONMENT_MODE',
     description: 'Backup format to restore from the source environment.',
@@ -561,8 +560,8 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   },
   {
     id: 'metabaseAdminEmail',
-    screen: 'advanced',
-    subScreen: 'application',
+    screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'Metabase Administration',
     label: 'OPENCRVS_METABASE_ADMIN_EMAIL',
     description: 'Email used as the Metabase super administrator username.',
@@ -580,8 +579,8 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   },
   {
     id: 'metabaseAdminPassword',
-    screen: 'advanced',
-    subScreen: 'application',
+    screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'Metabase Administration',
     label: 'OPENCRVS_METABASE_ADMIN_PASSWORD',
     description: 'Password for the Metabase super administrator.',
@@ -728,7 +727,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     label: 'Elastalert notification type',
     description: 'How to send alerts from Elastalert.',
     control: 'select',
-    requires: ['helm'],
     required: true,
     defaultValue: 'email',
     options: [
@@ -748,6 +746,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'elasticsearchEnabled',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'Elasticsearch',
     label: 'Deploy Elasticsearch',
     description: 'Deploy Elasticsearch with the OpenCRVS dependencies chart.',
@@ -760,6 +759,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'elasticsearchHost',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'Elasticsearch',
     label: 'Host',
     description: 'External Elasticsearch hostname.',
@@ -774,6 +774,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'elasticsearchPort',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'Elasticsearch',
     label: 'Port',
     description: 'External Elasticsearch port.',
@@ -789,6 +790,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'elasticsearchUsername',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'Elasticsearch',
     label: 'ELASTICSEARCH_SUPERUSER_USERNAME',
     description: 'Administrator username for external Elasticsearch.',
@@ -803,6 +805,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'elasticsearchPassword',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'Elasticsearch',
     label: 'ELASTICSEARCH_SUPERUSER_PASSWORD',
     description: 'Automatically generated Elasticsearch administrator password.',
@@ -817,6 +820,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'postgresEnabled',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'PostgreSQL',
     label: 'Deploy PostgreSQL',
     description: 'Deploy PostgreSQL with the OpenCRVS dependencies chart.',
@@ -829,6 +833,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'postgresHost',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'PostgreSQL',
     label: 'Host',
     description: 'External PostgreSQL hostname.',
@@ -843,6 +848,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'postgresPort',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'PostgreSQL',
     label: 'Port',
     description: 'External PostgreSQL port.',
@@ -858,6 +864,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'postgresSslmode',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'PostgreSQL',
     label: 'SSL mode',
     description: 'TLS verification mode for external PostgreSQL connections.',
@@ -880,6 +887,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'postgresUsername',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'PostgreSQL',
     label: 'POSTGRES_USER',
     description: 'Automatically generated PostgreSQL administrator username.',
@@ -894,6 +902,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'postgresPassword',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'PostgreSQL',
     label: 'POSTGRES_PASSWORD',
     description: 'Automatically generated PostgreSQL administrator password.',
@@ -908,6 +917,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'minioEnabled',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'MinIO',
     label: 'Deploy MinIO',
     description: 'Deploy MinIO with the OpenCRVS dependencies chart.',
@@ -920,6 +930,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'minioHost',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'MinIO',
     label: 'Host',
     description: 'External MinIO hostname.',
@@ -934,6 +945,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'minioPort',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'MinIO',
     label: 'Port',
     description: 'External MinIO port.',
@@ -949,6 +961,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'minioUsername',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'MinIO',
     label: 'MINIO_ROOT_USER',
     description: 'Automatically generated MinIO root username.',
@@ -963,6 +976,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'minioPassword',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'MinIO',
     label: 'MINIO_ROOT_PASSWORD',
     description: 'Automatically generated MinIO root password.',
@@ -977,6 +991,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'redisEnabled',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'Redis',
     label: 'Deploy Redis',
     description: 'Deploy Redis with the OpenCRVS dependencies chart.',
@@ -989,6 +1004,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'redisHost',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'Redis',
     label: 'Host',
     description: 'External Redis hostname.',
@@ -1003,6 +1019,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'redisPort',
     screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'Redis',
     label: 'Port',
     description: 'External Redis port.',
@@ -1017,8 +1034,8 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   },
   {
     id: 'dependenciesMemoryLimit',
-    screen: 'advanced',
-    subScreen: 'dependencies',
+    screen: 'dependencies',
+    subScreen: 'advanced',
     section: 'Dependencies / Resources',
     label: 'Default memory limit',
     description: 'Default container memory limit for dependency workloads.',
@@ -1036,8 +1053,8 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   },
   {
     id: 'servicesHpaMaxReplicas',
-    screen: 'advanced',
-    subScreen: 'application',
+    screen: 'application',
+    subScreen: 'advanced',
     section: 'OpenCRVS Services / Autoscaling',
     label: 'Maximum replicas',
     description: 'Maximum replica count used by the default HPA policy.',

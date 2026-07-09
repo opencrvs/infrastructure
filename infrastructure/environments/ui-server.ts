@@ -291,6 +291,18 @@ function getFieldSource(field: ConfigurationField) {
   return field.bindings[0]
 }
 
+function isAdvancedTabField(field: ConfigurationField) {
+  return field.subScreen === 'advanced'
+}
+
+function getAdvancedFields() {
+  return CONFIGURATION_FIELDS.filter(isAdvancedTabField)
+}
+
+function getGeneralScreenFields(screenId: string) {
+  return getConfigurationFields(screenId).filter((field) => !isAdvancedTabField(field))
+}
+
 function isFieldIdEnabled(fieldId: string) {
   const field = CONFIGURATION_FIELDS.find(({ id }) => id === fieldId)
   return field ? isFieldEnabledForDeployment(field) : false
@@ -584,7 +596,7 @@ function readHelmOverride(environmentName: string, chart: HelmChart) {
 }
 
 function loadAdvancedConfig(environmentName: string) {
-  const advancedFields = getConfigurationFields('advanced')
+  const advancedFields = getAdvancedFields()
   const charts = [...new Set(CONFIGURATION_FIELDS.flatMap((field) =>
     field.bindings
       .filter((binding): binding is HelmBinding => binding.target === 'helm')
@@ -655,7 +667,7 @@ function getFieldDefaultValue(field: ConfigurationField, environmentName = '') {
 
 function loadDependenciesConfig(environmentName: string) {
   dependenciesConfig = Object.fromEntries(
-    getConfigurationFields('dependencies').map((field) => {
+    getGeneralScreenFields('dependencies').map((field) => {
       const source = getFieldSource(field)
       let value: unknown
 
@@ -691,8 +703,7 @@ function loadGenericScreenConfigs(environmentName: string) {
   const specializedScreens = new Set([
     'infrastructure',
     'application',
-    'dependencies',
-    'advanced'
+    'dependencies'
   ])
 
   genericScreenConfigs = Object.fromEntries(
@@ -731,7 +742,7 @@ function loadGenericScreenConfigs(environmentName: string) {
 }
 
 function getAdvancedResponse() {
-  const fields = getConfigurationFields('advanced')
+  const fields = getAdvancedFields()
     .filter(isFieldEnabledForDeployment)
     .map(getFieldForResponse)
   return {
@@ -799,12 +810,10 @@ function getConfigurationScreenResponse(screenId: string) {
   const storedValues = screenId === 'infrastructure'
     ? { ...(infrastructureConfig || {}) }
     : screenId === 'application'
-      ? { ...(applicationConfig || {}) }
+      ? { ...(applicationConfig || {}), ...advancedConfig }
       : screenId === 'dependencies'
-        ? { ...dependenciesConfig }
-        : screenId === 'advanced'
-          ? { ...advancedConfig }
-          : { ...(genericScreenConfigs[screenId] || {}) }
+        ? { ...dependenciesConfig, ...advancedConfig }
+        : { ...(genericScreenConfigs[screenId] || {}) }
   const values = getResponseValuesForFields(fields, storedValues)
 
   return {
@@ -1293,7 +1302,7 @@ function getGithubUpdates(includeSecretValues = false) {
     )
   )
 
-  for (const field of getConfigurationFields('dependencies')) {
+  for (const field of getGeneralScreenFields('dependencies')) {
     if (!isFieldEnabledForDeployment(field) || !isConfigurationFieldActive(field)) {
       continue
     }
@@ -1314,7 +1323,7 @@ function getGithubUpdates(includeSecretValues = false) {
     }
   }
 
-  for (const field of getConfigurationFields('advanced').filter(isFieldEnabledForDeployment)) {
+  for (const field of getAdvancedFields().filter(isFieldEnabledForDeployment)) {
     if (!isConfigurationFieldActive(field)) {
       continue
     }
@@ -1336,7 +1345,7 @@ function getGithubUpdates(includeSecretValues = false) {
   }
 
   for (const definition of CONFIGURATION_SCREENS) {
-    if (['infrastructure', 'application', 'dependencies', 'advanced'].includes(definition.id)) {
+    if (['infrastructure', 'application', 'dependencies'].includes(definition.id)) {
       continue
     }
     for (const field of getConfigurationFields(definition.id)) {
@@ -1607,15 +1616,17 @@ function getHelmUpdates(): HelmUpdate[] {
   })
 }
 
-function saveAdvancedConfig(payload: AdvancedRequest) {
+function saveAdvancedFields(
+  fields: ConfigurationField[],
+  submittedValues: Record<string, unknown>
+) {
   if (!environmentSelection) {
     throw new Error('Select an environment before configuring Helm values.')
   }
 
-  const submittedValues = payload.values || {}
-  const nextConfig: Record<string, ConfigurationValue> = {}
+  const nextConfig: Record<string, ConfigurationValue> = { ...advancedConfig }
 
-  for (const field of getConfigurationFields('advanced')) {
+  for (const field of fields.filter(isFieldEnabledForDeployment)) {
     const submitted = submittedValues[field.id]
     const current = advancedConfig[field.id] ?? field.defaultValue ?? ''
 
@@ -1662,6 +1673,10 @@ function saveAdvancedConfig(payload: AdvancedRequest) {
   }
 
   advancedConfig = nextConfig
+}
+
+function saveAdvancedConfig(payload: AdvancedRequest) {
+  saveAdvancedFields(getAdvancedFields(), payload.values || {})
   return getAdvancedResponse()
 }
 
@@ -1671,7 +1686,7 @@ function saveDependenciesConfig(payload: DependenciesRequest) {
   }
 
   const submittedValues = payload.values || {}
-  const fields = getConfigurationFields('dependencies').filter(isFieldEnabledForDeployment)
+  const fields = getGeneralScreenFields('dependencies').filter(isFieldEnabledForDeployment)
   const nextConfig: Record<string, ConfigurationValue> = { ...dependenciesConfig }
 
   for (const field of fields.filter(({ control }) => control === 'checkbox')) {
@@ -2334,10 +2349,16 @@ function saveConfigurationScreen(
     })
   } else if (screenId === 'application') {
     saveApplicationConfig(values as ApplicationRequest)
+    saveAdvancedFields(
+      getConfigurationFields('application').filter(isAdvancedTabField),
+      values
+    )
   } else if (screenId === 'dependencies') {
     saveDependenciesConfig({ values })
-  } else if (screenId === 'advanced') {
-    saveAdvancedConfig({ values })
+    saveAdvancedFields(
+      getConfigurationFields('dependencies').filter(isAdvancedTabField),
+      values
+    )
   } else if (CONFIGURATION_SCREENS.some(({ id }) => id === screenId)) {
     saveGenericScreenConfig(screenId, values)
   } else {

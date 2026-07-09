@@ -95,6 +95,15 @@
     } = options;
 
     container.innerHTML = '';
+    const sortFields = (items) => items.slice().sort((left, right) => {
+      const leftOrder = left.order ?? Number.MAX_SAFE_INTEGER;
+      const rightOrder = right.order ?? Number.MAX_SAFE_INTEGER;
+      if (leftOrder !== rightOrder) {
+        return leftOrder - rightOrder;
+      }
+
+      return fields.indexOf(left) - fields.indexOf(right);
+    });
     const sections = [...new Set(fields.map((field) => field.section))];
 
     for (const sectionName of sections) {
@@ -105,7 +114,7 @@
       heading.textContent = sectionName;
       section.appendChild(heading);
 
-      for (const field of fields.filter((item) => item.section === sectionName)) {
+      for (const field of sortFields(fields.filter((item) => item.section === sectionName))) {
         const label = document.createElement('label');
         label.dataset.configFieldLabel = field.id;
         label.dataset.configFieldContainer = field.id;

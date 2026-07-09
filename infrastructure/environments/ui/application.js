@@ -154,6 +154,11 @@ const configurationControllers = new Map(
       fieldsContainer: document.querySelector('#' + definition.id + '-fields'),
       submitButton: document.querySelector('#' + definition.id + '-button'),
       status: document.querySelector('#' + definition.id + '-status'),
+      customSubScreenComponents: Array.from(
+        document.querySelectorAll(
+          '#' + definition.id + '-form [data-custom-sub-screen]'
+        )
+      ),
       tabs: Array.from(
         document.querySelectorAll(
           '#' + definition.id + '-screen [data-sub-screen]'
@@ -466,6 +471,9 @@ function renderConfigurationScreen(screenId) {
     return;
   }
 
+  const getFieldSubScreen = (field) => field.subScreen || 'general';
+  const getCustomComponentSubScreen = (component) =>
+    component.dataset.customSubScreen || 'general';
   let fields = controller.fields;
   if (controller.definition.subScreens?.length) {
     const availableSubScreens = controller.definition.subScreens
@@ -473,7 +481,10 @@ function renderConfigurationScreen(screenId) {
       .sort((left, right) => left.order - right.order)
       .filter((subScreen) =>
         controller.fields.some(
-          (field) => !field.subScreen || field.subScreen === subScreen.id
+          (field) => getFieldSubScreen(field) === subScreen.id
+        ) ||
+        controller.customSubScreenComponents.some(
+          (component) => getCustomComponentSubScreen(component) === subScreen.id
         )
       );
     if (!availableSubScreens.some(({ id }) => id === controller.selectedSubScreen)) {
@@ -489,8 +500,14 @@ function renderConfigurationScreen(screenId) {
       tab.setAttribute('aria-selected', String(active));
     }
     fields = controller.fields.filter(
-      (field) => !field.subScreen || field.subScreen === controller.selectedSubScreen
+      (field) => getFieldSubScreen(field) === controller.selectedSubScreen
     );
+  }
+  for (const component of controller.customSubScreenComponents) {
+    const visible =
+      !controller.definition.subScreens?.length ||
+      getCustomComponentSubScreen(component) === controller.selectedSubScreen;
+    component.classList.toggle('d-none', !visible);
   }
 
   controller.renderer = renderConfigurationForm({
