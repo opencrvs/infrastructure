@@ -785,6 +785,24 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     ]
   },
   {
+    id: 'elastalertNotificationType',
+    screen: 'dependencies',
+    section: 'Monitoring',
+    label: 'Elastalert notification type',
+    description: 'How to send alerts from Elastalert.',
+    control: 'select',
+    requires: ['helm'],
+    required: true,
+    defaultValue: 'email',
+    options: [
+      { label: 'email', value: 'email' },
+      { label: 'Post call to Countryconfig', value: 'post2' },
+    ],
+    visibleWhen: { fieldId: 'dependenciesMonitoringEnabled', equals: true },
+    source: { target: 'state', name: 'elastalertNotificationType' },
+    bindings: []
+  },
+  {
     id: 'elasticsearchEnabled',
     screen: 'dependencies',
     section: 'Elasticsearch',
@@ -856,80 +874,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     source: { target: 'github', scope: 'ENVIRONMENT', name: 'ELASTICSEARCH_SUPERUSER_PASSWORD' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'ELASTICSEARCH_SUPERUSER_PASSWORD' }
-    ]
-  },
-  {
-    id: 'mongodbEnabled',
-    screen: 'dependencies',
-    section: 'MongoDB',
-    label: 'Deploy MongoDB',
-    description: 'Deploy MongoDB with the OpenCRVS dependencies chart.',
-    control: 'checkbox',
-    defaultValue: true,
-    source: { target: 'helm', chart: 'dependencies', path: 'mongodb.enabled' },
-    bindings: [
-      { target: 'helm', chart: 'dependencies', path: 'mongodb.enabled', omitWhenDefault: true }
-    ]
-  },
-  {
-    id: 'mongodbHost',
-    screen: 'dependencies',
-    section: 'MongoDB',
-    label: 'Host',
-    description: 'External MongoDB hostname.',
-    control: 'text',
-    required: true,
-    defaultValue: 'mongodb-0.mongodb.opencrvs-deps-dev.svc.cluster.local',
-    visibleWhen: { fieldId: 'mongodbEnabled', equals: false },
-    source: { target: 'helm', chart: 'opencrvs-services', path: 'mongodb.host' },
-    bindings: [
-      { target: 'helm', chart: 'opencrvs-services', path: 'mongodb.host' }
-    ]
-  },
-  {
-    id: 'mongodbPort',
-    screen: 'dependencies',
-    section: 'MongoDB',
-    label: 'Port',
-    description: 'External MongoDB port.',
-    control: 'number',
-    required: true,
-    defaultValue: 27017,
-    validator: 'positive-integer',
-    visibleWhen: { fieldId: 'mongodbEnabled', equals: false },
-    source: { target: 'helm', chart: 'opencrvs-services', path: 'mongodb.port' },
-    bindings: [
-      { target: 'helm', chart: 'opencrvs-services', path: 'mongodb.port', skipPathValidation: true }
-    ]
-  },
-  {
-    id: 'mongodbUsername',
-    screen: 'dependencies',
-    section: 'MongoDB',
-    label: 'MONGODB_ADMIN_USER',
-    description: 'Automatically generated MongoDB administrator username.',
-    control: 'password',
-    required: true,
-    generatedDefault: 'username',
-    readonly: true,
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'MONGODB_ADMIN_USER' },
-    bindings: [
-      { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'MONGODB_ADMIN_USER' }
-    ]
-  },
-  {
-    id: 'mongodbPassword',
-    screen: 'dependencies',
-    section: 'MongoDB',
-    label: 'MONGODB_ADMIN_PASSWORD',
-    description: 'Automatically generated MongoDB administrator password.',
-    control: 'password',
-    required: true,
-    generatedDefault: 'password',
-    readonly: true,
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'MONGODB_ADMIN_PASSWORD' },
-    bindings: [
-      { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'MONGODB_ADMIN_PASSWORD' }
     ]
   },
   {

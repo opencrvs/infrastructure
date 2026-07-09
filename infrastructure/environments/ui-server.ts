@@ -12,13 +12,24 @@ import {
   CONFIGURATION_FIELDS,
   CONFIGURATION_SCREENS,
   ConfigurationField,
-  DeploymentFeature,
   GithubBinding,
   HelmBinding,
   HelmChart,
   getConfigurationFields,
   validateConfigurationSchema
 } from './configuration-fields'
+import {
+  InfrastructureType,
+  SetupOptions,
+  createDeploymentContext,
+  getActiveFieldBindings as getActiveBindingsForContext,
+  getFieldForCurrentDeployment as getFieldForDeploymentContext,
+  hasDeploymentFeature as contextHasDeploymentFeature,
+  isBindingEnabled as isBindingEnabledForContext,
+  isFieldEnabledForDeployment as isFieldEnabledForDeploymentContext,
+  isScreenEnabled as isScreenEnabledForContext,
+  normalizeInfrastructureType
+} from './deployment-context'
 import { getRepoInfo } from './git'
 import {
   Secret,
@@ -92,12 +103,10 @@ type EnvironmentSelectionRequest = {
 }
 
 type ConfigurationValue = string | number | boolean
-type InfrastructureType = 'on-premise' | 'cloud-native' | 'existing-cluster'
 
 type SetupOptionsRequest = {
   enableGithubIntegration?: boolean
   infrastructureType?: InfrastructureType
-  configureHelmValues?: boolean
 }
 
 type AdvancedRequest = {
@@ -173,10 +182,9 @@ let repositorySecrets: Secret[] = []
 let environmentVariables: Variable[] = []
 let environmentSecrets: Secret[] = []
 let environmentSelection: Required<EnvironmentSelectionRequest> | null = null
-let setupOptions: Required<SetupOptionsRequest> = {
+let setupOptions: SetupOptions = {
   enableGithubIntegration: true,
-  infrastructureType: 'on-premise',
-  configureHelmValues: true
+  infrastructureType: 'on-premise'
 }
 let users: User[] = []
 let applicationConfig: ApplicationRequest | null = null
@@ -241,61 +249,38 @@ function getGitHubDefaults() {
   }
 }
 
-function getDeploymentFeatures(): DeploymentFeature[] {
-  return [
-    setupOptions.enableGithubIntegration ? 'github' : null,
-    setupOptions.infrastructureType === 'on-premise' ? 'ansible' : null,
-    setupOptions.configureHelmValues ? 'helm' : null
-  ].filter((feature): feature is DeploymentFeature => Boolean(feature))
+function getDeploymentContext() {
+  return createDeploymentContext(setupOptions)
 }
 
-function hasDeploymentFeature(feature: DeploymentFeature) {
-  return getDeploymentFeatures().includes(feature)
+function getDeploymentFeatures() {
+  return getDeploymentContext().deploymentFeatures
 }
 
-function getBindingFeature(binding: { target: string }): DeploymentFeature | null {
-  if (
-    binding.target === 'github' ||
-    binding.target === 'helm' ||
-    binding.target === 'ansible'
-  ) {
-    return binding.target
-  }
-
-  return null
+function hasDeploymentFeature(feature: Parameters<typeof contextHasDeploymentFeature>[1]) {
+  return contextHasDeploymentFeature(getDeploymentContext(), feature)
 }
 
 function isBindingEnabled(binding: { target: string }) {
-  const feature = getBindingFeature(binding)
-  return feature ? hasDeploymentFeature(feature) : true
+  return isBindingEnabledForContext(getDeploymentContext(), binding)
 }
 
-function isScreenEnabled(definition: { requires?: DeploymentFeature[] }) {
-  return !definition.requires?.length ||
-    definition.requires.some((feature) => hasDeploymentFeature(feature))
+function isScreenEnabled(
+  definition: Parameters<typeof isScreenEnabledForContext>[1]
+) {
+  return isScreenEnabledForContext(getDeploymentContext(), definition)
 }
 
 function isFieldEnabledForDeployment(field: ConfigurationField) {
-  if (field.requires?.length) {
-    return field.requires.some((feature) => hasDeploymentFeature(feature))
-  }
-
-  if (!field.bindings.length) {
-    return true
-  }
-
-  return field.bindings.some(isBindingEnabled)
+  return isFieldEnabledForDeploymentContext(getDeploymentContext(), field)
 }
 
 function getActiveFieldBindings(field: ConfigurationField) {
-  return field.bindings.filter(isBindingEnabled)
+  return getActiveBindingsForContext(getDeploymentContext(), field)
 }
 
 function getFieldForCurrentDeployment(field: ConfigurationField) {
-  return {
-    ...field,
-    bindings: getActiveFieldBindings(field)
-  }
+  return getFieldForDeploymentContext(getDeploymentContext(), field)
 }
 
 function isFieldIdEnabled(fieldId: string) {
@@ -304,18 +289,9 @@ function isFieldIdEnabled(fieldId: string) {
 }
 
 function saveSetupOptions(payload: SetupOptionsRequest) {
-  const infrastructureType = [
-    'on-premise',
-    'cloud-native',
-    'existing-cluster'
-  ].includes(payload.infrastructureType || '')
-    ? payload.infrastructureType as InfrastructureType
-    : 'on-premise'
-
   setupOptions = {
     enableGithubIntegration: payload.enableGithubIntegration !== false,
-    infrastructureType,
-    configureHelmValues: payload.configureHelmValues !== false
+    infrastructureType: normalizeInfrastructureType(payload.infrastructureType)
   }
 
   if (!hasDeploymentFeature('github')) {
@@ -994,16 +970,18 @@ function getChartValues(config: ApplicationRequest) {
   return {
     env: environment,
     environment_type: environmentType,
-    two_fa_enabled: environment !== 'production' ? false : true,
+    two_fa_enabled: environmentType !== 'production' ? false : true,
     backup_enabled: config.backupRestoreMode === 'backup',
     restore_enabled: config.backupRestoreMode === 'restore',
     restore_environment_name:
       config.backupRestoreMode === 'restore' ? config.restoreEnvironmentName || '' : '',
     restore_type: config.backupRestoreMode === 'restore' ? config.restoreType || 'dump' : '',
     traefik_mode: config.traefikMode || 'lets_encrypt',
+    elastalert_notification_type:
+      String(dependenciesConfig.elastalertNotificationType || 'email'),
     backup_type: config.backupRestoreMode === 'backup' ? config.backupType || 'dump' : '',
     lets_encrypt: config.traefikMode === 'lets_encrypt',
-    static_ssl: config.traefikMode === 'static_ssl'
+    static_ssl: config.traefikMode === 'static_ssl',
   }
 }
 

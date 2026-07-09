@@ -98,7 +98,6 @@ const setupButton = document.querySelector('#setup-button');
 const setupStatusBox = document.querySelector('#setup-status');
 const enableGithubIntegrationInput = document.querySelector('#enableGithubIntegration');
 const infrastructureTypeInput = document.querySelector('#infrastructureType');
-const configureHelmValuesInput = document.querySelector('#configureHelmValues');
 const form = document.querySelector('#github-form');
 const environmentForm = document.querySelector('#environment-form');
 const organisationInput = document.querySelector('#organisation');
@@ -740,7 +739,6 @@ async function loadDefaults() {
   if (defaults.setupOptions) {
     enableGithubIntegrationInput.checked = defaults.setupOptions.enableGithubIntegration !== false;
     infrastructureTypeInput.value = defaults.setupOptions.infrastructureType || 'on-premise';
-    configureHelmValuesInput.checked = defaults.setupOptions.configureHelmValues !== false;
   }
   deploymentFeatures = defaults.deploymentFeatures || deploymentFeatures;
   syncGitHubVisibility();
@@ -762,8 +760,7 @@ setupForm.addEventListener('submit', async (event) => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         enableGithubIntegration: enableGithubIntegrationInput.checked,
-        infrastructureType: infrastructureTypeInput.value,
-        configureHelmValues: configureHelmValuesInput.checked
+        infrastructureType: infrastructureTypeInput.value
       })
     });
     const result = await response.json();

@@ -54,7 +54,8 @@ monitoring:
 
 elastalert:
   env:
-    NOTIFICATION_TYPE: email
+    NOTIFICATION_TYPE: {{elastalert_notification_type}}
+{{#if elastalert_map_smtp_secret}}
   secrets:
     smtp-config:
       - ALERT_EMAIL
@@ -64,7 +65,7 @@ elastalert:
       - SMTP_PORT
       - SMTP_SECURE
       - SMTP_USERNAME
-
+{{/if}}
 # Backup configuration
 backup:
   enabled: {{backup_enabled}}

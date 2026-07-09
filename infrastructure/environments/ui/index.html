@@ -35,18 +35,10 @@
               Infrastructure type
               <select id="infrastructureType" class="form-select" name="infrastructureType" required>
                 <option value="on-premise">On-Premise</option>
-                <option value="cloud-native">Cloud-Native / Managed Kubernetes cluster</option>
-                <option value="existing-cluster">Existing cluster</option>
+                <option value="managed-cluster">Managed / Existing Kubernetes cluster</option>
               </select>
               <span class="form-text fw-normal">
                 On-Premise generates Ansible inventory files. Managed and existing clusters skip Ansible inventory.
-              </span>
-            </label>
-            <label class="form-check">
-              <input id="configureHelmValues" class="form-check-input" name="configureHelmValues" type="checkbox" checked />
-              <span class="form-check-label">Configure values files for OpenCRVS Helm charts</span>
-              <span class="form-text d-block small fw-normal">
-                Generate and update environment-specific Helm chart values.
               </span>
             </label>
             <div class="actions d-flex gap-2">

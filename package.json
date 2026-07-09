@@ -13,6 +13,7 @@
   "husky": {},
   "scripts": {
     "environment:init": "ts-node infrastructure/environments/ui-server.ts",
+    "environment:init:test": "ts-node infrastructure/environments/deployment-context.test.ts",
     "environment:init:cli": "ts-node infrastructure/environments/setup-environment.ts",
     "environment:upgrade": "yarn environment:init",
     "environment:swarm-to-k8s": "ts-node infrastructure/environments/swarm-to-k8s.ts",
