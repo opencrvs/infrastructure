@@ -1,6 +1,6 @@
 import { spawn } from 'child_process'
 import fs from 'fs'
-import http, { IncomingMessage, ServerResponse } from 'http'
+import http from 'http'
 import { AddressInfo } from 'net'
 import os from 'os'
 import path from 'path'
@@ -44,6 +44,7 @@ import {
   valuesEqual
 } from './configuration-state'
 import { buildInventoryValues } from './ansible-plan'
+import { finalizeConfiguration } from './finalize'
 import {
   GithubSecretPlanItem,
   GithubUpdate,
@@ -51,7 +52,9 @@ import {
   buildGithubUpdates
 } from './github-plan'
 import { HelmUpdate, buildHelmUpdates } from './helm-plan'
+import { buildNextSteps } from './next-steps'
 import { buildReviewPlan } from './review-plan'
+import { createUiRequestHandler } from './ui-routes'
 import { getRepoInfo } from './git'
 import {
   Secret,
@@ -151,8 +154,6 @@ type User = {
   role: 'admin' | 'operator'
 }
 
-type JsonResponse = Record<string, unknown>
-
 const DEFAULT_ENVIRONMENT_CHOICES = [
   { name: 'Development', value: 'development' },
   { name: 'Quality assurance (no PII data)', value: 'qa' },
@@ -200,48 +201,35 @@ let advancedConfig: Record<string, ConfigurationValue> = {}
 let dependenciesConfig: Record<string, ConfigurationValue> = {}
 let genericScreenConfigs: Record<string, Record<string, ConfigurationValue>> = {}
 let helmBaseOverrides: Partial<Record<HelmChart, Record<string, unknown>>> = {}
-const getFieldDefaultValue = createFieldDefaultValueResolver()
+let lastValuesSecretsPath = ''
+let getFieldDefaultValue = createFieldDefaultValueResolver()
 
-function sendJson(
-  response: ServerResponse,
-  statusCode: number,
-  payload: JsonResponse
-) {
-  response.writeHead(statusCode, {
-    'content-type': 'application/json; charset=utf-8',
-    'cache-control': 'no-store'
-  })
-  response.end(JSON.stringify(payload))
-}
-
-function sendUiFile(
-  response: ServerResponse,
-  filename: string,
-  contentType: string
-) {
-  response.writeHead(200, {
-    'content-type': `${contentType}; charset=utf-8`,
-    'cache-control': 'no-store'
-  })
-  response.end(fs.readFileSync(path.join(UI_DIRECTORY, filename)))
-}
-
-function sendBootstrapCss(response: ServerResponse) {
-  response.writeHead(200, {
-    'content-type': 'text/css; charset=utf-8',
-    'cache-control': 'public, max-age=86400'
-  })
-  response.end(fs.readFileSync(BOOTSTRAP_CSS))
-}
-
-async function readRequestBody(request: IncomingMessage): Promise<string> {
-  const chunks: Buffer[] = []
-
-  for await (const chunk of request) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+function resetConfiguratorSession() {
+  verifiedConnection = null
+  infrastructureConfig = null
+  repositoryId = null
+  existingEnvironments = []
+  repositoryVariables = []
+  repositorySecrets = []
+  environmentVariables = []
+  environmentSecrets = []
+  environmentSelection = null
+  setupOptions = {
+    enableGithubIntegration: true,
+    infrastructureType: 'on-premise'
   }
-
-  return Buffer.concat(chunks).toString('utf8')
+  users = []
+  applicationConfig = null
+  generatedEncryptionKey = ''
+  generatedBackupEncryptionPassphrase = ''
+  generatedBackupHostPrivateKey = ''
+  generatedBackupHostPublicKey = ''
+  advancedConfig = {}
+  dependenciesConfig = {}
+  genericScreenConfigs = {}
+  helmBaseOverrides = {}
+  lastValuesSecretsPath = ''
+  getFieldDefaultValue = createFieldDefaultValueResolver()
 }
 
 function getGitHubDefaults() {
@@ -1095,9 +1083,14 @@ function getGeneratedBackupHostKeyPair() {
   }
 }
 
-function getGithubUpdates(includeSecretValues = false) {
+function getGithubUpdates(
+  includeSecretValues = false,
+  options: { includeExternalSecrets?: boolean } = {}
+) {
   return buildGithubUpdates({
-    enabled: hasDeploymentFeature('github') && Boolean(environmentSelection),
+    enabled:
+      Boolean(environmentSelection) &&
+      (hasDeploymentFeature('github') || Boolean(options.includeExternalSecrets)),
     includeSecretValues,
     approvalRequired: Boolean(environmentSelection?.approvalRequired),
     githubApprovers: environmentSelection?.githubApprovers || '',
@@ -1474,8 +1467,7 @@ function saveGenericScreenConfig(
   genericScreenConfigs[screenId] = nextConfig
 }
 
-function writeHelmOverrides(environmentName: string) {
-  const updates = getHelmUpdates()
+function writeHelmOverrides(environmentName: string, updates = getHelmUpdates()) {
   const charts = [...new Set(updates.map((update) => update.chart))]
 
   for (const chart of charts) {
@@ -1544,45 +1536,19 @@ function assertReadyToFinalize() {
   }
 }
 
-function shellQuote(value: string) {
-  return `'${value.replace(/'/g, `'"'"'`)}'`
-}
-
-function getNextSteps() {
-  if (!hasDeploymentFeature('ansible')) {
-    return null
-  }
-
-  const organisation = verifiedConnection?.organisation || '<org name>'
-  const repository = verifiedConnection?.repository || '<repo name>'
-  const token = verifiedConnection?.token || '<github token>'
-  const environment = environmentSelection!.environmentName
-  const primaryHost = infrastructureConfig!.kubeAPIHost || 'KUBE_API_HOST'
-  const workerNodes = (infrastructureConfig!.kubeWorkerNodes || '')
-    .split(',')
-    .map((host) => host.trim())
-    .filter(Boolean)
-  const backupHost = applicationConfig!.backupRestoreMode === 'backup'
-    ? applicationConfig!.backupHost || ''
-    : ''
-
-  return {
-    primaryHost,
-    primaryCommand: [
-      'curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh \\',
-      '     -o opencrvs-bootstrap.sh && \\',
-      `bash opencrvs-bootstrap.sh --owner ${shellQuote(organisation)} \\`,
-      `            --repo ${shellQuote(repository)} \\`,
-      `            --env ${shellQuote(environment)} \\`,
-      `            --token ${shellQuote(token)} \\`,
-      '            --enable-runner'
-    ].join('\n'),
-    additionalHosts: [...new Set([...workerNodes, backupHost].filter(Boolean))],
-    additionalCommand: [
-      'curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\',
-      '    bash opencrvs-bootstrap.sh --ssh-public-key "<public key from master node>"'
-    ].join('\n')
-  }
+function getNextSteps(inventoryAlreadyExists?: boolean) {
+  return buildNextSteps({
+    ansibleEnabled: hasDeploymentFeature('ansible'),
+    environmentName: environmentSelection!.environmentName,
+    organisation: verifiedConnection?.organisation,
+    repository: verifiedConnection?.repository,
+    token: verifiedConnection?.token,
+    kubeAPIHost: infrastructureConfig?.kubeAPIHost,
+    kubeWorkerNodes: infrastructureConfig?.kubeWorkerNodes,
+    backupEnabled: applicationConfig?.backupRestoreMode === 'backup',
+    backupHost: applicationConfig?.backupHost,
+    inventoryAlreadyExists
+  })
 }
 
 async function applyGithubUpdate(octokit: Octokit, update: GithubUpdate) {
@@ -1664,10 +1630,32 @@ async function applyGithubUpdates(octokit: Octokit, updates: GithubUpdate[]) {
   return performedActions
 }
 
+async function applyGithubFinalization(updates: GithubUpdate[]) {
+  const performedActions: string[] = []
+
+  await updateWorkflowEnvironments()
+  performedActions.push('Updated GitHub workflow environment options')
+
+  const octokit = new Octokit({ auth: verifiedConnection!.token })
+  await createEnvironment(
+    octokit,
+    environmentSelection!.environmentName,
+    verifiedConnection!.organisation!,
+    verifiedConnection!.repository!
+  )
+  performedActions.push(
+    `Created or updated GitHub environment ${environmentSelection!.environmentName}`
+  )
+  performedActions.push(...(await applyGithubUpdates(octokit, updates)))
+
+  return performedActions
+}
+
 async function finalizeSetup() {
   assertReadyToFinalize()
 
   const environment = environmentSelection!.environmentName
+  const inventoryAlreadyExists = fs.existsSync(getInventoryPath(environment))
   const inventoryValues = infrastructureConfig
     ? getInventoryValues(infrastructureConfig)
     : null
@@ -1675,48 +1663,45 @@ async function finalizeSetup() {
     ? getChartValues(applicationConfig)
     : null
   const debugPlan = getReviewPlan(true)
-  const githubUpdates = getGithubUpdates(true)
-  const performedActions: string[] = []
+  const githubUpdates = getGithubUpdates(true, {
+    includeExternalSecrets: !hasDeploymentFeature('github') && hasDeploymentFeature('helm')
+  })
+  const helmUpdates = getHelmUpdates()
 
   console.log('\nOpenCRVS environment:init GitHub debug payload')
   console.log(JSON.stringify(debugPlan, null, 2))
 
-  if (hasDeploymentFeature('ansible') && inventoryValues) {
-    generateInventory(environment, inventoryValues)
-    performedActions.push(`Generated inventory file infrastructure/server-setup/inventory/${environment}.yml`)
-  }
+  const finalizeResult = await finalizeConfiguration({
+    environmentName: environment,
+    githubEnabled: hasDeploymentFeature('github'),
+    ansibleEnabled: hasDeploymentFeature('ansible'),
+    helmEnabled: hasDeploymentFeature('helm'),
+    inventoryValues,
+    chartValues,
+    githubUpdates,
+    helmUpdates,
+    applyInventory: (name, values) => generateInventory(name, values as Record<string, any>),
+    applyChartValues: (name, values) =>
+      copyChartsValues(name, values as Record<string, string | boolean>),
+    applyHelmUpdates: (updates) => writeHelmOverrides(environment, updates),
+    applyGithub: applyGithubFinalization
+  })
 
-  if (hasDeploymentFeature('helm') && chartValues) {
-    copyChartsValues(environment, chartValues as Record<string, string | boolean>)
-    performedActions.push(`Generated Helm chart values under environments/${environment}`)
-    writeHelmOverrides(environment)
-    performedActions.push('Applied managed Helm chart overrides')
-  }
+  lastValuesSecretsPath = finalizeResult.valuesSecretsFile
+    ? path.join(process.cwd(), finalizeResult.valuesSecretsFile.path)
+    : ''
 
-  if (hasDeploymentFeature('github')) {
-    await updateWorkflowEnvironments()
-    performedActions.push('Updated GitHub workflow environment options')
+  const reviewPlan = getReviewPlan(false)
 
-    const octokit = new Octokit({ auth: verifiedConnection!.token })
-    await createEnvironment(
-      octokit,
-      environment,
-      verifiedConnection!.organisation!,
-      verifiedConnection!.repository!
-    )
-    performedActions.push(`Created or updated GitHub environment ${environment}`)
-    performedActions.push(
-      ...(await applyGithubUpdates(octokit, [
-        ...githubUpdates.variables,
-        ...githubUpdates.secrets
-      ]))
-    )
+  if (finalizeResult.valuesSecretsFile) {
+    reviewPlan.files.push(finalizeResult.valuesSecretsFile.path)
   }
 
   return {
-    ...getReviewPlan(false),
-    performedActions,
-    nextSteps: getNextSteps()
+    ...reviewPlan,
+    performedActions: finalizeResult.performedActions,
+    valuesSecretsFile: finalizeResult.valuesSecretsFile,
+    nextSteps: getNextSteps(inventoryAlreadyExists)
   }
 }
 
@@ -2000,276 +1985,140 @@ function getCurrentSystemUser() {
   }
 }
 
-async function handleRequest(
-  request: IncomingMessage,
-  response: ServerResponse
+function getSessionResponse() {
+  return {
+    connected: Boolean(verifiedConnection),
+    organisation: verifiedConnection?.organisation || '',
+    repository: verifiedConnection?.repository || '',
+    repositoryId,
+    environmentChoices: getEnvironmentChoices(),
+    existingEnvironments,
+    repositoryVariableCount: repositoryVariables.length,
+    repositorySecretCount: repositorySecrets.length,
+    environmentVariableCount: environmentVariables.length,
+    environmentSecretCount: environmentSecrets.length,
+    existingSecrets: getExistingSecretState(),
+    secretSentinel: EXISTING_SECRET_SENTINEL,
+    githubApprovers: getRepositoryVariableValue('GH_APPROVERS'),
+    setupOptions,
+    deploymentFeatures: getDeploymentFeatures(),
+    environmentSelection,
+    users,
+    infrastructure: infrastructureConfig,
+    infrastructureFields: getConfigurationFields('infrastructure'),
+    application: applicationConfig,
+    applicationFields: getApplicationFields(),
+    dependencies: getDependenciesResponse(),
+    advanced: getAdvancedResponse(),
+    configuration: getConfigurationResponse()
+  }
+}
+
+function getEnvironmentSelectionResponse(
+  selection: Required<EnvironmentSelectionRequest>
 ) {
-  try {
-    const method = request.method || 'GET'
-    const url = new URL(request.url || '/', `http://${HOST}`)
+  return {
+    saved: true,
+    environmentSelection: selection,
+    setupOptions,
+    deploymentFeatures: getDeploymentFeatures(),
+    approvalRequired: selection.approvalRequired,
+    environmentVariableCount: environmentVariables.length,
+    environmentSecretCount: environmentSecrets.length,
+    existingSecrets: getExistingSecretState(),
+    secretSentinel: EXISTING_SECRET_SENTINEL,
+    users,
+    infrastructure: infrastructureConfig,
+    infrastructureFields: getConfigurationFields('infrastructure'),
+    application: applicationConfig,
+    applicationFields: getApplicationFields(),
+    dependencies: getDependenciesResponse(),
+    advanced: getAdvancedResponse(),
+    configuration: getConfigurationResponse()
+  }
+}
 
-    if (method === 'GET' && url.pathname === '/') {
-      sendUiFile(response, 'index.html', 'text/html')
-      return
-    }
+async function previewEnvironment(payload: { environmentName?: unknown }) {
+  const environmentName =
+    typeof payload.environmentName === 'string'
+      ? payload.environmentName.trim()
+      : ''
 
-    if (method === 'GET' && url.pathname === '/ui/styles.css') {
-      sendUiFile(response, 'styles.css', 'text/css')
-      return
-    }
+  if (!environmentName) {
+    throw new Error('Environment name is required.')
+  }
 
-    if (method === 'GET' && url.pathname === '/ui/bootstrap.min.css') {
-      sendBootstrapCss(response)
-      return
-    }
+  if (!hasDeploymentFeature('github')) {
+    return { approvalRequired: false }
+  }
 
-    if (method === 'GET' && url.pathname === '/ui/application.js') {
-      sendUiFile(response, 'application.js', 'text/javascript')
-      return
-    }
+  await loadEnvironmentValues(environmentName)
+  return {
+    approvalRequired: getEnvironmentBooleanVariable('APPROVAL_REQUIRED')
+  }
+}
 
-    if (method === 'GET' && url.pathname === '/ui/form-renderer.js') {
-      sendUiFile(response, 'form-renderer.js', 'text/javascript')
-      return
-    }
-
-    if (method === 'GET' && url.pathname === '/ui/configuration-schema.js') {
-      response.writeHead(200, {
-        'content-type': 'text/javascript; charset=utf-8',
-        'cache-control': 'no-store'
-      })
-      response.end(
-        `window.OpenCRVSConfigurationSchema = ${JSON.stringify(
-          CONFIGURATION_SCREENS.slice().sort((left, right) => left.order - right.order)
-        )};`
-      )
-      return
-    }
-
-    if (method === 'GET' && url.pathname === '/api/github/defaults') {
-      sendJson(response, 200, {
-        ...getGitHubDefaults(),
-        setupOptions,
-        deploymentFeatures: getDeploymentFeatures(),
-        currentSystemUserAvailable: CURRENT_SYSTEM_USER_AVAILABLE
-      })
-      return
-    }
-
-    if (method === 'POST' && url.pathname === '/api/setup-options') {
-      const body = await readRequestBody(request)
-      const payload = JSON.parse(body || '{}') as SetupOptionsRequest
-      const options = saveSetupOptions(payload)
-
-      sendJson(response, 200, {
+function createRequestHandler() {
+  return createUiRequestHandler({
+    host: HOST,
+    uiDirectory: UI_DIRECTORY,
+    bootstrapCss: BOOTSTRAP_CSS,
+    currentSystemUserAvailable: CURRENT_SYSTEM_USER_AVAILABLE,
+    getConfigurationSchemaScript: () =>
+      `window.OpenCRVSConfigurationSchema = ${JSON.stringify(
+        CONFIGURATION_SCREENS.slice().sort((left, right) => left.order - right.order)
+      )};`,
+    getGitHubDefaultsResponse: () => ({
+      ...getGitHubDefaults(),
+      setupOptions,
+      deploymentFeatures: getDeploymentFeatures(),
+      currentSystemUserAvailable: CURRENT_SYSTEM_USER_AVAILABLE
+    }),
+    saveSetupOptions: (payload) => {
+      const options = saveSetupOptions(payload as SetupOptionsRequest)
+      return {
         saved: true,
         setupOptions: options,
         configuration: environmentSelection ? getConfigurationResponse() : []
-      })
-      return
-    }
-
-    if (method === 'GET' && url.pathname === '/api/configuration-schema') {
-      sendJson(response, 200, {
-        screens: CONFIGURATION_SCREENS,
-        fields: CONFIGURATION_FIELDS
-      })
-      return
-    }
-
-    if (method === 'GET' && url.pathname === '/api/session') {
-      sendJson(response, 200, {
-        connected: Boolean(verifiedConnection),
-        organisation: verifiedConnection?.organisation || '',
-        repository: verifiedConnection?.repository || '',
-        repositoryId,
-        environmentChoices: getEnvironmentChoices(),
-        existingEnvironments,
-        repositoryVariableCount: repositoryVariables.length,
-        repositorySecretCount: repositorySecrets.length,
-        environmentVariableCount: environmentVariables.length,
-        environmentSecretCount: environmentSecrets.length,
-        existingSecrets: getExistingSecretState(),
-        secretSentinel: EXISTING_SECRET_SENTINEL,
-        githubApprovers: getRepositoryVariableValue('GH_APPROVERS'),
-        setupOptions,
-        deploymentFeatures: getDeploymentFeatures(),
-        environmentSelection,
-        users,
-        infrastructure: infrastructureConfig,
-        infrastructureFields: getConfigurationFields('infrastructure'),
-        application: applicationConfig,
-        applicationFields: getApplicationFields(),
-        dependencies: getDependenciesResponse(),
-        advanced: getAdvancedResponse(),
-        configuration: getConfigurationResponse()
-      })
-      return
-    }
-
-    if (method === 'GET' && url.pathname === '/api/current-user') {
-      if (!CURRENT_SYSTEM_USER_AVAILABLE) {
-        sendJson(response, 404, {
-          error: 'The current system user is not available in container mode.'
-        })
-        return
       }
-
-      sendJson(response, 200, {
-        user: getCurrentSystemUser()
-      })
-      return
-    }
-
-    if (method === 'POST' && url.pathname === '/api/github/connect') {
-      const body = await readRequestBody(request)
-      const payload = JSON.parse(body || '{}') as GitHubConnectionRequest
-      await verifyGitHubConnection(payload)
-
-      sendJson(response, 200, getGitHubConnectionResponse())
-      return
-    }
-
-    if (method === 'POST' && url.pathname === '/api/environment-selection') {
-      const body = await readRequestBody(request)
-      const payload = JSON.parse(body || '{}') as EnvironmentSelectionRequest
-      const selection = await saveEnvironmentSelection(payload)
-
-      sendJson(response, 200, {
-        saved: true,
-        environmentSelection: selection,
-        setupOptions,
-        deploymentFeatures: getDeploymentFeatures(),
-        approvalRequired: selection.approvalRequired,
-        environmentVariableCount: environmentVariables.length,
-        environmentSecretCount: environmentSecrets.length,
-        existingSecrets: getExistingSecretState(),
-        secretSentinel: EXISTING_SECRET_SENTINEL,
-        users,
-        infrastructure: infrastructureConfig,
-        infrastructureFields: getConfigurationFields('infrastructure'),
-        application: applicationConfig,
-        applicationFields: getApplicationFields(),
-        dependencies: getDependenciesResponse(),
-        advanced: getAdvancedResponse(),
-        configuration: getConfigurationResponse()
-      })
-      return
-    }
-
-    if (method === 'POST' && url.pathname === '/api/environment-preview') {
-      const body = await readRequestBody(request)
-      const payload = JSON.parse(body || '{}') as { environmentName?: string }
-      const environmentName = payload.environmentName?.trim() || ''
-
-      if (!environmentName) {
-        throw new Error('Environment name is required.')
-      }
-
-      if (!hasDeploymentFeature('github')) {
-        sendJson(response, 200, { approvalRequired: false })
-        return
-      }
-
-      await loadEnvironmentValues(environmentName)
-      sendJson(response, 200, {
-        approvalRequired: getEnvironmentBooleanVariable('APPROVAL_REQUIRED')
-      })
-      return
-    }
-
-    const configurationRoute = url.pathname.match(/^\/api\/configuration\/([^/]+)$/)
-    if (method === 'POST' && configurationRoute) {
-      const body = await readRequestBody(request)
-      const payload = JSON.parse(body || '{}') as ConfigurationScreenRequest
-      const screen = saveConfigurationScreen(
-        decodeURIComponent(configurationRoute[1]),
-        payload
-      )
-
-      sendJson(response, 200, {
-        saved: true,
-        screen,
-        configuration: getConfigurationResponse(),
-        helmUpdates: getHelmUpdates()
-      })
-      return
-    }
-
-    if (method === 'POST' && url.pathname === '/api/infrastructure') {
-      const body = await readRequestBody(request)
-      const payload = JSON.parse(body || '{}') as InfrastructureRequest
-      const infrastructure = saveInfrastructureConfig(payload)
-
-      sendJson(response, 200, {
-        saved: true,
-        infrastructure,
-        inventoryValues: getInventoryValues(infrastructure)
-      })
-      return
-    }
-
-    if (method === 'POST' && url.pathname === '/api/application') {
-      const body = await readRequestBody(request)
-      const payload = JSON.parse(body || '{}') as ApplicationRequest
-      const application = saveApplicationConfig(payload)
-
-      sendJson(response, 200, {
-        saved: true,
-        application,
-        chartValues: getChartValues(application),
-        githubUpdates: getApplicationGithubUpdates(application)
-      })
-      return
-    }
-
-    if (method === 'POST' && url.pathname === '/api/advanced') {
-      const body = await readRequestBody(request)
-      const payload = JSON.parse(body || '{}') as AdvancedRequest
-      const advanced = saveAdvancedConfig(payload)
-
-      sendJson(response, 200, {
-        saved: true,
-        advanced,
-        helmUpdates: getHelmUpdates()
-      })
-      return
-    }
-
-    if (method === 'POST' && url.pathname === '/api/dependencies') {
-      const body = await readRequestBody(request)
-      const payload = JSON.parse(body || '{}') as DependenciesRequest
-      const dependencies = saveDependenciesConfig(payload)
-
-      sendJson(response, 200, {
-        saved: true,
-        dependencies,
-        helmUpdates: getHelmUpdates()
-      })
-      return
-    }
-
-    if (method === 'GET' && url.pathname === '/api/review') {
-      assertReadyToFinalize()
-      sendJson(response, 200, getReviewPlan(false))
-      return
-    }
-
-    if (method === 'POST' && url.pathname === '/api/finalize') {
-      const result = await finalizeSetup()
-      sendJson(response, 200, {
-        finalized: true,
-        ...result
-      })
-      return
-    }
-
-    sendJson(response, 404, { error: 'Not found' })
-  } catch (error) {
-    sendJson(response, 400, {
-      error: error instanceof Error ? error.message : 'Unexpected error'
-    })
-  }
+    },
+    getConfigurationSchemaResponse: () => ({
+      screens: CONFIGURATION_SCREENS,
+      fields: CONFIGURATION_FIELDS
+    }),
+    getSessionResponse,
+    getCurrentSystemUser,
+    verifyGitHubConnection: async (payload) => {
+      await verifyGitHubConnection(payload as GitHubConnectionRequest)
+    },
+    getGitHubConnectionResponse,
+    saveEnvironmentSelection: (payload) =>
+      saveEnvironmentSelection(payload as EnvironmentSelectionRequest),
+    getEnvironmentSelectionResponse: (selection) =>
+      getEnvironmentSelectionResponse(selection as Required<EnvironmentSelectionRequest>),
+    previewEnvironment,
+    saveConfigurationScreen: (screenId, payload) =>
+      saveConfigurationScreen(screenId, payload as ConfigurationScreenRequest),
+    getConfigurationResponse,
+    getHelmUpdates,
+    saveInfrastructureConfig: (payload) =>
+      saveInfrastructureConfig(payload as InfrastructureRequest) as Record<string, unknown>,
+    getInventoryValues: (payload) =>
+      getInventoryValues(payload as InfrastructureRequest),
+    saveApplicationConfig: (payload) =>
+      saveApplicationConfig(payload as ApplicationRequest) as Record<string, unknown>,
+    getChartValues: (payload) => getChartValues(payload as ApplicationRequest),
+    getApplicationGithubUpdates: (payload) =>
+      getApplicationGithubUpdates(payload as ApplicationRequest),
+    saveAdvancedConfig: (payload) => saveAdvancedConfig(payload as AdvancedRequest),
+    saveDependenciesConfig: (payload) =>
+      saveDependenciesConfig(payload as DependenciesRequest),
+    assertReadyToFinalize,
+    getReviewPlan: (includeSecretValues) => getReviewPlan(includeSecretValues),
+    getValuesSecretsPath: () => lastValuesSecretsPath,
+    finalizeSetup,
+    resetConfiguratorSession
+  })
 }
 
 function openBrowser(url: string) {
@@ -2293,7 +2142,7 @@ function openBrowser(url: string) {
 }
 
 export function startEnvironmentInitUi() {
-  const server = http.createServer(handleRequest)
+  const server = http.createServer(createRequestHandler())
 
   server.listen(DEFAULT_PORT, HOST, () => {
     const address = server.address() as AddressInfo
