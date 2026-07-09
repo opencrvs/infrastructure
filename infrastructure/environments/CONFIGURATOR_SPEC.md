@@ -175,7 +175,7 @@ Expected field properties:
 ```ts
 {
   id: 'elastalertNotificationType',
-  source: { target: 'state', name: 'elastalertNotificationType' },
+  bindings: [{ target: 'state', name: 'elastalertNotificationType' }],
   deriveValue: [
     {
       when: { fieldId: 'smtpEnabled', equals: false },
@@ -193,7 +193,9 @@ Another example:
 ```ts
 {
   id: 'activateUsers',
-  source: { target: 'github', scope: 'ENVIRONMENT', name: 'ACTIVATE_USERS' },
+  bindings: [
+    { target: 'github', type: 'VARIABLE', scope: 'ENVIRONMENT', name: 'ACTIVATE_USERS' }
+  ],
   deriveValue: [
     {
       when: { context: 'environmentType', equals: 'production' },
@@ -223,33 +225,30 @@ In this example, `ACTIVATE_USERS` is always derived from the selected environmen
 - `visibleWhen`
   - Field-level visibility condition based on another field value.
 
-- `source`
-  - The single source of truth used to load the field's current value.
-  - A field may write to multiple places through bindings, but it should have only one source of truth.
-  - Examples:
-    - `source: { target: 'github', scope: 'ENVIRONMENT', kind: 'secret', name: 'SMTP_PASSWORD' }` means the current value is loaded from a GitHub environment secret when GitHub integration is enabled.
-    - `source: { target: 'state', name: 'elastalertNotificationType' }` means the current value is loaded from local configurator state.
-    - `source: { target: 'derived', name: 'CONTENT_SECURITY_POLICY_WILDCARD' }` means the value is computed from another field, such as `DOMAIN`.
-
 - `bindings`
-  - Where the field is written during review/finalize.
+  - Ordered list of places where the field value belongs.
+  - The first binding is the source of truth used to load the field's current value.
+  - All active bindings are written during review/finalize.
   - A field may have multiple bindings.
-  - Optional when `requires` is defined, because some fields are UI-only or state-only and are not written directly to an output.
+  - Use a `state` binding for UI-only or local configurator state values.
+  - Binding order matters:
+    - first binding: source of truth;
+    - later bindings: additional write targets.
+  - A field with no bindings should be rare. It is only valid for display-only fields or future custom UI components.
   - Example:
 
 ```ts
 {
   id: 'domain',
-  source: { target: 'github', scope: 'ENVIRONMENT', kind: 'variable', name: 'DOMAIN' },
   bindings: [
-    { target: 'github', scope: 'ENVIRONMENT', kind: 'variable', name: 'DOMAIN' },
+    { target: 'github', type: 'VARIABLE', scope: 'ENVIRONMENT', name: 'DOMAIN' },
     { target: 'helm', chart: 'opencrvs-services', path: 'hostname' },
     { target: 'helm', chart: 'dependencies', path: 'hostname' }
   ]
 }
 ```
 
-In this example GitHub is the source of truth when GitHub integration is enabled, but the same value is also written into Helm values.
+In this example the first binding, the GitHub environment variable `DOMAIN`, is used as the source of truth. The same value is also written into Helm values.
 
 ## Field Activation
 
@@ -265,31 +264,41 @@ Fields that are not active should not be shown, should not be required, and shou
 `requires` and `bindings` are intentionally allowed to overlap, but they do not both need to be present:
 
 - Bound output fields may omit `requires` when their bindings are enough to determine relevance.
-- UI-only or state-only fields may use `requires` with `bindings: []`.
+- UI-only or state-only fields should usually use a `state` binding.
 - A field with neither `requires` nor active bindings is considered globally relevant, subject to `visibleWhen`.
 
-Field activation should be based on enabled bindings, not only on the field source.
+Field activation should be based on enabled bindings, not only on the first/source binding.
 
 Example:
 
 ```ts
 {
   id: 'domain',
-  source: { target: 'github', scope: 'ENVIRONMENT', kind: 'variable', name: 'DOMAIN' },
   bindings: [
-    { target: 'github', scope: 'ENVIRONMENT', kind: 'variable', name: 'DOMAIN' },
+    { target: 'github', type: 'VARIABLE', scope: 'ENVIRONMENT', name: 'DOMAIN' },
     { target: 'helm', chart: 'opencrvs-services', path: 'hostname' }
   ]
 }
 ```
 
-If GitHub integration is disabled, the GitHub source and GitHub binding are unavailable. The field should still appear because the Helm binding is enabled and Helm values are always generated.
+If GitHub integration is disabled, the first GitHub binding is unavailable as a source/write target. The field should still appear because the Helm binding is enabled and Helm values are always generated.
 
-For `source: state`, the configurator state may be a dynamic key/value dictionary. State-only fields are allowed when their `requires` conditions are satisfied, even if they have no bindings.
+For `target: 'state'`, the configurator state may be a dynamic key/value dictionary. State bindings are always locally available and are useful for fields that control UI or template behavior without writing directly to GitHub, Helm, or Ansible.
 
 ## Bindings
 
 Bindings describe where a field value is written.
+
+There is no separate field-level `source` property. A field's source is derived from its bindings.
+
+Binding rules:
+
+- The first binding is the source binding.
+- The source binding is used to load the current field value.
+- All active non-state bindings are output targets during Review and Finalize.
+- `state` bindings are local to the configurator. They provide local state for UI-only, template-only, or derived fields.
+- Binding order should be intentional. Put the preferred source first.
+- If the first binding is disabled by setup context, the field may still be active when another output binding is enabled. In that case the configurator should use the existing local/default value until the user saves a new value.
 
 Supported binding targets:
 
@@ -308,6 +317,11 @@ Supported binding targets:
   - Inventory path
   - Optional transform
 
+- `state`
+  - Local configurator state key.
+  - Used for values that do not directly write to GitHub, Helm, or Ansible.
+  - State bindings are useful for UI switches, template inputs, and derived values.
+
 Bindings should only apply when their target backend or deployment output is enabled.
 
 For example:
@@ -315,6 +329,7 @@ For example:
 - A GitHub secret binding should be ignored when `github` is disabled.
 - An Ansible inventory binding should be ignored when `ansible` is disabled.
 - Helm values bindings are always active because Helm values are always generated.
+- State bindings are always locally available, but they do not count as deployment-output relevance. If a state-only field has `requires: ['github']`, it should still be hidden when GitHub is disabled.
 
 When `github` is disabled, secret values that would normally be stored in GitHub should be generated into `values.secrets.yaml` when Helm charts need them. Datastore admin credentials are expected to be supported by Helm charts later; until that chart work is done, no-GitHub scenarios that require those datastore secrets are incomplete.
 
@@ -552,7 +567,7 @@ Work:
 - Add focused tests for field activation:
   - field with GitHub and Helm bindings remains active when GitHub is disabled;
   - field with only GitHub bindings is inactive when GitHub is disabled;
-  - field with `requires: ['github']` and `bindings: []` is active only when GitHub is enabled;
+  - field with `requires: ['github']` and a state binding is active only when GitHub is enabled;
   - field with neither `requires` nor bindings is globally active, subject to `visibleWhen`.
 
 ### Phase 2: Configuration Schema Cleanup
@@ -568,7 +583,7 @@ Work:
   - Dependencies / General
   - Dependencies / Advanced
 - Remove duplicated `requires` values from fields where bindings already express relevance.
-- Keep `requires` on UI-only or state-only fields with `bindings: []`.
+- Keep `requires` on UI-only or state-only fields when setup context still matters.
 - Ensure every field has one clear source of truth.
 
 ### Phase 3: Configuration State
@@ -666,6 +681,6 @@ Work:
 
 - Advanced configuration is schema-defined through sub-screens, not a hard-coded top-level screen.
 - Generated secret values should not be displayed. The UI may only show that they are present.
-- `source: state` is valid for state-only fields. A separate `consumedBy` property is not needed for now.
+- `target: 'state'` bindings are valid for state-only fields. A separate `consumedBy` property is not needed for now.
 - Setup choices should not be persisted in the repository.
 - The configurator should focus on GitHub only. It should not support third-party Git backends directly.

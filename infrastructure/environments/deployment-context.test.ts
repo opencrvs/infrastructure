@@ -34,6 +34,11 @@ const ansibleBinding: FieldBinding = {
   name: 'kube_api_host'
 }
 
+const stateBinding: FieldBinding = {
+  target: 'state',
+  name: 'smtpEnabled'
+}
+
 const fullContext = createDeploymentContext({
   enableGithubIntegration: true,
   infrastructureType: 'on-premise'
@@ -100,7 +105,7 @@ assert.strictEqual(
 assert.strictEqual(
   isFieldEnabledForDeployment(
     fullContext,
-    makeField({ requires: ['github'], bindings: [] })
+    makeField({ requires: ['github'], bindings: [stateBinding] })
   ),
   true
 )
@@ -108,7 +113,7 @@ assert.strictEqual(
 assert.strictEqual(
   isFieldEnabledForDeployment(
     noGithubContext,
-    makeField({ requires: ['github'], bindings: [] })
+    makeField({ requires: ['github'], bindings: [stateBinding] })
   ),
   false
 )

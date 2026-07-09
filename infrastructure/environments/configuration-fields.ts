@@ -43,23 +43,12 @@ export type AnsibleBinding = {
   name: string
 }
 
-export type FieldBinding = AnsibleBinding | GithubBinding | HelmBinding
+export type StateBinding = {
+  target: 'state'
+  name: string
+}
 
-export type FieldSource =
-  | {
-      target: 'github'
-      scope: 'REPOSITORY' | 'ENVIRONMENT'
-      name: string
-    }
-  | {
-      target: 'helm'
-      chart: HelmChart
-      path: string
-    }
-  | {
-      target: 'state'
-      name: string
-    }
+export type FieldBinding = AnsibleBinding | GithubBinding | HelmBinding | StateBinding
 
 export type DerivedValueCondition =
   | {
@@ -86,7 +75,6 @@ export type ConfigurationField = {
   description: string
   control: 'checkbox' | 'number' | 'password' | 'select' | 'text' | 'textarea'
   requires?: DeploymentFeature[]
-  source?: FieldSource
   bindings: FieldBinding[]
   defaultValue?: string | number | boolean
   deriveValue?: DerivedValueRule[]
@@ -165,11 +153,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     label: 'KUBE_API_HOST',
     description: 'Kubernetes API endpoint. Empty values use auto-detection.',
     control: 'text',
-    source: {
-      target: 'github',
-      scope: 'ENVIRONMENT',
-      name: 'KUBE_API_HOST'
-    },
     bindings: [
       {
         target: 'github',
@@ -191,11 +174,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     label: 'KUBE_WORKER_NODES',
     description: 'Comma-separated Kubernetes worker node hostnames or IP addresses.',
     control: 'text',
-    source: {
-      target: 'github',
-      scope: 'ENVIRONMENT',
-      name: 'KUBE_WORKER_NODES'
-    },
     bindings: [
       {
         target: 'github',
@@ -217,11 +195,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     label: 'KUBE_API_ALLOWED_CIDRS',
     description: 'Comma-separated CIDR ranges allowed to access the Kubernetes API.',
     control: 'text',
-    source: {
-      target: 'github',
-      scope: 'ENVIRONMENT',
-      name: 'KUBE_API_ALLOWED_CIDRS'
-    },
     bindings: [
       {
         target: 'github',
@@ -245,8 +218,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'checkbox',
     requires: ['github'],
     defaultValue: false,
-    source: { target: 'state', name: 'enableDiskEncryption' },
-    bindings: []
+    bindings: [{ target: 'state', name: 'enableDiskEncryption' }]
   },
   {
     id: 'diskSpace',
@@ -258,13 +230,8 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     required: true,
     defaultValue: '200g',
     visibleWhen: { fieldId: 'enableDiskEncryption', equals: true },
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'DISK_SPACE' },
     bindings: [
-      {
-        target: 'github',
-        type: 'VARIABLE',
-        scope: 'ENVIRONMENT',
-        name: 'DISK_SPACE',
+      { target: 'github', type: 'VARIABLE', scope: 'ENVIRONMENT', name: 'DISK_SPACE',
         omitWhenEmpty: true
       }
     ]
@@ -277,11 +244,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     description: 'Base domain used after OpenCRVS subdomains.',
     control: 'text',
     required: true,
-    source: {
-      target: 'github',
-      scope: 'ENVIRONMENT',
-      name: 'DOMAIN'
-    },
     bindings: [
       {
         target: 'github',
@@ -346,8 +308,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
       { label: 'Static SSL certificate', value: 'static_ssl' },
       { label: 'Custom configuration', value: 'custom' }
     ],
-    source: { target: 'state', name: 'traefikMode' },
-    bindings: []
+    bindings: [{ target: 'state', name: 'traefikMode' }]
   },
   {
     id: 'sslCrt',
@@ -359,11 +320,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     required: true,
     visibleWhen: { fieldId: 'traefikMode', equals: 'static_ssl' },
     existingSecretBehavior: 'replace',
-    source: {
-      target: 'github',
-      scope: 'ENVIRONMENT',
-      name: 'SSL_CRT'
-    },
     bindings: [
       {
         target: 'github',
@@ -383,11 +339,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     required: true,
     visibleWhen: { fieldId: 'traefikMode', equals: 'static_ssl' },
     existingSecretBehavior: 'replace',
-    source: {
-      target: 'github',
-      scope: 'ENVIRONMENT',
-      name: 'SSL_KEY'
-    },
     bindings: [
       {
         target: 'github',
@@ -413,8 +364,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
       },
       { label: 'Provide own repository', value: 'custom' }
     ],
-    source: { target: 'state', name: 'dockerhubMode' },
-    bindings: []
+    bindings: [{ target: 'state', name: 'dockerhubMode' }]
   },
   {
     id: 'dockerhubOrganisation',
@@ -425,7 +375,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     visibleWhen: { fieldId: 'dockerhubMode', equals: 'custom' },
-    source: { target: 'github', scope: 'REPOSITORY', name: 'DOCKERHUB_ACCOUNT' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'REPOSITORY', name: 'DOCKERHUB_ACCOUNT' }
     ]
@@ -439,7 +388,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     visibleWhen: { fieldId: 'dockerhubMode', equals: 'custom' },
-    source: { target: 'github', scope: 'REPOSITORY', name: 'DOCKERHUB_REPO' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'REPOSITORY', name: 'DOCKERHUB_REPO' }
     ]
@@ -453,7 +401,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     visibleWhen: { fieldId: 'dockerhubMode', equals: 'custom' },
-    source: { target: 'github', scope: 'REPOSITORY', name: 'DOCKER_USERNAME' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'REPOSITORY', name: 'DOCKER_USERNAME' }
     ]
@@ -467,7 +414,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     visibleWhen: { fieldId: 'dockerhubMode', equals: 'custom' },
-    source: { target: 'github', scope: 'REPOSITORY', name: 'DOCKER_TOKEN' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'REPOSITORY', name: 'DOCKER_TOKEN' }
     ]
@@ -482,7 +428,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     defaultValue: 'opencrvs-admin',
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'KIBANA_USERNAME' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'KIBANA_USERNAME' },
     ]
@@ -497,7 +442,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     generatedDefault: 'password',
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'KIBANA_PASSWORD' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'KIBANA_PASSWORD' }
     ]
@@ -510,7 +454,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     label: 'SENTRY_DSN',
     description: 'Sentry DSN used for application error reporting.',
     control: 'password',
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'SENTRY_DSN' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'SENTRY_DSN' }
     ]
@@ -529,8 +472,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
       { label: 'Configure backup', value: 'backup' },
       { label: 'Restore from another environment', value: 'restore' }
     ],
-    source: { target: 'state', name: 'backupRestoreMode' },
-    bindings: []
+    bindings: [{ target: 'state', name: 'backupRestoreMode' }]
   },
   {
     id: 'backupHost',
@@ -541,13 +483,8 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'text',
     required: true,
     visibleWhen: { fieldId: 'backupRestoreMode', equals: 'backup' },
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'BACKUP_HOST' },
     bindings: [
-      {
-        target: 'github',
-        type: 'VARIABLE',
-        scope: 'ENVIRONMENT',
-        name: 'BACKUP_HOST',
+      { target: 'github', type: 'VARIABLE', scope: 'ENVIRONMENT', name: 'BACKUP_HOST',
         omitWhenEmpty: true
       }
     ]
@@ -562,13 +499,8 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     defaultValue: 'backup',
     required: true,
     visibleWhen: { fieldId: 'backupRestoreMode', equals: 'backup' },
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'BACKUP_SERVER_USER' },
     bindings: [
-      {
-        target: 'github',
-        type: 'SECRET',
-        scope: 'ENVIRONMENT',
-        name: 'BACKUP_SERVER_USER'
+      { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'BACKUP_SERVER_USER'
       }
     ]
   },
@@ -586,13 +518,8 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
       { label: 'Full dump (daily full database backup)', value: 'dump' },
       { label: 'Differential (weekly full, daily differential backup)', value: 'differential' }
     ],
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'BACKUP_ENVIRONMENT_MODE' },
     bindings: [
-      {
-        target: 'github',
-        type: 'VARIABLE',
-        scope: 'ENVIRONMENT',
-        name: 'BACKUP_ENVIRONMENT_MODE',
+      { target: 'github', type: 'VARIABLE', scope: 'ENVIRONMENT', name: 'BACKUP_ENVIRONMENT_MODE',
         omitWhenEmpty: true
       }
     ]
@@ -606,13 +533,8 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'text',
     required: true,
     visibleWhen: { fieldId: 'backupRestoreMode', equals: 'restore' },
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'RESTORE_ENVIRONMENT_NAME' },
     bindings: [
-      {
-        target: 'github',
-        type: 'VARIABLE',
-        scope: 'ENVIRONMENT',
-        name: 'RESTORE_ENVIRONMENT_NAME',
+      { target: 'github', type: 'VARIABLE', scope: 'ENVIRONMENT', name: 'RESTORE_ENVIRONMENT_NAME',
         omitWhenEmpty: true
       }
     ]
@@ -631,13 +553,8 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
       { label: 'Full dump (daily full database backup)', value: 'dump' },
       { label: 'Differential (weekly full, daily differential backup)', value: 'differential' }
     ],
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'RESTORE_ENVIRONMENT_MODE' },
     bindings: [
-      {
-        target: 'github',
-        type: 'VARIABLE',
-        scope: 'ENVIRONMENT',
-        name: 'RESTORE_ENVIRONMENT_MODE',
+      { target: 'github', type: 'VARIABLE', scope: 'ENVIRONMENT', name: 'RESTORE_ENVIRONMENT_MODE',
         omitWhenEmpty: true
       }
     ]
@@ -652,11 +569,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     defaultValue: 'user@opencrvs.org',
-    source: {
-      target: 'github',
-      scope: 'ENVIRONMENT',
-      name: 'OPENCRVS_METABASE_ADMIN_EMAIL'
-    },
     bindings: [
       {
         target: 'github',
@@ -676,11 +588,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     generatedDefault: 'password',
-    source: {
-      target: 'github',
-      scope: 'ENVIRONMENT',
-      name: 'OPENCRVS_METABASE_ADMIN_PASSWORD'
-    },
     bindings: [
       {
         target: 'github',
@@ -699,8 +606,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'checkbox',
     requires: ['github'],
     defaultValue: false,
-    source: { target: 'state', name: 'smtpEnabled' },
-    bindings: []
+    bindings: [{ target: 'state', name: 'smtpEnabled' }]
   },
   {
     id: 'smtpHost',
@@ -711,7 +617,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     visibleWhen: { fieldId: 'smtpEnabled', equals: true },
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'SMTP_HOST' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'SMTP_HOST' }
     ]
@@ -725,7 +630,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     visibleWhen: { fieldId: 'smtpEnabled', equals: true },
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'SMTP_USERNAME' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'SMTP_USERNAME' }
     ]
@@ -739,7 +643,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     visibleWhen: { fieldId: 'smtpEnabled', equals: true },
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'SMTP_PASSWORD' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'SMTP_PASSWORD' }
     ]
@@ -753,7 +656,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     visibleWhen: { fieldId: 'smtpEnabled', equals: true },
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'SMTP_PORT' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'SMTP_PORT' }
     ]
@@ -767,7 +669,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'checkbox',
     defaultValue: false,
     visibleWhen: { fieldId: 'smtpEnabled', equals: true },
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'SMTP_SECURE' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'SMTP_SECURE' }
     ]
@@ -781,11 +682,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     visibleWhen: { fieldId: 'smtpEnabled', equals: true },
-    source: {
-      target: 'github',
-      scope: 'ENVIRONMENT',
-      name: 'SENDER_EMAIL_ADDRESS'
-    },
     bindings: [
       {
         target: 'github',
@@ -804,7 +700,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     visibleWhen: { fieldId: 'smtpEnabled', equals: true },
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'ALERT_EMAIL' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'ALERT_EMAIL' }
     ]
@@ -817,11 +712,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     description: 'Deploy the OpenCRVS dependency monitoring stack.',
     control: 'checkbox',
     defaultValue: true,
-    source: {
-      target: 'helm',
-      chart: 'dependencies',
-      path: 'monitoring.enabled'
-    },
     bindings: [
       {
         target: 'helm',
@@ -853,8 +743,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
       }
     ],
     visibleWhen: { fieldId: 'dependenciesMonitoringEnabled', equals: true },
-    source: { target: 'state', name: 'elastalertNotificationType' },
-    bindings: []
+    bindings: [{ target: 'state', name: 'elastalertNotificationType' }]
   },
   {
     id: 'elasticsearchEnabled',
@@ -864,7 +753,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     description: 'Deploy Elasticsearch with the OpenCRVS dependencies chart.',
     control: 'checkbox',
     defaultValue: true,
-    source: { target: 'helm', chart: 'dependencies', path: 'elasticsearch.enabled' },
     bindings: [
       { target: 'helm', chart: 'dependencies', path: 'elasticsearch.enabled', omitWhenDefault: true }
     ]
@@ -879,7 +767,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     required: true,
     defaultValue: 'elasticsearch.opencrvs-deps-dev.svc.cluster.local',
     visibleWhen: { fieldId: 'elasticsearchEnabled', equals: false },
-    source: { target: 'helm', chart: 'opencrvs-services', path: 'elasticsearch.host' },
     bindings: [
       { target: 'helm', chart: 'opencrvs-services', path: 'elasticsearch.host' }
     ]
@@ -895,7 +782,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     defaultValue: 9200,
     validator: 'positive-integer',
     visibleWhen: { fieldId: 'elasticsearchEnabled', equals: false },
-    source: { target: 'helm', chart: 'opencrvs-services', path: 'elasticsearch.port' },
     bindings: [
       { target: 'helm', chart: 'opencrvs-services', path: 'elasticsearch.port' }
     ]
@@ -910,7 +796,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     required: true,
     generatedDefault: 'username',
     visibleWhen: { fieldId: 'elasticsearchEnabled', equals: false },
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'ELASTICSEARCH_SUPERUSER_USERNAME' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'ELASTICSEARCH_SUPERUSER_USERNAME' }
     ]
@@ -925,7 +810,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     required: true,
     generatedDefault: 'password',
     readonly: true,
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'ELASTICSEARCH_SUPERUSER_PASSWORD' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'ELASTICSEARCH_SUPERUSER_PASSWORD' }
     ]
@@ -938,7 +822,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     description: 'Deploy PostgreSQL with the OpenCRVS dependencies chart.',
     control: 'checkbox',
     defaultValue: true,
-    source: { target: 'helm', chart: 'dependencies', path: 'postgres.enabled' },
     bindings: [
       { target: 'helm', chart: 'dependencies', path: 'postgres.enabled', omitWhenDefault: true }
     ]
@@ -953,7 +836,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     required: true,
     defaultValue: 'postgres-0.postgres.opencrvs-deps-dev.svc.cluster.local',
     visibleWhen: { fieldId: 'postgresEnabled', equals: false },
-    source: { target: 'helm', chart: 'opencrvs-services', path: 'postgres.host' },
     bindings: [
       { target: 'helm', chart: 'opencrvs-services', path: 'postgres.host' }
     ]
@@ -969,7 +851,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     defaultValue: 5432,
     validator: 'positive-integer',
     visibleWhen: { fieldId: 'postgresEnabled', equals: false },
-    source: { target: 'helm', chart: 'opencrvs-services', path: 'postgres.port' },
     bindings: [
       { target: 'helm', chart: 'opencrvs-services', path: 'postgres.port' }
     ]
@@ -992,7 +873,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
       { label: 'Verify full', value: 'verify-full' }
     ],
     visibleWhen: { fieldId: 'postgresEnabled', equals: false },
-    source: { target: 'helm', chart: 'opencrvs-services', path: 'postgres.sslmode' },
     bindings: [
       { target: 'helm', chart: 'opencrvs-services', path: 'postgres.sslmode' }
     ]
@@ -1007,7 +887,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     required: true,
     generatedDefault: 'username',
     readonly: true,
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'POSTGRES_USER' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'POSTGRES_USER' }
     ]
@@ -1022,7 +901,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     required: true,
     generatedDefault: 'password',
     readonly: true,
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'POSTGRES_PASSWORD' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'POSTGRES_PASSWORD' }
     ]
@@ -1035,7 +913,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     description: 'Deploy MinIO with the OpenCRVS dependencies chart.',
     control: 'checkbox',
     defaultValue: true,
-    source: { target: 'helm', chart: 'dependencies', path: 'minio.enabled' },
     bindings: [
       { target: 'helm', chart: 'dependencies', path: 'minio.enabled', omitWhenDefault: true }
     ]
@@ -1050,7 +927,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     required: true,
     defaultValue: 'minio-0.minio.opencrvs-deps-dev.svc.cluster.local',
     visibleWhen: { fieldId: 'minioEnabled', equals: false },
-    source: { target: 'helm', chart: 'opencrvs-services', path: 'minio.host' },
     bindings: [
       { target: 'helm', chart: 'opencrvs-services', path: 'minio.host' }
     ]
@@ -1066,7 +942,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     defaultValue: 3535,
     validator: 'positive-integer',
     visibleWhen: { fieldId: 'minioEnabled', equals: false },
-    source: { target: 'helm', chart: 'opencrvs-services', path: 'minio.port' },
     bindings: [
       { target: 'helm', chart: 'opencrvs-services', path: 'minio.port', skipPathValidation: true }
     ]
@@ -1081,7 +956,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     required: true,
     generatedDefault: 'username',
     readonly: true,
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'MINIO_ROOT_USER' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'MINIO_ROOT_USER' }
     ]
@@ -1096,7 +970,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     required: true,
     generatedDefault: 'password',
     readonly: true,
-    source: { target: 'github', scope: 'ENVIRONMENT', name: 'MINIO_ROOT_PASSWORD' },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'MINIO_ROOT_PASSWORD' }
     ]
@@ -1109,7 +982,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     description: 'Deploy Redis with the OpenCRVS dependencies chart.',
     control: 'checkbox',
     defaultValue: true,
-    source: { target: 'helm', chart: 'dependencies', path: 'redis.enabled' },
     bindings: [
       { target: 'helm', chart: 'dependencies', path: 'redis.enabled', omitWhenDefault: true }
     ]
@@ -1124,7 +996,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     required: true,
     defaultValue: 'redis-0.redis.opencrvs-deps-dev.svc.cluster.local',
     visibleWhen: { fieldId: 'redisEnabled', equals: false },
-    source: { target: 'helm', chart: 'opencrvs-services', path: 'redis.host' },
     bindings: [
       { target: 'helm', chart: 'opencrvs-services', path: 'redis.host' }
     ]
@@ -1140,7 +1011,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     defaultValue: 6379,
     validator: 'positive-integer',
     visibleWhen: { fieldId: 'redisEnabled', equals: false },
-    source: { target: 'helm', chart: 'opencrvs-services', path: 'redis.port' },
     bindings: [
       { target: 'helm', chart: 'opencrvs-services', path: 'redis.port', skipPathValidation: true }
     ]
@@ -1155,11 +1025,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'text',
     defaultValue: '8Gi',
     validator: 'kubernetes-memory',
-    source: {
-      target: 'helm',
-      chart: 'dependencies',
-      path: 'resources.memoryLimit'
-    },
     bindings: [
       {
         target: 'helm',
@@ -1179,11 +1044,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'number',
     defaultValue: 2,
     validator: 'positive-integer',
-    source: {
-      target: 'helm',
-      chart: 'opencrvs-services',
-      path: 'hpa.maxReplicas'
-    },
     bindings: [
       {
         target: 'helm',

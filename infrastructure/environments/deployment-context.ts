@@ -97,15 +97,18 @@ export function isFieldEnabledForDeployment(
   field: Pick<ConfigurationField, 'bindings' | 'requires'>
 ) {
   const hasRequires = Boolean(field.requires?.length)
-  const hasBindings = field.bindings.length > 0
+  const outputBindings = field.bindings.filter(
+    (binding) => binding.target !== 'state'
+  )
+  const hasOutputBindings = outputBindings.length > 0
 
-  if (!hasRequires && !hasBindings) {
+  if (!hasRequires && !hasOutputBindings) {
     return true
   }
 
   return (
     isRequiresEnabled(context, field.requires) ||
-    field.bindings.some((binding) => isBindingEnabled(context, binding))
+    outputBindings.some((binding) => isBindingEnabled(context, binding))
   )
 }
 

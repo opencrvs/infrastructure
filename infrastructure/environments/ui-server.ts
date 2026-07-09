@@ -13,7 +13,6 @@ import {
   CONFIGURATION_SCREENS,
   ConfigurationField,
   DerivedValueCondition,
-  FieldSource,
   GithubBinding,
   HelmBinding,
   HelmChart,
@@ -288,33 +287,8 @@ function getFieldForCurrentDeployment(field: ConfigurationField) {
   return getFieldForDeploymentContext(getDeploymentContext(), field)
 }
 
-function getFieldSource(field: ConfigurationField): FieldSource | undefined {
-  if (field.source) {
-    return field.source
-  }
-
-  const [binding] = field.bindings
-  if (!binding) {
-    return undefined
-  }
-
-  if (binding.target === 'github') {
-    return {
-      target: 'github',
-      scope: binding.scope,
-      name: binding.name
-    }
-  }
-
-  if (binding.target === 'helm') {
-    return {
-      target: 'helm',
-      chart: binding.chart,
-      path: binding.path
-    }
-  }
-
-  return undefined
+function getFieldSource(field: ConfigurationField) {
+  return field.bindings[0]
 }
 
 function isFieldIdEnabled(fieldId: string) {
@@ -622,10 +596,10 @@ function loadAdvancedConfig(environmentName: string) {
   )
   advancedConfig = Object.fromEntries(
     advancedFields.map((field) => {
-      const source = field.source
-      const override = source.target === 'helm'
+      const source = getFieldSource(field)
+      const override = source?.target === 'helm'
         ? getNestedValue(helmBaseOverrides[source.chart] || {}, source.path)
-        : source.target === 'github'
+        : source?.target === 'github'
           ? secretExists(source.scope, source.name)
             ? ''
             : undefined
@@ -682,19 +656,19 @@ function getFieldDefaultValue(field: ConfigurationField, environmentName = '') {
 function loadDependenciesConfig(environmentName: string) {
   dependenciesConfig = Object.fromEntries(
     getConfigurationFields('dependencies').map((field) => {
-      const source = field.source
+      const source = getFieldSource(field)
       let value: unknown
 
-      if (source.target === 'helm') {
+      if (source?.target === 'helm') {
         value = getNestedValue(helmBaseOverrides[source.chart] || {}, source.path)
       } else if (
-        source.target === 'github' &&
+        source?.target === 'github' &&
         source.scope === 'ENVIRONMENT' &&
         secretExists('ENVIRONMENT', source.name)
       ) {
         value = ''
       } else if (
-        source.target === 'github' &&
+        source?.target === 'github' &&
         source.scope === 'REPOSITORY' &&
         secretExists('REPOSITORY', source.name)
       ) {
@@ -728,16 +702,16 @@ function loadGenericScreenConfigs(environmentName: string) {
         id,
         Object.fromEntries(
           getConfigurationFields(id).map((field) => {
-            const source = field.source
+            const source = getFieldSource(field)
             let value: unknown
-            if (source.target === 'helm') {
+            if (source?.target === 'helm') {
               value = getNestedValue(helmBaseOverrides[source.chart] || {}, source.path)
             } else if (
-              source.target === 'github' &&
+              source?.target === 'github' &&
               secretExists(source.scope, source.name)
             ) {
               value = ''
-            } else if (source.target === 'github') {
+            } else if (source?.target === 'github') {
               value = source.scope === 'ENVIRONMENT'
                 ? getEnvironmentVariableValue(source.name)
                 : getRepositoryVariableValue(source.name)
@@ -765,10 +739,10 @@ function getAdvancedResponse() {
     values: getResponseValuesForFields(fields, advancedConfig),
     existingSecrets: Object.fromEntries(
       fields.map((field) => {
-        const source = field.source
+        const source = getFieldSource(field)
         return [
           field.id,
-          source.target === 'github' && secretExists(source.scope, source.name)
+          source?.target === 'github' && secretExists(source.scope, source.name)
         ]
       })
     )
@@ -784,10 +758,10 @@ function getDependenciesResponse() {
     values: getResponseValuesForFields(fields, dependenciesConfig),
     existingSecrets: Object.fromEntries(
       fields.map((field) => {
-        const source = field.source
-        const exists = source.target === 'github' && source.scope === 'ENVIRONMENT'
+        const source = getFieldSource(field)
+        const exists = source?.target === 'github' && source.scope === 'ENVIRONMENT'
           ? secretExists('ENVIRONMENT', source.name)
-          : source.target === 'github' && source.scope === 'REPOSITORY'
+          : source?.target === 'github' && source.scope === 'REPOSITORY'
             ? secretExists('REPOSITORY', source.name)
             : false
         return [field.id, exists]
@@ -815,10 +789,10 @@ function getConfigurationScreenResponse(screenId: string) {
     .map(getFieldForResponse)
   const existingSecrets = Object.fromEntries(
     fields.map((field) => {
-      const source = field.source
+      const source = getFieldSource(field)
       return [
         field.id,
-        source.target === 'github' && secretExists(source.scope, source.name)
+        source?.target === 'github' && secretExists(source.scope, source.name)
       ]
     })
   )
