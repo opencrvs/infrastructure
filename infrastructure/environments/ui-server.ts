@@ -46,7 +46,6 @@ import {
 import { buildInventoryValues } from './ansible-plan'
 import { finalizeConfiguration } from './finalize'
 import {
-  GithubSecretPlanItem,
   GithubUpdate,
   buildApplicationSecretItems,
   buildGithubUpdates
@@ -390,14 +389,9 @@ function getEnvironmentChoices() {
 }
 
 function inferEnvironmentType(environmentName: string) {
-  if (['development', 'qa'].includes(environmentName)) {
-    return 'non-production'
-  }
-
   if (['staging', 'production'].includes(environmentName)) {
     return 'production'
   }
-
   return 'non-production'
 }
 
@@ -574,7 +568,9 @@ function loadDependenciesConfig(environmentName: string) {
       const source = getFieldSource(field)
       let value: unknown
 
-      if (source?.target === 'helm') {
+      if (field.id === 'backupRestoreMode') {
+        value = getPersistedBackupRestoreMode()
+      } else if (source?.target === 'helm') {
         value = getNestedValue(helmBaseOverrides[source.chart] || {}, source.path)
       } else if (
         source?.target === 'github' &&
@@ -588,6 +584,10 @@ function loadDependenciesConfig(environmentName: string) {
         secretExists('REPOSITORY', source.name)
       ) {
         value = ''
+      } else if (source?.target === 'github') {
+        value = source.scope === 'ENVIRONMENT'
+          ? getEnvironmentVariableValue(source.name)
+          : getRepositoryVariableValue(source.name)
       }
 
       const resolvedValue =
@@ -664,7 +664,7 @@ function getAdvancedResponse() {
 }
 
 function getDependenciesResponse() {
-  const fields = getConfigurationFields('dependencies')
+  const fields = getDependenciesFields()
     .filter(isFieldEnabledForDeployment)
     .map(getFieldForResponse)
   return {
@@ -698,7 +698,9 @@ function getConfigurationScreenResponse(screenId: string) {
     ? getInfrastructureFields()
     : screenId === 'application'
       ? getApplicationFields()
-      : getConfigurationFields(screenId))
+      : screenId === 'dependencies'
+        ? getDependenciesFields()
+        : getConfigurationFields(screenId))
     .filter(isFieldEnabledForDeployment)
     .map(getFieldForResponse)
   const existingSecrets = Object.fromEntries(
@@ -869,51 +871,46 @@ function validateUsers(inputUsers: User[]) {
 }
 
 function getInventoryValues(config: InfrastructureRequest) {
-  return buildInventoryValues(config, applicationConfig)
+  return buildInventoryValues(config, getBackupRestoreConfig())
 }
 
 function getChartValues(config: ApplicationRequest) {
   const environment = environmentSelection?.environmentName || ''
   const environmentType = environmentSelection?.environmentType || 'non-production'
+  const backupRestoreConfig = getBackupRestoreConfig()
 
   return {
     env: environment,
     environment_type: environmentType,
     two_fa_enabled: environmentType !== 'production' ? false : true,
-    backup_enabled: config.backupRestoreMode === 'backup',
-    restore_enabled: config.backupRestoreMode === 'restore',
+    backup_enabled: backupRestoreConfig.backupRestoreMode === 'backup',
+    restore_enabled: backupRestoreConfig.backupRestoreMode === 'restore',
     restore_environment_name:
-      config.backupRestoreMode === 'restore' ? config.restoreEnvironmentName || '' : '',
-    restore_type: config.backupRestoreMode === 'restore' ? config.restoreType || 'dump' : '',
+      backupRestoreConfig.backupRestoreMode === 'restore'
+        ? backupRestoreConfig.restoreEnvironmentName || ''
+        : '',
+    restore_type:
+      backupRestoreConfig.backupRestoreMode === 'restore'
+        ? backupRestoreConfig.restoreType || 'dump'
+        : '',
     traefik_mode: config.traefikMode || 'lets_encrypt',
     elastalert_notification_type:
       String(getConfigurationFieldValueById('elastalertNotificationType') || 'email'),
-    backup_type: config.backupRestoreMode === 'backup' ? config.backupType || 'dump' : '',
+    backup_type:
+      backupRestoreConfig.backupRestoreMode === 'backup'
+        ? backupRestoreConfig.backupType || 'dump'
+        : '',
     lets_encrypt: config.traefikMode === 'lets_encrypt',
     static_ssl: config.traefikMode === 'static_ssl',
   }
 }
 
 function getApplicationGithubUpdates(config: ApplicationRequest) {
-  const backupSecrets: GithubSecretPlanItem[] = config.backupRestoreMode === 'backup'
-    ? [
-        {
-          scope: 'ENVIRONMENT',
-          type: 'SECRET',
-          name: 'BACKUP_SERVER_USER',
-          value: config.backupUser || ''
-        }
-      ]
-    : []
-
   return {
     variables: [
       { scope: 'ENVIRONMENT', type: 'VARIABLE', name: 'DOMAIN', value: config.domain || '' }
     ],
-    secrets: [
-      ...buildApplicationSecretItems(config, hasEnvironmentSecret),
-      ...backupSecrets
-    ]
+    secrets: buildApplicationSecretItems(config, hasEnvironmentSecret)
   }
 }
 
@@ -955,10 +952,7 @@ function getExistingSecretState() {
 
 function getBackupRestoreState() {
   const environmentName = environmentSelection?.environmentName || ''
-  const hasConfiguredBackupOrRestore = Boolean(
-    getEnvironmentVariableValue('BACKUP_HOST') ||
-    getEnvironmentVariableValue('RESTORE_ENVIRONMENT_NAME')
-  )
+  const hasConfiguredBackupOrRestore = getPersistedBackupRestoreMode() !== 'none'
 
   return {
     locked: Boolean(
@@ -968,6 +962,52 @@ function getBackupRestoreState() {
     ),
     restoreEnvironmentChoices: existingEnvironments.filter(
       (environment) => environment !== environmentName
+    )
+  }
+}
+
+function normalizeBackupRestoreMode(value: unknown): 'none' | 'backup' | 'restore' {
+  return value === 'backup' || value === 'restore' ? value : 'none'
+}
+
+function getPersistedBackupRestoreMode(): 'none' | 'backup' | 'restore' {
+  if (getEnvironmentVariableValue('BACKUP_HOST')) {
+    return 'backup'
+  }
+  if (getEnvironmentVariableValue('RESTORE_ENVIRONMENT_NAME')) {
+    return 'restore'
+  }
+  return 'none'
+}
+
+function getConfigString(value: unknown) {
+  return value === undefined || value === null ? '' : String(value)
+}
+
+function getBackupRestoreConfig(): ApplicationRequest {
+  const backupRestoreMode = normalizeBackupRestoreMode(
+    dependenciesConfig.backupRestoreMode ||
+      applicationConfig?.backupRestoreMode ||
+      getPersistedBackupRestoreMode()
+  )
+
+  return {
+    backupRestoreMode,
+    backupHost: getConfigString(
+      dependenciesConfig.backupHost ?? applicationConfig?.backupHost
+    ),
+    backupUser: getConfigString(
+      dependenciesConfig.backupUser ?? applicationConfig?.backupUser
+    ),
+    backupType: getConfigString(
+      dependenciesConfig.backupType ?? applicationConfig?.backupType ?? 'dump'
+    ),
+    restoreEnvironmentName: getConfigString(
+      dependenciesConfig.restoreEnvironmentName ??
+        applicationConfig?.restoreEnvironmentName
+    ),
+    restoreType: getConfigString(
+      dependenciesConfig.restoreType ?? applicationConfig?.restoreType ?? 'dump'
     )
   }
 }
@@ -998,10 +1038,14 @@ function getInfrastructureFields() {
 }
 
 function getApplicationFields() {
-  const backupRestoreState = getBackupRestoreState()
-  const backupRestoreMode = applicationConfig?.backupRestoreMode || 'none'
+  return getConfigurationFields('application')
+}
 
-  return getConfigurationFields('application').map((field) => {
+function getDependenciesFields() {
+  const backupRestoreState = getBackupRestoreState()
+  const backupRestoreMode = getBackupRestoreConfig().backupRestoreMode
+
+  return getConfigurationFields('dependencies').map((field) => {
     if (field.id === 'backupRestoreMode' && backupRestoreState.locked) {
       return {
         ...field,
@@ -1104,7 +1148,7 @@ function getGithubUpdates(
     dependenciesConfig,
     advancedConfig,
     genericScreenConfigs,
-    backupEnabled: applicationConfig?.backupRestoreMode === 'backup',
+    backupEnabled: getBackupRestoreConfig().backupRestoreMode === 'backup',
     diskEncryptionEnabled: Boolean(infrastructureConfig?.enableDiskEncryption),
     isFieldEnabled: isFieldEnabledForDeployment,
     isFieldActive: isConfigurationFieldActive,
@@ -1126,6 +1170,7 @@ function getConfigurationContext(): ConfigurationContext {
 }
 
 function getRawConfigurationFieldValue(field: ConfigurationField): ConfigurationValue {
+  const backupRestoreConfig = getBackupRestoreConfig()
   const configuredValues: Record<string, ConfigurationValue> = {
     kubeAPIHost: infrastructureConfig?.kubeAPIHost || '',
     kubeWorkerNodes: infrastructureConfig?.kubeWorkerNodes || '',
@@ -1139,16 +1184,16 @@ function getRawConfigurationFieldValue(field: ConfigurationField): Configuration
       ? false
       : true,
     smtpEnabled: Boolean(applicationConfig?.smtpEnabled),
-    backupRestoreMode: applicationConfig?.backupRestoreMode || 'none',
-    backupHost: applicationConfig?.backupHost || '',
+    backupRestoreMode: backupRestoreConfig.backupRestoreMode || 'none',
+    backupHost: backupRestoreConfig.backupHost || '',
     backupType:
-      applicationConfig?.backupRestoreMode === 'backup'
-        ? applicationConfig.backupType || 'dump'
+      backupRestoreConfig.backupRestoreMode === 'backup'
+        ? backupRestoreConfig.backupType || 'dump'
         : '',
-    restoreEnvironmentName: applicationConfig?.restoreEnvironmentName || '',
+    restoreEnvironmentName: backupRestoreConfig.restoreEnvironmentName || '',
     restoreType:
-      applicationConfig?.backupRestoreMode === 'restore'
-        ? applicationConfig.restoreType || 'dump'
+      backupRestoreConfig.backupRestoreMode === 'restore'
+        ? backupRestoreConfig.restoreType || 'dump'
         : ''
   }
 
@@ -1321,6 +1366,26 @@ function saveDependenciesConfig(payload: DependenciesRequest) {
   const submittedValues = payload.values || {}
   const fields = getGeneralScreenFields('dependencies').filter(isFieldEnabledForDeployment)
   const nextConfig: Record<string, ConfigurationValue> = { ...dependenciesConfig }
+  const hasBackupRestoreFields = fields.some(({ id }) => id === 'backupRestoreMode')
+
+  if (hasBackupRestoreFields && hasDeploymentFeature('github')) {
+    const requestedBackupRestoreMode = normalizeBackupRestoreMode(
+      submittedValues.backupRestoreMode ?? getBackupRestoreConfig().backupRestoreMode
+    )
+    const persistedBackupRestoreMode = getPersistedBackupRestoreMode()
+    const backupRestoreLocked =
+      persistedBackupRestoreMode !== 'none' &&
+      existingEnvironments.includes(environmentSelection.environmentName)
+
+    if (
+      backupRestoreLocked &&
+      requestedBackupRestoreMode !== persistedBackupRestoreMode
+    ) {
+      throw new Error(
+        'Backup or restore mode cannot be changed after it has been configured.'
+      )
+    }
+  }
 
   for (const field of fields.filter(({ control }) => control === 'checkbox')) {
     const submitted = submittedValues[field.id]
@@ -1384,6 +1449,14 @@ function saveDependenciesConfig(payload: DependenciesRequest) {
       throw new Error(`${field.label} has an invalid value.`)
     }
     nextConfig[field.id] = textValue
+  }
+
+  if (
+    hasDeploymentFeature('github') &&
+    nextConfig.backupRestoreMode === 'restore' &&
+    nextConfig.restoreEnvironmentName === environmentSelection.environmentName
+  ) {
+    throw new Error('An environment cannot restore a backup from itself.')
   }
 
   dependenciesConfig = nextConfig
@@ -1537,6 +1610,8 @@ function assertReadyToFinalize() {
 }
 
 function getNextSteps(inventoryAlreadyExists?: boolean) {
+  const backupRestoreConfig = getBackupRestoreConfig()
+
   return buildNextSteps({
     ansibleEnabled: hasDeploymentFeature('ansible'),
     environmentName: environmentSelection!.environmentName,
@@ -1545,8 +1620,8 @@ function getNextSteps(inventoryAlreadyExists?: boolean) {
     token: verifiedConnection?.token,
     kubeAPIHost: infrastructureConfig?.kubeAPIHost,
     kubeWorkerNodes: infrastructureConfig?.kubeWorkerNodes,
-    backupEnabled: applicationConfig?.backupRestoreMode === 'backup',
-    backupHost: applicationConfig?.backupHost,
+    backupEnabled: backupRestoreConfig.backupRestoreMode === 'backup',
+    backupHost: backupRestoreConfig.backupHost,
     inventoryAlreadyExists
   })
 }
@@ -1801,60 +1876,7 @@ function saveApplicationConfig(payload: ApplicationRequest) {
     throw new Error('All SMTP configuration fields are required when SMTP is enabled.')
   }
 
-  const requestedBackupRestoreMode = ['backup', 'restore'].includes(
-    payload.backupRestoreMode || ''
-  )
-    ? payload.backupRestoreMode as 'backup' | 'restore'
-    : 'none'
-  const persistedBackupRestoreMode = getEnvironmentVariableValue('BACKUP_HOST')
-    ? 'backup'
-    : getEnvironmentVariableValue('RESTORE_ENVIRONMENT_NAME')
-      ? 'restore'
-      : 'none'
-  const backupRestoreLocked =
-    persistedBackupRestoreMode !== 'none' &&
-    existingEnvironments.includes(environmentSelection.environmentName)
-
-  if (
-    hasDeploymentFeature('github') &&
-    backupRestoreLocked &&
-    requestedBackupRestoreMode !== persistedBackupRestoreMode
-  ) {
-    throw new Error(
-      'Backup or restore mode cannot be changed after it has been configured.'
-    )
-  }
-
-  const backupUser = parseSubmittedSecret(
-    'ENVIRONMENT',
-    'BACKUP_SERVER_USER',
-    payload.backupUser
-  )
-  const backupHost = payload.backupHost?.trim() || ''
-  const backupType = payload.backupType === 'differential' ? 'differential' : 'dump'
-  const restoreEnvironmentName = payload.restoreEnvironmentName?.trim() || ''
-  const restoreType = payload.restoreType === 'differential' ? 'differential' : 'dump'
-
-  if (
-    hasDeploymentFeature('github') &&
-    requestedBackupRestoreMode === 'backup' &&
-    (!backupHost || !backupUser.available)
-  ) {
-    throw new Error('Backup host and backup server user are required for backups.')
-  }
-
-  if (hasDeploymentFeature('github') && requestedBackupRestoreMode === 'restore') {
-    if (!restoreEnvironmentName) {
-      throw new Error('Restore environment name is required for restore.')
-    }
-    if (restoreEnvironmentName === environmentSelection.environmentName) {
-      throw new Error('An environment cannot restore a backup from itself.')
-    }
-  }
-
-  const backupRestoreMode = hasDeploymentFeature('github')
-    ? requestedBackupRestoreMode
-    : 'none'
+  const backupRestoreConfig = getBackupRestoreConfig()
 
   applicationConfig = {
     domain: payload.domain?.trim() || '',
@@ -1876,13 +1898,27 @@ function saveApplicationConfig(payload: ApplicationRequest) {
     smtpSecure: smtpEnabled ? smtpSecrets.smtpSecure.value : '',
     senderEmailAddress: smtpEnabled ? smtpSecrets.senderEmailAddress.value : '',
     alertEmail: smtpEnabled ? smtpSecrets.alertEmail.value : '',
-    backupRestoreMode,
-    backupHost: backupRestoreMode === 'backup' ? backupHost : '',
-    backupUser: backupRestoreMode === 'backup' ? backupUser.value : '',
-    backupType: backupRestoreMode === 'backup' ? backupType : '',
+    backupRestoreMode: backupRestoreConfig.backupRestoreMode,
+    backupHost:
+      backupRestoreConfig.backupRestoreMode === 'backup'
+        ? backupRestoreConfig.backupHost || ''
+        : '',
+    backupUser:
+      backupRestoreConfig.backupRestoreMode === 'backup'
+        ? backupRestoreConfig.backupUser || ''
+        : '',
+    backupType:
+      backupRestoreConfig.backupRestoreMode === 'backup'
+        ? backupRestoreConfig.backupType || ''
+        : '',
     restoreEnvironmentName:
-      backupRestoreMode === 'restore' ? restoreEnvironmentName : '',
-    restoreType: backupRestoreMode === 'restore' ? restoreType : ''
+      backupRestoreConfig.backupRestoreMode === 'restore'
+        ? backupRestoreConfig.restoreEnvironmentName || ''
+        : '',
+    restoreType:
+      backupRestoreConfig.backupRestoreMode === 'restore'
+        ? backupRestoreConfig.restoreType || ''
+        : ''
   }
 
   return applicationConfig
