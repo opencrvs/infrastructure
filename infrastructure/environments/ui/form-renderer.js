@@ -110,7 +110,7 @@
       const section = document.createElement('div');
       section.className = sectionClass + ' configuration-section';
       const heading = document.createElement('h2');
-      heading.className = 'group-title h5 border-top pt-3';
+      heading.className = 'group-title h5 pt-3';
       heading.textContent = sectionName;
       section.appendChild(heading);
 
