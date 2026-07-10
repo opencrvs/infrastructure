@@ -59,6 +59,13 @@ export type DerivedValueCondition =
       context: 'environmentType'
       equals: string | number | boolean
     }
+  | {
+      githubVariable: {
+        scope: 'REPOSITORY' | 'ENVIRONMENT'
+        name: string
+      }
+      exists: boolean
+    }
 
 export type DerivedValueRule = {
   when: DerivedValueCondition
@@ -78,6 +85,7 @@ export type ConfigurationField = {
   requires?: DeploymentFeature[]
   bindings: FieldBinding[]
   defaultValue?: string | number | boolean
+  defaultValueWhen?: DerivedValueRule[]
   deriveValue?: DerivedValueRule[]
   options?: Array<{
     label: string
@@ -87,6 +95,9 @@ export type ConfigurationField = {
   validator?: 'kubernetes-memory' | 'positive-integer'
   generatedDefault?: 'username' | 'password'
   readonly?: boolean
+  readonlyWhen?: Array<{
+    when: DerivedValueCondition
+  }>
   visibleWhen?: {
     fieldId: string
     equals: string | number | boolean
@@ -105,7 +116,7 @@ export const CONFIGURATION_SCREENS: ConfigurationScreenDefinition[] = [
     id: 'infrastructure',
     label: 'Infrastructure',
     description: 'Configure the Kubernetes endpoint, worker nodes, API access ranges, and disk encryption settings for this environment.',
-    order: 10,
+    order: 20,
     submitLabel: 'Save infrastructure',
     savedMessage: 'Infrastructure configuration saved.',
     nextScreen: 'application',
@@ -119,15 +130,25 @@ export const CONFIGURATION_SCREENS: ConfigurationScreenDefinition[] = [
   {
     id: 'application',
     label: 'Application',
-    description: 'Configure OpenCRVS domain, Traefik TLS mode, country configuration Docker image source, and advanced application values.',
-    order: 20,
+    description: 'Configure OpenCRVS domain, Traefik TLS mode, and advanced application values.',
+    order: 30,
     submitLabel: 'Save application',
     savedMessage: 'Application configuration saved.',
-    nextScreen: 'dependencies',
+    nextScreen: 'containerRegistry',
     subScreens: [
       { id: 'general', label: 'General', order: 10 },
       { id: 'advanced', label: 'Advanced', order: 20 }
     ]
+  },
+  {
+    id: 'containerRegistry',
+    label: 'Container registry configuration',
+    description: 'Configure the country configuration image source used by OpenCRVS deployments.',
+    order: 10,
+    submitLabel: 'Save container registry',
+    savedMessage: 'Container registry configuration saved.',
+    nextScreen: 'infrastructure',
+    requires: ['github']
   },
   {
     id: 'dependencies',
@@ -218,6 +239,28 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'checkbox',
     requires: ['github'],
     defaultValue: false,
+    defaultValueWhen: [
+      {
+        when: {
+          githubVariable: {
+            scope: 'ENVIRONMENT',
+            name: 'DISK_SPACE'
+          },
+          exists: true
+        },
+        value: true
+      },
+      {
+        when: {
+          githubVariable: {
+            scope: 'ENVIRONMENT',
+            name: 'DISK_SPACE'
+          },
+          exists: false
+        },
+        value: false
+      }
+    ],
     bindings: [{ target: 'state', name: 'enableDiskEncryption' }]
   },
   {
@@ -230,6 +273,17 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'text',
     required: true,
     defaultValue: '200g',
+    readonlyWhen: [
+      {
+        when: {
+          githubVariable: {
+            scope: 'ENVIRONMENT',
+            name: 'DISK_SPACE'
+          },
+          exists: true
+        }
+      }
+    ],
     visibleWhen: { fieldId: 'enableDiskEncryption', equals: true },
     bindings: [
       { target: 'github', type: 'VARIABLE', scope: 'ENVIRONMENT', name: 'DISK_SPACE',
@@ -267,21 +321,20 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'activateUsers',
     screen: 'application',
+    subScreen: 'advanced',
     section: 'OpenCRVS',
     label: 'ACTIVATE_USERS',
     description: 'Whether newly created users should be activated automatically.',
     control: 'checkbox',
     defaultValue: true,
-    deriveValue: [
+    defaultValueWhen: [
       {
         when: { context: 'environmentType', equals: 'production' },
-        value: false,
-        lock: true
+        value: false
       },
       {
         when: { context: 'environmentType', equals: 'non-production' },
-        value: true,
-        lock: true
+        value: true
       }
     ],
     bindings: [
@@ -349,7 +402,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   },
   {
     id: 'dockerhubMode',
-    screen: 'application',
+    screen: 'containerRegistry',
     section: 'Docker Hub',
     label: 'Country configuration image source',
     description: 'Use the OpenCRVS Farajaland image or provide another Docker Hub repository.',
@@ -367,7 +420,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   },
   {
     id: 'dockerhubOrganisation',
-    screen: 'application',
+    screen: 'containerRegistry',
     section: 'Docker Hub',
     label: 'DOCKERHUB_ACCOUNT',
     description: 'Docker Hub account or organisation containing the country configuration image.',
@@ -380,7 +433,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   },
   {
     id: 'dockerhubRepository',
-    screen: 'application',
+    screen: 'containerRegistry',
     section: 'Docker Hub',
     label: 'DOCKERHUB_REPO',
     description: 'Docker Hub repository containing the country configuration image.',
@@ -393,7 +446,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   },
   {
     id: 'dockerhubUsername',
-    screen: 'application',
+    screen: 'containerRegistry',
     section: 'Docker Hub',
     label: 'DOCKER_USERNAME',
     description: 'Username used to authenticate with Docker Hub.',
@@ -406,7 +459,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   },
   {
     id: 'dockerhubToken',
-    screen: 'application',
+    screen: 'containerRegistry',
     section: 'Docker Hub',
     label: 'DOCKER_TOKEN',
     description: 'Access token used to authenticate with Docker Hub.',

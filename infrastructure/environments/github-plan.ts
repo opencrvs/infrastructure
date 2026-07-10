@@ -293,7 +293,12 @@ export function buildGithubUpdates(input: GithubPlanInput) {
   )
 
   for (const definition of CONFIGURATION_SCREENS) {
-    if (['infrastructure', 'application', 'dependencies'].includes(definition.id)) {
+    if ([
+      'infrastructure',
+      'application',
+      'containerRegistry',
+      'dependencies'
+    ].includes(definition.id)) {
       continue
     }
     for (const field of getConfigurationFields(definition.id)) {

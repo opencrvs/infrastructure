@@ -323,7 +323,12 @@ function setScreenFieldValues(
 }
 
 function getGenericScreenConfigsForGithub() {
-  const specializedScreens = new Set(['infrastructure', 'application', 'dependencies'])
+  const specializedScreens = new Set([
+    'infrastructure',
+    'application',
+    'containerRegistry',
+    'dependencies'
+  ])
 
   return Object.fromEntries(
     CONFIGURATION_SCREENS
@@ -475,8 +480,6 @@ function getStateFieldValueFromGitHub(field: ConfigurationField): ConfigurationV
     hasEnvironmentSecret('ALERT_EMAIL')
 
   switch (field.id) {
-    case 'enableDiskEncryption':
-      return hasEnvironmentSecret('ENCRYPTION_KEY')
     case 'traefikMode':
       return hasStaticSsl ? 'static_ssl' : 'lets_encrypt'
     case 'dockerhubMode':
@@ -535,7 +538,7 @@ function getFieldValueFromGitHub(
     : undefined
 
   return githubValue === undefined
-    ? getFieldDefaultValue(field, environmentName)
+    ? getContextualDefaultValue(field)
     : githubValue
 }
 
@@ -626,7 +629,7 @@ function getFieldConfigValue(
     typeof value === 'number' ||
     typeof value === 'boolean'
     ? value
-    : getFieldDefaultValue(field, environmentName)
+    : getContextualDefaultValue(field)
 }
 
 function loadScreenConfigs(environmentName: string) {
@@ -1163,6 +1166,8 @@ function getGithubUpdates(
   includeSecretValues = false,
   options: { includeExternalSecrets?: boolean } = {}
 ) {
+  const containerRegistryConfig = getScreenStoredValues('containerRegistry')
+
   return buildGithubUpdates({
     enabled:
       Boolean(environmentSelection) &&
@@ -1173,7 +1178,10 @@ function getGithubUpdates(
     applicationDomain: applicationConfig?.domain || '',
     githubToken: verifiedConnection?.token || '',
     applicationSecrets: applicationConfig
-      ? getApplicationGithubUpdates(applicationConfig).secrets
+      ? getApplicationGithubUpdates({
+          ...applicationConfig,
+          ...containerRegistryConfig
+        }).secrets
       : [],
     dependencyFields: getGeneralScreenFields('dependencies'),
     advancedFields: getAllAdvancedFields(),
@@ -1212,6 +1220,16 @@ function getConfigurationContext(): ConfigurationContext {
   }
 }
 
+function getContextualDefaultValue(field: ConfigurationField) {
+  const defaultRule = field.defaultValueWhen?.find(({ when }) =>
+    derivedValueConditionMatches(when)
+  )
+
+  return defaultRule
+    ? defaultRule.value
+    : getFieldDefaultValue(field, environmentSelection?.environmentName || '')
+}
+
 function getRawConfigurationFieldValue(field: ConfigurationField): ConfigurationValue {
   const backupRestoreConfig = getBackupRestoreConfig()
   const configuredValues: Record<string, ConfigurationValue> = {
@@ -1222,10 +1240,6 @@ function getRawConfigurationFieldValue(field: ConfigurationField): Configuration
     diskSpace: infrastructureConfig?.diskSpace || '200g',
     domain: applicationConfig?.domain || '',
     traefikMode: applicationConfig?.traefikMode || 'lets_encrypt',
-    dockerhubMode: applicationConfig?.dockerhubMode || 'opencrvs',
-    activateUsers: environmentSelection?.environmentType === 'production'
-      ? false
-      : true,
     smtpEnabled: Boolean(applicationConfig?.smtpEnabled),
     backupRestoreMode: backupRestoreConfig.backupRestoreMode || 'none',
     backupHost: backupRestoreConfig.backupHost || '',
@@ -1243,8 +1257,7 @@ function getRawConfigurationFieldValue(field: ConfigurationField): Configuration
   return configuredValues[field.id] ??
     dependenciesConfig[field.id] ??
     getScreenStoredValues(field.screen)[field.id] ??
-    field.defaultValue ??
-    ''
+    getContextualDefaultValue(field)
 }
 
 function getRawConfigurationFieldValueById(fieldId: string): ConfigurationValue {
@@ -1265,6 +1278,13 @@ function derivedValueConditionMatches(condition: DerivedValueCondition) {
     )
   }
 
+  if ('githubVariable' in condition) {
+    return variableExists(
+      condition.githubVariable.scope,
+      condition.githubVariable.name
+    ) === condition.exists
+  }
+
   return valuesEqual(getConfigurationContext()[condition.context], condition.equals)
 }
 
@@ -1283,7 +1303,7 @@ function getSubmittedOrDerivedFieldValue(
 ) {
   const derivedState = getDerivedFieldState(field)
   return resolveSubmittedOrDerivedFieldValue(
-    field,
+    getFieldForResponse(field),
     submitted,
     current,
     derivedState
@@ -1293,9 +1313,16 @@ function getSubmittedOrDerivedFieldValue(
 function getFieldForResponse(field: ConfigurationField) {
   const deploymentField = getFieldForCurrentDeployment(field)
   const derivedState = getDerivedFieldState(field)
+  const readonly = Boolean(
+    deploymentField.readonly ||
+      deploymentField.readonlyWhen?.some(({ when }) =>
+        derivedValueConditionMatches(when)
+      )
+  )
 
   return {
     ...deploymentField,
+    readonly,
     disabled: Boolean(deploymentField.disabled || derivedState?.locked)
   }
 }
@@ -1864,41 +1891,6 @@ function saveApplicationConfig(payload: ApplicationRequest) {
     throw new Error('SSL certificate and key are required for static SSL.')
   }
 
-  const dockerhubMode = payload.dockerhubMode || 'opencrvs'
-  const dockerhubOrganisation = parseSubmittedSecret(
-    'REPOSITORY',
-    'DOCKERHUB_ACCOUNT',
-    payload.dockerhubOrganisation
-  )
-  const dockerhubRepository = parseSubmittedSecret(
-    'REPOSITORY',
-    'DOCKERHUB_REPO',
-    payload.dockerhubRepository
-  )
-  const dockerhubUsername = parseSubmittedSecret(
-    'REPOSITORY',
-    'DOCKER_USERNAME',
-    payload.dockerhubUsername
-  )
-  const dockerhubToken = parseSubmittedSecret(
-    'REPOSITORY',
-    'DOCKER_TOKEN',
-    payload.dockerhubToken
-  )
-
-  if (hasDeploymentFeature('github') && isFieldIdEnabled('dockerhubMode') && dockerhubMode === 'custom') {
-    const required = [
-      dockerhubOrganisation,
-      dockerhubRepository,
-      dockerhubUsername,
-      dockerhubToken
-    ]
-
-    if (required.some((secret) => !secret.available)) {
-      throw new Error('All custom Docker Hub fields are required.')
-    }
-  }
-
   const smtpEnabled = hasDeploymentFeature('github') && Boolean(payload.smtpEnabled)
   const smtpSecrets = {
     smtpHost: parseSubmittedSecret('ENVIRONMENT', 'SMTP_HOST', payload.smtpHost),
@@ -1941,13 +1933,6 @@ function saveApplicationConfig(payload: ApplicationRequest) {
     traefikMode,
     sslCrt: traefikMode === 'static_ssl' ? sslCrt.value : '',
     sslKey: traefikMode === 'static_ssl' ? sslKey.value : '',
-    dockerhubMode,
-    dockerhubOrganisation:
-      dockerhubMode === 'opencrvs' ? 'opencrvs' : dockerhubOrganisation.value,
-    dockerhubRepository:
-      dockerhubMode === 'opencrvs' ? 'ocrvs-countryconfig' : dockerhubRepository.value,
-    dockerhubUsername: dockerhubMode === 'custom' ? dockerhubUsername.value : '',
-    dockerhubToken: dockerhubMode === 'custom' ? dockerhubToken.value : '',
     smtpEnabled,
     smtpHost: smtpEnabled ? smtpSecrets.smtpHost.value : '',
     smtpUsername: smtpEnabled ? smtpSecrets.smtpUsername.value : '',
@@ -1997,7 +1982,7 @@ function saveInfrastructureConfig(payload: InfrastructureRequest) {
 
   const enableDiskEncryption = hasDeploymentFeature('github') && (
     isExistingGithubEnvironment()
-      ? hasEnvironmentSecret('ENCRYPTION_KEY')
+      ? Boolean(getEnvironmentVariableValue('DISK_SPACE'))
       : Boolean(payload.enableDiskEncryption)
   )
 
