@@ -45,6 +45,7 @@ export type GithubPlanInput = {
   isFieldActive: (field: ConfigurationField) => boolean
   getFieldValue: (field: ConfigurationField) => ConfigurationValue
   getActiveBindings: (field: ConfigurationField) => FieldBinding[]
+  getVariableValue: (scope: 'ENVIRONMENT' | 'REPOSITORY', name: string) => string
   variableExists: (scope: 'ENVIRONMENT' | 'REPOSITORY', name: string) => boolean
   secretExists: (scope: 'ENVIRONMENT' | 'REPOSITORY', name: string) => boolean
   hasEnvironmentSecret: (name: string) => boolean
@@ -60,7 +61,8 @@ export function planVariable(
   scope: 'ENVIRONMENT' | 'REPOSITORY',
   name: string,
   value: string,
-  exists: boolean
+  exists: boolean,
+  currentValue = ''
 ): GithubUpdate {
   return {
     scope,
@@ -68,7 +70,7 @@ export function planVariable(
     name,
     value,
     exists,
-    action: exists ? 'update' : 'create'
+    action: exists ? currentValue === value ? 'unchanged' : 'update' : 'create'
   }
 }
 
@@ -194,7 +196,8 @@ export function buildGithubUpdates(input: GithubPlanInput) {
       'ENVIRONMENT',
       'APPROVAL_REQUIRED',
       input.approvalRequired ? 'true' : 'false',
-      input.variableExists('ENVIRONMENT', 'APPROVAL_REQUIRED')
+      input.variableExists('ENVIRONMENT', 'APPROVAL_REQUIRED'),
+      input.getVariableValue('ENVIRONMENT', 'APPROVAL_REQUIRED')
     )
   ]
 
@@ -203,7 +206,8 @@ export function buildGithubUpdates(input: GithubPlanInput) {
       'ENVIRONMENT',
       'CONTENT_SECURITY_POLICY_WILDCARD',
       `*.${input.applicationDomain}`,
-      input.variableExists('ENVIRONMENT', 'CONTENT_SECURITY_POLICY_WILDCARD')
+      input.variableExists('ENVIRONMENT', 'CONTENT_SECURITY_POLICY_WILDCARD'),
+      input.getVariableValue('ENVIRONMENT', 'CONTENT_SECURITY_POLICY_WILDCARD')
     ))
   }
 
@@ -213,7 +217,8 @@ export function buildGithubUpdates(input: GithubPlanInput) {
         'REPOSITORY',
         'GH_APPROVERS',
         input.githubApprovers,
-        input.variableExists('REPOSITORY', 'GH_APPROVERS')
+        input.variableExists('REPOSITORY', 'GH_APPROVERS'),
+        input.getVariableValue('REPOSITORY', 'GH_APPROVERS')
       )
     )
   }
@@ -239,7 +244,8 @@ export function buildGithubUpdates(input: GithubPlanInput) {
             binding.scope,
             binding.name,
             value,
-            input.variableExists(binding.scope, binding.name)
+            input.variableExists(binding.scope, binding.name),
+            input.getVariableValue(binding.scope, binding.name)
           )
         ]
       })

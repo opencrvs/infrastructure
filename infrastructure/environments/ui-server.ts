@@ -956,6 +956,12 @@ function variableExists(scope: 'ENVIRONMENT' | 'REPOSITORY', name: string) {
   return Boolean(source.find((variable) => variable.name === name))
 }
 
+function getVariableValue(scope: 'ENVIRONMENT' | 'REPOSITORY', name: string) {
+  return scope === 'ENVIRONMENT'
+    ? getEnvironmentVariableValue(name)
+    : getRepositoryVariableValue(name)
+}
+
 function secretExists(scope: 'ENVIRONMENT' | 'REPOSITORY', name: string) {
   const source = scope === 'ENVIRONMENT' ? environmentSecrets : repositorySecrets
   return Boolean(source.find((secret) => secret.name === name))
@@ -1058,7 +1064,7 @@ function getInfrastructureFields() {
     return {
       ...field,
       disabled: true,
-      description: 'Disk encryption reflects the existing GitHub ENCRYPTION_KEY secret and cannot be changed here.'
+      description: 'Encrypt /data partition. Property cannot be changed after the GitHub environment is configured.'
     }
   })
 }
@@ -1190,6 +1196,7 @@ function getGithubUpdates(
     isFieldActive: isConfigurationFieldActive,
     getFieldValue: getConfigurationFieldValue,
     getActiveBindings: getActiveFieldBindings,
+    getVariableValue,
     variableExists,
     secretExists,
     hasEnvironmentSecret,
@@ -1672,6 +1679,10 @@ function getNextSteps(inventoryAlreadyExists?: boolean) {
 }
 
 async function applyGithubUpdate(octokit: Octokit, update: GithubUpdate) {
+  if (update.action === 'unchanged') {
+    return
+  }
+
   if (update.type === 'VARIABLE') {
     if (update.scope === 'ENVIRONMENT') {
       if (update.action === 'update') {
@@ -1708,7 +1719,7 @@ async function applyGithubUpdate(octokit: Octokit, update: GithubUpdate) {
     }
   }
 
-  if (update.type === 'SECRET' && update.action !== 'unchanged') {
+  if (update.type === 'SECRET') {
     if (update.scope === 'ENVIRONMENT') {
       await createEnvironmentSecret(
         octokit,
@@ -1736,8 +1747,10 @@ async function applyGithubUpdates(octokit: Octokit, updates: GithubUpdate[]) {
   const performedActions: string[] = []
 
   for (const update of updates) {
-    if (update.type === 'SECRET' && update.action === 'unchanged') {
-      performedActions.push(`Skipped unchanged ${update.scope.toLowerCase()} secret ${update.name}`)
+    if (update.action === 'unchanged') {
+      performedActions.push(
+        `Skipped unchanged ${update.scope.toLowerCase()} ${update.type.toLowerCase()} ${update.name}`
+      )
       continue
     }
 

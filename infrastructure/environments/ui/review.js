@@ -14,7 +14,20 @@
   }
 
   function formatGithubStatus(update) {
-    return update.exists ? 'Exists' : 'New';
+    if (update.action === 'create') {
+      return 'New';
+    }
+    if (update.action === 'update') {
+      return 'Update';
+    }
+    return 'Exists';
+  }
+
+  function formatHelmStatus(update) {
+    if (update.action === 'unchanged') {
+      return 'Exists';
+    }
+    return update.action === 'create' ? 'New' : 'Update';
   }
 
   function renderReview(plan, elements) {
@@ -34,8 +47,7 @@
         formatGithubScope(variable.scope),
         variable.name,
         variable.value,
-        formatGithubStatus(variable),
-        variable.action
+        formatGithubStatus(variable)
       ]);
     }
 
@@ -43,8 +55,7 @@
       appendReviewRow(elements.reviewSecrets, [
         formatGithubScope(secret.scope),
         secret.name,
-        formatGithubStatus(secret),
-        secret.action
+        formatGithubStatus(secret)
       ]);
     }
 
@@ -53,7 +64,7 @@
         update.chart,
         update.path,
         update.value,
-        update.action
+        formatHelmStatus(update)
       ]);
     }
 

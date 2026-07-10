@@ -82,6 +82,7 @@ function testGithubDisabledProducesNoGithubPlan() {
     isFieldActive: () => true,
     getFieldValue: () => '',
     getActiveBindings: () => [],
+    getVariableValue: () => '',
     variableExists: () => false,
     secretExists: () => false,
     hasEnvironmentSecret: () => false,
@@ -180,6 +181,7 @@ function testBackupRestoreDependencyFieldsPlanGithubUpdates() {
       values[field.visibleWhen.fieldId] === field.visibleWhen.equals,
     getFieldValue: (field) => values[field.id] || '',
     getActiveBindings: (field) => field.bindings || [],
+    getVariableValue: () => '',
     variableExists: () => false,
     secretExists: () => false,
     hasEnvironmentSecret: () => false,
@@ -209,6 +211,45 @@ function testBackupRestoreDependencyFieldsPlanGithubUpdates() {
   ))
 }
 
+function testUnchangedGithubVariablesAreNotUpdated() {
+  const plan = buildGithubUpdates({
+    enabled: true,
+    includeSecretValues: false,
+    approvalRequired: true,
+    githubApprovers: '',
+    applicationDomain: '',
+    githubToken: '',
+    applicationSecrets: [],
+    dependencyFields: [],
+    advancedFields: [],
+    dependenciesConfig: {},
+    advancedConfig: {},
+    genericScreenConfigs: {},
+    backupEnabled: false,
+    diskEncryptionEnabled: false,
+    isFieldEnabled: () => true,
+    isFieldActive: () => true,
+    getFieldValue: () => '',
+    getActiveBindings: () => [],
+    getVariableValue: (_scope, name) =>
+      name === 'APPROVAL_REQUIRED' ? 'true' : '',
+    variableExists: (_scope, name) => name === 'APPROVAL_REQUIRED',
+    secretExists: () => false,
+    hasEnvironmentSecret: () => false,
+    getEncryptionKey: () => 'key',
+    getBackupEncryptionPassphrase: () => 'passphrase',
+    getBackupHostKeyPair: () => ({
+      privateKey: 'private',
+      publicKey: 'public'
+    })
+  })
+
+  assert.strictEqual(
+    plan.variables.find(({ name }) => name === 'APPROVAL_REQUIRED')?.action,
+    'unchanged'
+  )
+}
+
 testGeneratedValuesAreStableAndScoped()
 testLockedDerivedValueIgnoresSubmittedValue()
 testGithubDisabledProducesNoGithubPlan()
@@ -216,5 +257,6 @@ testReviewSectionsFollowDeploymentFeatures()
 testNextStepsHideWhenInventoryAlreadyExists()
 testFieldActivationWithBindingsAndRequires()
 testBackupRestoreDependencyFieldsPlanGithubUpdates()
+testUnchangedGithubVariablesAreNotUpdated()
 
 console.log('configurator regression tests passed')
