@@ -196,9 +196,8 @@ let generatedEncryptionKey = ''
 let generatedBackupEncryptionPassphrase = ''
 let generatedBackupHostPrivateKey = ''
 let generatedBackupHostPublicKey = ''
-let advancedConfig: Record<string, ConfigurationValue> = {}
 let dependenciesConfig: Record<string, ConfigurationValue> = {}
-let genericScreenConfigs: Record<string, Record<string, ConfigurationValue>> = {}
+let screenConfigs: Record<string, Record<string, Record<string, ConfigurationValue>>> = {}
 let helmBaseOverrides: Partial<Record<HelmChart, Record<string, unknown>>> = {}
 let lastValuesSecretsPath = ''
 let getFieldDefaultValue = createFieldDefaultValueResolver()
@@ -223,9 +222,8 @@ function resetConfiguratorSession() {
   generatedBackupEncryptionPassphrase = ''
   generatedBackupHostPrivateKey = ''
   generatedBackupHostPublicKey = ''
-  advancedConfig = {}
   dependenciesConfig = {}
-  genericScreenConfigs = {}
+  screenConfigs = {}
   helmBaseOverrides = {}
   lastValuesSecretsPath = ''
   getFieldDefaultValue = createFieldDefaultValueResolver()
@@ -278,16 +276,60 @@ function getFieldSource(field: ConfigurationField) {
   return field.bindings[0]
 }
 
-function isAdvancedTabField(field: ConfigurationField) {
-  return field.subScreen === 'advanced'
+function getSubScreenId(field: ConfigurationField) {
+  return field.subScreen || 'general'
 }
 
-function getAdvancedFields() {
-  return CONFIGURATION_FIELDS.filter(isAdvancedTabField)
+function getScreenFields(screenId: string, subScreenId?: string | null) {
+  const fields = getConfigurationFields(screenId)
+  if (!subScreenId) {
+    return fields
+  }
+  return fields.filter((field) => getSubScreenId(field) === subScreenId)
 }
 
 function getGeneralScreenFields(screenId: string) {
-  return getConfigurationFields(screenId).filter((field) => !isAdvancedTabField(field))
+  return getScreenFields(screenId, 'general')
+}
+
+function getAllAdvancedFields() {
+  return CONFIGURATION_FIELDS.filter((field) => getSubScreenId(field) !== 'general')
+}
+
+function getSubScreenConfig(screenId: string, subScreenId = 'general') {
+  return screenConfigs[screenId]?.[subScreenId] || {}
+}
+
+function getScreenStoredValues(screenId: string) {
+  return Object.assign({}, ...Object.values(screenConfigs[screenId] || {}))
+}
+
+function setScreenFieldValues(
+  screenId: string,
+  fields: ConfigurationField[],
+  values: Record<string, ConfigurationValue>
+) {
+  screenConfigs[screenId] ||= {}
+
+  for (const field of fields) {
+    if (!(field.id in values)) {
+      continue
+    }
+
+    const subScreenId = getSubScreenId(field)
+    screenConfigs[screenId][subScreenId] ||= {}
+    screenConfigs[screenId][subScreenId][field.id] = values[field.id]
+  }
+}
+
+function getGenericScreenConfigsForGithub() {
+  const specializedScreens = new Set(['infrastructure', 'application', 'dependencies'])
+
+  return Object.fromEntries(
+    CONFIGURATION_SCREENS
+      .filter(({ id }) => !specializedScreens.has(id))
+      .map(({ id }) => [id, getScreenStoredValues(id)])
+  )
 }
 
 function isFieldIdEnabled(fieldId: string) {
@@ -415,20 +457,7 @@ function hasEnvironmentSecret(name: string) {
   return Boolean(environmentSecrets.find((secret) => secret.name === name))
 }
 
-function getInfrastructureConfigFromGitHub(): InfrastructureRequest {
-  const enableDiskEncryption = hasEnvironmentSecret('ENCRYPTION_KEY')
-
-  return {
-    kubeAPIHost: getEnvironmentVariableValue('KUBE_API_HOST'),
-    kubeWorkerNodes: getEnvironmentVariableValue('KUBE_WORKER_NODES'),
-    kubeApiAllowedCidrs: getEnvironmentVariableValue('KUBE_API_ALLOWED_CIDRS'),
-    enableDiskEncryption,
-    diskSpace: getEnvironmentVariableValue('DISK_SPACE') || '200g',
-    users
-  }
-}
-
-function getApplicationConfigFromGitHub(): ApplicationRequest {
+function getStateFieldValueFromGitHub(field: ConfigurationField): ConfigurationValue | undefined {
   const hasStaticSsl = hasEnvironmentSecret('SSL_CRT') || hasEnvironmentSecret('SSL_KEY')
   const hasDockerhubAccount = hasRepositorySecret('DOCKERHUB_ACCOUNT')
   const hasDockerhubRepo = hasRepositorySecret('DOCKERHUB_REPO')
@@ -445,40 +474,97 @@ function getApplicationConfigFromGitHub(): ApplicationRequest {
     hasEnvironmentSecret('SENDER_EMAIL_ADDRESS') ||
     hasEnvironmentSecret('ALERT_EMAIL')
 
-  return {
-    domain: getEnvironmentVariableValue('DOMAIN'),
-    traefikMode: hasStaticSsl ? 'static_ssl' : 'lets_encrypt',
-    sslCrt: '',
-    sslKey: '',
-    dockerhubMode:
-      hasDockerhubAccount && hasDockerhubRepo && !hasDockerhubCredentials
-        ? 'opencrvs'
-        : 'custom',
-    dockerhubOrganisation:
-      hasDockerhubAccount && !hasDockerhubCredentials ? 'opencrvs' : '',
-    dockerhubRepository:
-      hasDockerhubRepo && !hasDockerhubCredentials ? 'ocrvs-countryconfig' : '',
-    dockerhubUsername: '',
-    dockerhubToken: '',
-    smtpEnabled: hasSmtpConfiguration,
-    smtpHost: '',
-    smtpUsername: '',
-    smtpPassword: '',
-    smtpPort: '',
-    smtpSecure: hasEnvironmentSecret('SMTP_SECURE') ? '' : false,
-    senderEmailAddress: '',
-    alertEmail: '',
-    backupRestoreMode: backupHost
-      ? 'backup'
-      : restoreEnvironmentName
-        ? 'restore'
-        : 'none',
-    backupHost,
-    backupUser: hasEnvironmentSecret('BACKUP_SERVER_USER') ? '' : 'backup',
-    backupType: getEnvironmentVariableValue('BACKUP_ENVIRONMENT_MODE') || 'dump',
-    restoreEnvironmentName,
-    restoreType: getEnvironmentVariableValue('RESTORE_ENVIRONMENT_MODE') || 'dump',
+  switch (field.id) {
+    case 'enableDiskEncryption':
+      return hasEnvironmentSecret('ENCRYPTION_KEY')
+    case 'traefikMode':
+      return hasStaticSsl ? 'static_ssl' : 'lets_encrypt'
+    case 'dockerhubMode':
+      return (
+        hasDockerhubAccount && hasDockerhubRepo && !hasDockerhubCredentials
+          ? 'opencrvs'
+          : 'custom'
+      )
+    case 'smtpEnabled':
+      return hasSmtpConfiguration
+    case 'backupRestoreMode':
+      return backupHost ? 'backup' : restoreEnvironmentName ? 'restore' : 'none'
+    default:
+      return undefined
   }
+}
+
+function getGithubBindingValue(binding: GithubBinding, field: ConfigurationField) {
+  if (binding.type === 'VARIABLE') {
+    const value = binding.scope === 'ENVIRONMENT'
+      ? getEnvironmentVariableValue(binding.name)
+      : getRepositoryVariableValue(binding.name)
+
+    if (field.control === 'checkbox') {
+      return value ? value.trim().toLowerCase() === 'true' : undefined
+    }
+
+    return value || undefined
+  }
+
+  const exists = binding.scope === 'ENVIRONMENT'
+    ? hasEnvironmentSecret(binding.name)
+    : hasRepositorySecret(binding.name)
+
+  if (!exists) {
+    return undefined
+  }
+
+  return ''
+}
+
+function getFieldValueFromGitHub(
+  field: ConfigurationField,
+  environmentName: string
+) {
+  const stateValue = getStateFieldValueFromGitHub(field)
+  if (stateValue !== undefined) {
+    return stateValue
+  }
+
+  const githubBinding = getActiveFieldBindings(field).find(
+    (binding): binding is GithubBinding => binding.target === 'github'
+  )
+  const githubValue = githubBinding
+    ? getGithubBindingValue(githubBinding, field)
+    : undefined
+
+  return githubValue === undefined
+    ? getFieldDefaultValue(field, environmentName)
+    : githubValue
+}
+
+function getScreenConfigFromGitHub(
+  screenId: string,
+  subScreenId: string | null,
+  environmentName: string
+) {
+  const fields = getScreenFields(screenId, subScreenId)
+  return Object.fromEntries(
+    fields.map((field) => [
+      field.id,
+      getFieldValueFromGitHub(field, environmentName)
+    ])
+  ) as Record<string, ConfigurationValue>
+}
+
+function getScreenConfig(
+  screenId: string,
+  subScreenId: string | null,
+  environmentName: string
+) {
+  const fields = getScreenFields(screenId, subScreenId)
+  return Object.fromEntries(
+    fields.map((field) => [
+      field.id,
+      getFieldConfigValue(field, environmentName)
+    ])
+  ) as Record<string, ConfigurationValue>
 }
 
 function getInventoryPath(environmentName: string) {
@@ -527,8 +613,23 @@ function readHelmOverride(environmentName: string, chart: HelmChart) {
   return isRecord(parsed) ? parsed : {}
 }
 
-function loadAdvancedConfig(environmentName: string) {
-  const advancedFields = getAdvancedFields()
+function getFieldConfigValue(
+  field: ConfigurationField,
+  environmentName: string
+) {
+  const source = getFieldSource(field)
+  const value = source?.target === 'helm'
+    ? getNestedValue(helmBaseOverrides[source.chart] || {}, source.path)
+    : getFieldValueFromGitHub(field, environmentName)
+
+  return typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+    ? value
+    : getFieldDefaultValue(field, environmentName)
+}
+
+function loadScreenConfigs(environmentName: string) {
   const charts = [...new Set(CONFIGURATION_FIELDS.flatMap((field) =>
     field.bindings
       .filter((binding): binding is HelmBinding => binding.target === 'helm')
@@ -538,129 +639,26 @@ function loadAdvancedConfig(environmentName: string) {
   helmBaseOverrides = Object.fromEntries(
     charts.map((chart) => [chart, readHelmOverride(environmentName, chart)])
   )
-  advancedConfig = Object.fromEntries(
-    advancedFields.map((field) => {
-      const source = getFieldSource(field)
-      const override = source?.target === 'helm'
-        ? getNestedValue(helmBaseOverrides[source.chart] || {}, source.path)
-        : source?.target === 'github'
-          ? secretExists(source.scope, source.name)
-            ? ''
-            : undefined
-          : undefined
-      const resolvedValue =
-        typeof override === 'string' ||
-        typeof override === 'number' ||
-        typeof override === 'boolean'
-          ? override
-          : getFieldDefaultValue(field, environmentName)
 
-      return [field.id, resolvedValue]
-    })
-  )
-  loadDependenciesConfig(environmentName)
-  loadGenericScreenConfigs(environmentName)
-}
+  screenConfigs = Object.fromEntries(
+    CONFIGURATION_SCREENS.map(({ id }) => {
+      const subScreenIds = [...new Set(
+        getConfigurationFields(id).map(getSubScreenId)
+      )]
 
-function loadDependenciesConfig(environmentName: string) {
-  dependenciesConfig = Object.fromEntries(
-    getGeneralScreenFields('dependencies').map((field) => {
-      const source = getFieldSource(field)
-      let value: unknown
-
-      if (field.id === 'backupRestoreMode') {
-        value = getPersistedBackupRestoreMode()
-      } else if (source?.target === 'helm') {
-        value = getNestedValue(helmBaseOverrides[source.chart] || {}, source.path)
-      } else if (
-        source?.target === 'github' &&
-        source.scope === 'ENVIRONMENT' &&
-        secretExists('ENVIRONMENT', source.name)
-      ) {
-        value = ''
-      } else if (
-        source?.target === 'github' &&
-        source.scope === 'REPOSITORY' &&
-        secretExists('REPOSITORY', source.name)
-      ) {
-        value = ''
-      } else if (source?.target === 'github') {
-        value = source.scope === 'ENVIRONMENT'
-          ? getEnvironmentVariableValue(source.name)
-          : getRepositoryVariableValue(source.name)
-      }
-
-      const resolvedValue =
-        typeof value === 'string' ||
-        typeof value === 'number' ||
-        typeof value === 'boolean'
-          ? value
-          : getFieldDefaultValue(field, environmentName)
-
-      return [field.id, resolvedValue]
-    })
-  )
-}
-
-function loadGenericScreenConfigs(environmentName: string) {
-  const specializedScreens = new Set([
-    'infrastructure',
-    'application',
-    'dependencies'
-  ])
-
-  genericScreenConfigs = Object.fromEntries(
-    CONFIGURATION_SCREENS
-      .filter(({ id }) => !specializedScreens.has(id))
-      .map(({ id }) => [
+      return [
         id,
         Object.fromEntries(
-          getConfigurationFields(id).map((field) => {
-            const source = getFieldSource(field)
-            let value: unknown
-            if (source?.target === 'helm') {
-              value = getNestedValue(helmBaseOverrides[source.chart] || {}, source.path)
-            } else if (
-              source?.target === 'github' &&
-              secretExists(source.scope, source.name)
-            ) {
-              value = ''
-            } else if (source?.target === 'github') {
-              value = source.scope === 'ENVIRONMENT'
-                ? getEnvironmentVariableValue(source.name)
-                : getRepositoryVariableValue(source.name)
-            }
-
-            const resolvedValue =
-              typeof value === 'string' ||
-              typeof value === 'number' ||
-              typeof value === 'boolean'
-                ? value
-                : getFieldDefaultValue(field, environmentName)
-            return [field.id, resolvedValue]
-          })
+          subScreenIds.map((subScreenId) => [
+            subScreenId,
+            getScreenConfig(id, subScreenId, environmentName)
+          ])
         )
-      ])
+      ]
+    })
   )
-}
 
-function getAdvancedResponse() {
-  const fields = getAdvancedFields()
-    .filter(isFieldEnabledForDeployment)
-    .map(getFieldForResponse)
-  return {
-    fields,
-    values: getResponseValuesForFields(fields, advancedConfig),
-    existingSecrets: Object.fromEntries(
-      fields.map((field) => {
-        const source = getFieldSource(field)
-        return [
-          field.id,
-          source?.target === 'github' && secretExists(source.scope, source.name)
-        ]
-      })
-    )
-  }
+  dependenciesConfig = screenConfigs.dependencies?.general || {}
 }
 
 function getDependenciesResponse() {
@@ -682,6 +680,37 @@ function getDependenciesResponse() {
       })
     ),
     secretSentinel: EXISTING_SECRET_SENTINEL
+  }
+}
+
+function getAdvancedResponse() {
+  const fields = getAllAdvancedFields()
+    .filter(isFieldEnabledForDeployment)
+    .map(getFieldForResponse)
+  const values = Object.assign(
+    {},
+    ...CONFIGURATION_SCREENS.map(({ id }) =>
+      Object.assign(
+        {},
+        ...Object.entries(screenConfigs[id] || {})
+          .filter(([subScreenId]) => subScreenId !== 'general')
+          .map(([, subScreenValues]) => subScreenValues)
+      )
+    )
+  )
+
+  return {
+    fields,
+    values: getResponseValuesForFields(fields, values),
+    existingSecrets: Object.fromEntries(
+      fields.map((field) => {
+        const source = getFieldSource(field)
+        return [
+          field.id,
+          source?.target === 'github' && secretExists(source.scope, source.name)
+        ]
+      })
+    )
   }
 }
 
@@ -715,10 +744,10 @@ function getConfigurationScreenResponse(screenId: string) {
   const storedValues = screenId === 'infrastructure'
     ? { ...(infrastructureConfig || {}) }
     : screenId === 'application'
-      ? { ...(applicationConfig || {}), ...advancedConfig }
+      ? { ...(applicationConfig || {}), ...getScreenStoredValues('application') }
       : screenId === 'dependencies'
-        ? { ...dependenciesConfig, ...advancedConfig }
-        : { ...(genericScreenConfigs[screenId] || {}) }
+        ? { ...dependenciesConfig, ...getScreenStoredValues('dependencies') }
+        : getScreenStoredValues(screenId)
   const values = getResponseValuesForFields(fields, storedValues)
 
   return {
@@ -763,9 +792,13 @@ async function loadEnvironmentValues(environmentName: string) {
     } else {
       users = []
     }
-    infrastructureConfig = getInfrastructureConfigFromGitHub()
-    applicationConfig = getApplicationConfigFromGitHub()
-    loadAdvancedConfig(environmentName)
+    loadScreenConfigs(environmentName)
+    infrastructureConfig = {
+      ...(screenConfigs.infrastructure?.general || {}),
+      ...(screenConfigs.infrastructure?.advanced || {}),
+      users
+    }
+    applicationConfig = screenConfigs.application?.general || {}
     return
   }
 
@@ -785,9 +818,13 @@ async function loadEnvironmentValues(environmentName: string) {
     environmentName
   )
   loadUsersFromInventory(environmentName)
-  infrastructureConfig = getInfrastructureConfigFromGitHub()
-  applicationConfig = getApplicationConfigFromGitHub()
-  loadAdvancedConfig(environmentName)
+  loadScreenConfigs(environmentName)
+  infrastructureConfig = {
+    ...(screenConfigs.infrastructure?.general || {}),
+    ...(screenConfigs.infrastructure?.advanced || {}),
+    users
+  }
+  applicationConfig = screenConfigs.application?.general || {}
 }
 
 async function saveEnvironmentSelection(payload: EnvironmentSelectionRequest) {
@@ -925,29 +962,18 @@ function secretExists(scope: 'ENVIRONMENT' | 'REPOSITORY', name: string) {
 }
 
 function getExistingSecretState() {
-  return {
-    sslCrt: hasEnvironmentSecret('SSL_CRT'),
-    sslKey: hasEnvironmentSecret('SSL_KEY'),
-    dockerhubOrganisation: hasRepositorySecret('DOCKERHUB_ACCOUNT'),
-    dockerhubRepository: hasRepositorySecret('DOCKERHUB_REPO'),
-    dockerhubUsername: hasRepositorySecret('DOCKER_USERNAME'),
-    dockerhubToken: hasRepositorySecret('DOCKER_TOKEN'),
-    smtpHost: hasEnvironmentSecret('SMTP_HOST'),
-    smtpUsername: hasEnvironmentSecret('SMTP_USERNAME'),
-    smtpPassword: hasEnvironmentSecret('SMTP_PASSWORD'),
-    smtpPort: hasEnvironmentSecret('SMTP_PORT'),
-    smtpSecure: hasEnvironmentSecret('SMTP_SECURE'),
-    senderEmailAddress: hasEnvironmentSecret('SENDER_EMAIL_ADDRESS'),
-    alertEmail: hasEnvironmentSecret('ALERT_EMAIL'),
-    kibanaUsername: hasEnvironmentSecret('KIBANA_USERNAME'),
-    kibanaPassword: hasEnvironmentSecret('KIBANA_PASSWORD'),
-    sentryDsn: hasEnvironmentSecret('SENTRY_DSN'),
-    backupUser: hasEnvironmentSecret('BACKUP_SERVER_USER'),
-    metabaseAdminEmail: hasEnvironmentSecret('OPENCRVS_METABASE_ADMIN_EMAIL'),
-    metabaseAdminPassword: hasEnvironmentSecret(
-      'OPENCRVS_METABASE_ADMIN_PASSWORD'
+  return Object.fromEntries(
+    CONFIGURATION_FIELDS.flatMap((field) =>
+      field.bindings
+        .filter((binding): binding is GithubBinding =>
+          binding.target === 'github' && binding.type === 'SECRET'
+        )
+        .map((binding) => [
+          field.id,
+          secretExists(binding.scope, binding.name)
+        ])
     )
-  }
+  )
 }
 
 function getBackupRestoreState() {
@@ -1144,10 +1170,20 @@ function getGithubUpdates(
       ? getApplicationGithubUpdates(applicationConfig).secrets
       : [],
     dependencyFields: getGeneralScreenFields('dependencies'),
-    advancedFields: getAdvancedFields(),
+    advancedFields: getAllAdvancedFields(),
     dependenciesConfig,
-    advancedConfig,
-    genericScreenConfigs,
+    advancedConfig: Object.assign(
+      {},
+      ...CONFIGURATION_SCREENS.map(({ id }) =>
+        Object.assign(
+          {},
+          ...Object.entries(screenConfigs[id] || {})
+            .filter(([subScreenId]) => subScreenId !== 'general')
+            .map(([, values]) => values)
+        )
+      )
+    ),
+    genericScreenConfigs: getGenericScreenConfigsForGithub(),
     backupEnabled: getBackupRestoreConfig().backupRestoreMode === 'backup',
     diskEncryptionEnabled: Boolean(infrastructureConfig?.enableDiskEncryption),
     isFieldEnabled: isFieldEnabledForDeployment,
@@ -1199,8 +1235,7 @@ function getRawConfigurationFieldValue(field: ConfigurationField): Configuration
 
   return configuredValues[field.id] ??
     dependenciesConfig[field.id] ??
-    advancedConfig[field.id] ??
-    genericScreenConfigs[field.screen]?.[field.id] ??
+    getScreenStoredValues(field.screen)[field.id] ??
     field.defaultValue ??
     ''
 }
@@ -1294,7 +1329,8 @@ function getHelmUpdates(): HelmUpdate[] {
   })
 }
 
-function saveAdvancedFields(
+function saveScreenFields(
+  screenId: string,
   fields: ConfigurationField[],
   submittedValues: Record<string, unknown>
 ) {
@@ -1302,11 +1338,12 @@ function saveAdvancedFields(
     throw new Error('Select an environment before configuring Helm values.')
   }
 
-  const nextConfig: Record<string, ConfigurationValue> = { ...advancedConfig }
+  const currentConfig = getScreenStoredValues(screenId)
+  const nextConfig: Record<string, ConfigurationValue> = { ...currentConfig }
 
   for (const field of fields.filter(isFieldEnabledForDeployment)) {
     const submitted = submittedValues[field.id]
-    const current = advancedConfig[field.id] ?? field.defaultValue ?? ''
+    const current = currentConfig[field.id] ?? field.defaultValue ?? ''
 
     if (field.control === 'checkbox') {
       nextConfig[field.id] = Boolean(
@@ -1350,12 +1387,20 @@ function saveAdvancedFields(
     nextConfig[field.id] = textValue
   }
 
-  advancedConfig = nextConfig
+  setScreenFieldValues(screenId, fields, nextConfig)
 }
 
 function saveAdvancedConfig(payload: AdvancedRequest) {
-  saveAdvancedFields(getAdvancedFields(), payload.values || {})
-  return getAdvancedResponse()
+  for (const definition of CONFIGURATION_SCREENS) {
+    saveScreenFields(
+      definition.id,
+      getScreenFields(definition.id).filter(
+        (field) => getSubScreenId(field) !== 'general'
+      ),
+      payload.values || {}
+    )
+  }
+  return getConfigurationResponse()
 }
 
 function saveDependenciesConfig(payload: DependenciesRequest) {
@@ -1468,7 +1513,7 @@ function saveGenericScreenConfig(
   submittedValues: Record<string, unknown>
 ) {
   const fields = getConfigurationFields(screenId).filter(isFieldEnabledForDeployment)
-  const currentConfig = genericScreenConfigs[screenId] || {}
+  const currentConfig = getScreenStoredValues(screenId)
   const nextConfig: Record<string, ConfigurationValue> = { ...currentConfig }
 
   for (const field of fields.filter(({ control }) => control === 'checkbox')) {
@@ -1481,7 +1526,7 @@ function saveGenericScreenConfig(
       )
     )
   }
-  genericScreenConfigs[screenId] = nextConfig
+  setScreenFieldValues(screenId, fields, nextConfig)
 
   for (const field of fields.filter(({ control }) => control !== 'checkbox')) {
     if (!isConfigurationFieldActive(field)) {
@@ -1537,7 +1582,7 @@ function saveGenericScreenConfig(
     nextConfig[field.id] = textValue
   }
 
-  genericScreenConfigs[screenId] = nextConfig
+  setScreenFieldValues(screenId, fields, nextConfig)
 }
 
 function writeHelmOverrides(environmentName: string, updates = getHelmUpdates()) {
@@ -1973,16 +2018,37 @@ function saveConfigurationScreen(
       ...(values as InfrastructureRequest),
       users: payload.custom?.users || users
     })
+    setScreenFieldValues(
+      'infrastructure',
+      getConfigurationFields('infrastructure'),
+      Object.fromEntries(
+        Object.entries(infrastructureConfig || {}).filter(
+          ([, value]) => !Array.isArray(value)
+        )
+      ) as Record<string, ConfigurationValue>
+    )
   } else if (screenId === 'application') {
     saveApplicationConfig(values as ApplicationRequest)
-    saveAdvancedFields(
-      getConfigurationFields('application').filter(isAdvancedTabField),
+    setScreenFieldValues(
+      'application',
+      getGeneralScreenFields('application'),
+      applicationConfig || {}
+    )
+    saveScreenFields(
+      'application',
+      getScreenFields('application', 'advanced'),
       values
     )
   } else if (screenId === 'dependencies') {
     saveDependenciesConfig({ values })
-    saveAdvancedFields(
-      getConfigurationFields('dependencies').filter(isAdvancedTabField),
+    setScreenFieldValues(
+      'dependencies',
+      getGeneralScreenFields('dependencies'),
+      dependenciesConfig
+    )
+    saveScreenFields(
+      'dependencies',
+      getScreenFields('dependencies', 'advanced'),
       values
     )
   } else if (CONFIGURATION_SCREENS.some(({ id }) => id === screenId)) {

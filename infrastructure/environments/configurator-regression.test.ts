@@ -1,6 +1,7 @@
 import assert from 'assert'
 
 import {
+  CONFIGURATION_FIELDS,
   ConfigurationField,
   ConfigurationScreenDefinition
 } from './configuration-fields'
@@ -150,11 +151,70 @@ function testFieldActivationWithBindingsAndRequires() {
   assert(screen.requires?.includes('ansible'))
 }
 
+function testBackupRestoreDependencyFieldsPlanGithubUpdates() {
+  const values: Record<string, string> = {
+    backupRestoreMode: 'backup',
+    backupHost: '10.0.0.9',
+    backupUser: 'backup',
+    backupType: 'differential'
+  }
+
+  const plan = buildGithubUpdates({
+    enabled: true,
+    includeSecretValues: true,
+    approvalRequired: false,
+    githubApprovers: '',
+    applicationDomain: '',
+    githubToken: 'token',
+    applicationSecrets: [],
+    dependencyFields: CONFIGURATION_FIELDS.filter(({ screen }) => screen === 'dependencies'),
+    advancedFields: [],
+    dependenciesConfig: values,
+    advancedConfig: {},
+    genericScreenConfigs: {},
+    backupEnabled: true,
+    diskEncryptionEnabled: false,
+    isFieldEnabled: () => true,
+    isFieldActive: (field) =>
+      !field.visibleWhen ||
+      values[field.visibleWhen.fieldId] === field.visibleWhen.equals,
+    getFieldValue: (field) => values[field.id] || '',
+    getActiveBindings: (field) => field.bindings || [],
+    variableExists: () => false,
+    secretExists: () => false,
+    hasEnvironmentSecret: () => false,
+    getEncryptionKey: () => 'key',
+    getBackupEncryptionPassphrase: () => 'passphrase',
+    getBackupHostKeyPair: () => ({
+      privateKey: 'private',
+      publicKey: 'public'
+    })
+  })
+
+  assert(plan.variables.some(
+    (variable) => variable.name === 'BACKUP_HOST' && variable.value === '10.0.0.9'
+  ))
+  assert(plan.variables.some(
+    (variable) =>
+      variable.name === 'BACKUP_ENVIRONMENT_MODE' &&
+      variable.value === 'differential'
+  ))
+  assert(plan.secrets.some(
+    (secret) => secret.name === 'BACKUP_SERVER_USER' && secret.value === 'backup'
+  ))
+  assert(plan.secrets.some(
+    (secret) =>
+      secret.name === 'BACKUP_ENCRYPTION_PASSPHRASE' &&
+      secret.value === 'passphrase'
+  ))
+}
+
 testGeneratedValuesAreStableAndScoped()
 testLockedDerivedValueIgnoresSubmittedValue()
 testGithubDisabledProducesNoGithubPlan()
 testReviewSectionsFollowDeploymentFeatures()
 testNextStepsHideWhenInventoryAlreadyExists()
 testFieldActivationWithBindingsAndRequires()
+testBackupRestoreDependencyFieldsPlanGithubUpdates()
 
 console.log('configurator regression tests passed')
