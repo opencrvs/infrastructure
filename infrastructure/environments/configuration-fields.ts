@@ -113,6 +113,16 @@ export type ConfigurationField = {
 
 export const CONFIGURATION_SCREENS: ConfigurationScreenDefinition[] = [
   {
+    id: 'containerRegistry',
+    label: 'Container registry configuration',
+    description: 'Configure the country configuration image source used by OpenCRVS deployments.',
+    order: 10,
+    submitLabel: 'Save container registry',
+    savedMessage: 'Container registry configuration saved.',
+    nextScreen: 'infrastructure',
+    requires: ['github']
+  },
+  {
     id: 'infrastructure',
     label: 'Infrastructure',
     description: 'Configure the Kubernetes endpoint, worker nodes, API access ranges, and disk encryption settings for this environment.',
@@ -134,21 +144,11 @@ export const CONFIGURATION_SCREENS: ConfigurationScreenDefinition[] = [
     order: 30,
     submitLabel: 'Save application',
     savedMessage: 'Application configuration saved.',
-    nextScreen: 'containerRegistry',
+    nextScreen: 'dependencies',
     subScreens: [
       { id: 'general', label: 'General', order: 10 },
       { id: 'advanced', label: 'Advanced', order: 20 }
     ]
-  },
-  {
-    id: 'containerRegistry',
-    label: 'Container registry configuration',
-    description: 'Configure the country configuration image source used by OpenCRVS deployments.',
-    order: 10,
-    submitLabel: 'Save container registry',
-    savedMessage: 'Container registry configuration saved.',
-    nextScreen: 'infrastructure',
-    requires: ['github']
   },
   {
     id: 'dependencies',
@@ -294,7 +294,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'domain',
     screen: 'application',
-    section: 'OpenCRVS',
+    section: 'OpenCRVS domain and TLS certificate',
     label: 'Domain',
     description: 'Base domain used after OpenCRVS subdomains.',
     control: 'text',
@@ -349,7 +349,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'traefikMode',
     screen: 'application',
-    section: 'Traefik SSL Certificate',
+    section: 'OpenCRVS domain and TLS certificate',
     label: 'Certificate mode',
     description: 'Choose how Traefik obtains and serves the environment certificate.',
     control: 'select',
@@ -365,7 +365,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'sslCrt',
     screen: 'application',
-    section: 'Traefik SSL Certificate',
+    section: 'OpenCRVS domain and TLS certificate',
     label: 'SSL_CRT',
     description: 'PEM-encoded SSL certificate or certificate chain.',
     control: 'textarea',
@@ -384,7 +384,7 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
   {
     id: 'sslKey',
     screen: 'application',
-    section: 'Traefik SSL Certificate',
+    section: 'OpenCRVS domain and TLS certificate',
     label: 'SSL_KEY',
     description: 'PEM-encoded private key for the SSL certificate.',
     control: 'textarea',
@@ -865,7 +865,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     generatedDefault: 'password',
-    readonly: true,
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'ELASTICSEARCH_SUPERUSER_PASSWORD' }
     ]
@@ -947,7 +946,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     generatedDefault: 'username',
-    readonly: true,
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'POSTGRES_USER' }
     ]
@@ -962,7 +960,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     generatedDefault: 'password',
-    readonly: true,
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'POSTGRES_PASSWORD' }
     ]
@@ -1021,7 +1018,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     generatedDefault: 'username',
-    readonly: true,
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'MINIO_ROOT_USER' }
     ]
@@ -1036,7 +1032,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     control: 'password',
     required: true,
     generatedDefault: 'password',
-    readonly: true,
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'MINIO_ROOT_PASSWORD' }
     ]

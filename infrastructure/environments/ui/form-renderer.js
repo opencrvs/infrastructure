@@ -22,6 +22,13 @@
     label.appendChild(description);
   }
 
+  function usesExistingSecretEditFlow(field, secretExists) {
+    return Boolean(
+      secretExists &&
+      (field.control === 'password' || field.existingSecretBehavior === 'replace')
+    );
+  }
+
   function createInput(field, value, secretExists, secretSentinel, idPrefix, context) {
     let input;
 
@@ -119,6 +126,7 @@
         label.dataset.configFieldLabel = field.id;
         label.dataset.configFieldContainer = field.id;
         const secretExists = Boolean(existingSecrets[field.id]);
+        const usesSecretEditFlow = usesExistingSecretEditFlow(field, secretExists);
         const input = createInput(
           field,
           values[field.id],
@@ -155,7 +163,7 @@
         }
 
         appendDescription(label, field);
-        if (secretExists && field.existingSecretBehavior === 'replace') {
+        if (usesSecretEditFlow) {
           const replacement = document.createElement('div');
           replacement.className = 'secret-replacement d-grid gap-2';
           replacement.dataset.configFieldContainer = field.id;
@@ -163,11 +171,11 @@
           const existingNotice = document.createElement('div');
           existingNotice.className = 'secret-existing alert alert-secondary d-flex align-items-center justify-content-between gap-2 mb-0';
           const existingText = document.createElement('span');
-          existingText.textContent = field.label + ' already exists in GitHub.';
+          existingText.textContent = field.label;
           const replaceButton = document.createElement('button');
           replaceButton.className = 'btn btn-outline-secondary btn-sm';
           replaceButton.type = 'button';
-          replaceButton.textContent = 'Replace';
+          replaceButton.textContent = 'Set new value';
           input.value = '';
           input.required = false;
           label.classList.add('d-none');
@@ -209,8 +217,7 @@
         fieldContainer.classList.toggle('d-none', !visible);
         if (field.control !== 'checkbox') {
           const waitsForReplacement =
-            Boolean(existingSecrets[field.id]) &&
-            field.existingSecretBehavior === 'replace' &&
+            usesExistingSecretEditFlow(field, Boolean(existingSecrets[field.id])) &&
             input.dataset.replacementRevealed !== 'true';
           input.required = visible && !waitsForReplacement && isRequired(field, context);
         }
