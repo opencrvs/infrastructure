@@ -292,6 +292,10 @@ function getGeneralScreenFields(screenId: string) {
   return getScreenFields(screenId, 'general')
 }
 
+function isFieldVisibleInUi(field: ConfigurationField) {
+  return !field.hidden
+}
+
 function getAllAdvancedFields() {
   return CONFIGURATION_FIELDS.filter((field) => getSubScreenId(field) !== 'general')
 }
@@ -667,6 +671,7 @@ function loadScreenConfigs(environmentName: string) {
 function getDependenciesResponse() {
   const fields = getDependenciesFields()
     .filter(isFieldEnabledForDeployment)
+    .filter(isFieldVisibleInUi)
     .map(getFieldForResponse)
   return {
     fields,
@@ -689,6 +694,7 @@ function getDependenciesResponse() {
 function getAdvancedResponse() {
   const fields = getAllAdvancedFields()
     .filter(isFieldEnabledForDeployment)
+    .filter(isFieldVisibleInUi)
     .map(getFieldForResponse)
   const values = Object.assign(
     {},
@@ -734,6 +740,7 @@ function getConfigurationScreenResponse(screenId: string) {
         ? getDependenciesFields()
         : getConfigurationFields(screenId))
     .filter(isFieldEnabledForDeployment)
+    .filter(isFieldVisibleInUi)
     .map(getFieldForResponse)
   const existingSecrets = Object.fromEntries(
     fields.map((field) => {
@@ -934,6 +941,7 @@ function getChartValues(config: ApplicationRequest) {
         ? backupRestoreConfig.restoreType || 'dump'
         : '',
     traefik_mode: config.traefikMode || 'lets_encrypt',
+    smtp_enabled: Boolean(config.smtpEnabled),
     elastalert_notification_type:
       String(getConfigurationFieldValueById('elastalertNotificationType') || 'email'),
     backup_type:
@@ -1172,6 +1180,7 @@ function getGithubUpdates(
     enabled:
       Boolean(environmentSelection) &&
       (hasDeploymentFeature('github') || Boolean(options.includeExternalSecrets)),
+    environmentExists: isExistingGithubEnvironment(),
     includeSecretValues,
     approvalRequired: Boolean(environmentSelection?.approvalRequired),
     githubApprovers: environmentSelection?.githubApprovers || '',
@@ -1375,7 +1384,9 @@ function saveScreenFields(
   const currentConfig = getScreenStoredValues(screenId)
   const nextConfig: Record<string, ConfigurationValue> = { ...currentConfig }
 
-  for (const field of fields.filter(isFieldEnabledForDeployment)) {
+  for (const field of fields
+    .filter(isFieldEnabledForDeployment)
+    .filter(isFieldVisibleInUi)) {
     const submitted = submittedValues[field.id]
     const current = currentConfig[field.id] ?? field.defaultValue ?? ''
 
@@ -1443,7 +1454,9 @@ function saveDependenciesConfig(payload: DependenciesRequest) {
   }
 
   const submittedValues = payload.values || {}
-  const fields = getGeneralScreenFields('dependencies').filter(isFieldEnabledForDeployment)
+  const fields = getGeneralScreenFields('dependencies')
+    .filter(isFieldEnabledForDeployment)
+    .filter(isFieldVisibleInUi)
   const nextConfig: Record<string, ConfigurationValue> = { ...dependenciesConfig }
   const hasBackupRestoreFields = fields.some(({ id }) => id === 'backupRestoreMode')
 
@@ -1546,7 +1559,9 @@ function saveGenericScreenConfig(
   screenId: string,
   submittedValues: Record<string, unknown>
 ) {
-  const fields = getConfigurationFields(screenId).filter(isFieldEnabledForDeployment)
+  const fields = getConfigurationFields(screenId)
+    .filter(isFieldEnabledForDeployment)
+    .filter(isFieldVisibleInUi)
   const currentConfig = getScreenStoredValues(screenId)
   const nextConfig: Record<string, ConfigurationValue> = { ...currentConfig }
 

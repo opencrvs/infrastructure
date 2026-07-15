@@ -17,6 +17,7 @@ export type GithubUpdate = {
   value: string
   exists: boolean
   action: 'create' | 'update' | 'unchanged'
+  hidden?: boolean
 }
 
 export type GithubSecretPlanItem = {
@@ -28,6 +29,7 @@ export type GithubSecretPlanItem = {
 
 export type GithubPlanInput = {
   enabled: boolean
+  environmentExists: boolean
   includeSecretValues: boolean
   approvalRequired: boolean
   githubApprovers: string
@@ -78,7 +80,8 @@ export function planSecret(
   scope: 'ENVIRONMENT' | 'REPOSITORY',
   name: string,
   value: string,
-  exists: boolean
+  exists: boolean,
+  hidden = false
 ): GithubUpdate {
   return {
     scope,
@@ -86,7 +89,8 @@ export function planSecret(
     name,
     value,
     exists,
-    action: value ? (exists ? 'update' : 'create') : exists ? 'unchanged' : 'create'
+    action: value ? (exists ? 'update' : 'create') : exists ? 'unchanged' : 'create',
+    hidden
   }
 }
 
@@ -163,18 +167,29 @@ function buildFieldSecrets(
       continue
     }
 
+    if (field.createOnlyForNewEnvironment && input.environmentExists) {
+      continue
+    }
+
     for (const binding of input.getActiveBindings(field)) {
       if (binding.target !== 'github' || binding.type !== 'SECRET') {
         continue
       }
 
-      const value = String(config[field.id] ?? '')
+      const exists = input.secretExists(binding.scope, binding.name)
+      const configuredValue = config[field.id]
+      const value = String(
+        configuredValue === undefined && field.generatedDefault && !exists
+          ? input.getFieldValue(field)
+          : configuredValue ?? ''
+      )
       secrets.push(
         planSecret(
           binding.scope,
           binding.name,
           input.includeSecretValues ? value : value ? '[provided on submit]' : '',
-          input.secretExists(binding.scope, binding.name)
+          exists,
+          Boolean(field.hidden)
         )
       )
     }

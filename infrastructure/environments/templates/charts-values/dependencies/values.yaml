@@ -55,7 +55,7 @@ monitoring:
 elastalert:
   env:
     NOTIFICATION_TYPE: {{elastalert_notification_type}}
-{{#if elastalert_map_smtp_secret}}
+{{#if smtp_enabled}}
   secrets:
     smtp-config:
       - ALERT_EMAIL

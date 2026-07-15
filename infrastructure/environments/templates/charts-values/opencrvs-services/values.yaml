@@ -61,6 +61,7 @@ events:
     TWO_FA_ENABLED: {{two_fa_enabled}}
 
 countryconfig:
+{{#if smtp_enabled}}
   secrets:
     smtp-config:
       - ALERT_EMAIL
@@ -70,7 +71,7 @@ countryconfig:
       - SMTP_PORT
       - SMTP_SECURE
       - SMTP_USERNAME
-
+{{/if}}
 dashboards:
   use_default_credentials: false
   enabled: true

@@ -116,6 +116,42 @@ function hasDeploymentFeature(feature) {
   return deploymentFeatures.includes(feature);
 }
 
+function syncBackupWithoutAnsibleWarning(controller) {
+  if (controller.definition.id !== 'dependencies') {
+    return;
+  }
+
+  const warningId = 'dependencies-backup-without-ansible-warning';
+  let warning = controller.fieldsContainer.querySelector('#' + warningId);
+
+  if (!warning) {
+    const anchor = controller.fieldsContainer.querySelector(
+      '[data-config-field-container="backupRestoreMode"]'
+    );
+    if (!anchor) {
+      return;
+    }
+
+    warning = document.createElement('div');
+    warning.id = warningId;
+    warning.className = 'alert alert-warning small mt-2 mb-3';
+    warning.innerHTML = [
+      '<p class="mb-2">Infrastructure configuration was skipped:</p>',
+      '<ol class="mb-0">',
+      '<li>Create ssh private/public key-pair.</li>',
+      '<li>Add private key to GitHub secrets as <code>BACKUP_HOST_PRIVATE_KEY</code>.</li>',
+      '<li>Add public key to <code>~/.ssh/authorized_keys</code> on Backup server for <code>BACKUP_SERVER_USER</code>.</li>',
+      '</ol>'
+    ].join('');
+    anchor.insertAdjacentElement('afterend', warning);
+  }
+
+  warning.classList.toggle(
+    'd-none',
+    hasDeploymentFeature('ansible') || controller.values.backupRestoreMode !== 'backup'
+  );
+}
+
 function syncGitHubVisibility() {
   githubNavigation.textContent = hasDeploymentFeature('github')
     ? 'GitHub configuration'
@@ -401,6 +437,7 @@ function renderConfigurationScreen(screenId) {
     idPrefix: screenId + '-',
     context: controller.context
   });
+  syncBackupWithoutAnsibleWarning(controller);
 }
 
 function populateConfigurationScreen(state) {
@@ -781,6 +818,7 @@ function updateConfigurationDraft(event, controller) {
     controller.values[input.dataset.configFieldId] = input.value;
   }
   controller.renderer?.syncVisibility();
+  syncBackupWithoutAnsibleWarning(controller);
   return true;
 }
 

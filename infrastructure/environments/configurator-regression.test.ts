@@ -65,6 +65,7 @@ function testLockedDerivedValueIgnoresSubmittedValue() {
 function testGithubDisabledProducesNoGithubPlan() {
   const plan = buildGithubUpdates({
     enabled: false,
+    environmentExists: false,
     includeSecretValues: false,
     approvalRequired: false,
     githubApprovers: '',
@@ -162,6 +163,7 @@ function testBackupRestoreDependencyFieldsPlanGithubUpdates() {
 
   const plan = buildGithubUpdates({
     enabled: true,
+    environmentExists: false,
     includeSecretValues: true,
     approvalRequired: false,
     githubApprovers: '',
@@ -214,6 +216,7 @@ function testBackupRestoreDependencyFieldsPlanGithubUpdates() {
 function testUnchangedGithubVariablesAreNotUpdated() {
   const plan = buildGithubUpdates({
     enabled: true,
+    environmentExists: false,
     includeSecretValues: false,
     approvalRequired: true,
     githubApprovers: '',
@@ -250,6 +253,99 @@ function testUnchangedGithubVariablesAreNotUpdated() {
   )
 }
 
+function testHiddenGeneratedSecretIsOnlyCreatedForNewEnvironment() {
+  const field = CONFIGURATION_FIELDS.find(({ id }) => id === 'superUserPassword')
+  assert(field)
+  assert.strictEqual(field.hidden, true)
+
+  const baseInput = {
+    enabled: true,
+    includeSecretValues: true,
+    approvalRequired: false,
+    githubApprovers: '',
+    applicationDomain: '',
+    githubToken: '',
+    applicationSecrets: [],
+    dependencyFields: [],
+    advancedFields: [field],
+    dependenciesConfig: {},
+    advancedConfig: {},
+    genericScreenConfigs: {},
+    backupEnabled: false,
+    diskEncryptionEnabled: false,
+    isFieldEnabled: () => true,
+    isFieldActive: () => true,
+    getFieldValue: () => 'generated-super-user-password',
+    getActiveBindings: (configurationField: ConfigurationField) =>
+      configurationField.bindings || [],
+    getVariableValue: () => '',
+    variableExists: () => false,
+    secretExists: () => false,
+    hasEnvironmentSecret: () => false,
+    getEncryptionKey: () => 'key',
+    getBackupEncryptionPassphrase: () => 'passphrase',
+    getBackupHostKeyPair: () => ({
+      privateKey: 'private',
+      publicKey: 'public'
+    })
+  }
+
+  const newEnvironmentPlan = buildGithubUpdates({
+    ...baseInput,
+    environmentExists: false
+  })
+  const existingEnvironmentPlan = buildGithubUpdates({
+    ...baseInput,
+    environmentExists: true
+  })
+
+  assert(newEnvironmentPlan.secrets.some(
+    (secret) =>
+      secret.name === 'SUPER_USER_PASSWORD' &&
+      secret.value === 'generated-super-user-password' &&
+      secret.action === 'create'
+  ))
+  assert(!existingEnvironmentPlan.secrets.some(
+    (secret) => secret.name === 'SUPER_USER_PASSWORD'
+  ))
+}
+
+function testHiddenSecretsAreExcludedFromReviewPlan() {
+  const plan = buildReviewPlan({
+    environmentName: 'development',
+    deploymentFeatures: ['github'],
+    includeSecretValues: false,
+    githubUpdates: {
+      variables: [],
+      secrets: [
+        {
+          scope: 'ENVIRONMENT',
+          type: 'SECRET',
+          name: 'SUPER_USER_PASSWORD',
+          value: '[generated on finalize]',
+          exists: false,
+          action: 'create',
+          hidden: true
+        },
+        {
+          scope: 'ENVIRONMENT',
+          type: 'SECRET',
+          name: 'VISIBLE_SECRET',
+          value: '[provided on submit]',
+          exists: false,
+          action: 'create'
+        }
+      ]
+    },
+    inventoryValues: null,
+    chartValues: null,
+    helmUpdates: []
+  })
+
+  assert(!plan.secrets.some((secret) => secret.name === 'SUPER_USER_PASSWORD'))
+  assert(plan.secrets.some((secret) => secret.name === 'VISIBLE_SECRET'))
+}
+
 testGeneratedValuesAreStableAndScoped()
 testLockedDerivedValueIgnoresSubmittedValue()
 testGithubDisabledProducesNoGithubPlan()
@@ -258,5 +354,7 @@ testNextStepsHideWhenInventoryAlreadyExists()
 testFieldActivationWithBindingsAndRequires()
 testBackupRestoreDependencyFieldsPlanGithubUpdates()
 testUnchangedGithubVariablesAreNotUpdated()
+testHiddenGeneratedSecretIsOnlyCreatedForNewEnvironment()
+testHiddenSecretsAreExcludedFromReviewPlan()
 
 console.log('configurator regression tests passed')

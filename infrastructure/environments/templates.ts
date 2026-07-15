@@ -83,7 +83,6 @@ export function copyChartsValues(env: string, values: Record<string, string | bo
   fs.mkdirSync(destDir, { recursive: true });
   values['lets_encrypt'] = values['traefik_mode'] === "lets_encrypt" ? true : false
   values['static_ssl'] = values['traefik_mode'] === "static_ssl" ? true : false
-  values['elastalert_map_smtp_secret'] =values['elastalert_notification_type'] === "email" ? true : false
   function copyRecursive(src: string, dest: string) {
     const stat = fs.statSync(src);
 

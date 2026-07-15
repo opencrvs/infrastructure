@@ -52,6 +52,10 @@ export function buildFilesToUpdate(input: {
 }
 
 export function buildReviewPlan(input: ReviewPlanInput) {
+  const visibleSecrets = input.githubUpdates.secrets.filter(
+    (secret) => !secret.hidden
+  )
+
   return {
     files: buildFilesToUpdate({
       environmentName: input.environmentName,
@@ -61,8 +65,8 @@ export function buildReviewPlan(input: ReviewPlanInput) {
     }),
     variables: input.githubUpdates.variables,
     secrets: input.includeSecretValues
-      ? input.githubUpdates.secrets
-      : input.githubUpdates.secrets.map(({ value, ...secret }) => secret),
+      ? visibleSecrets
+      : visibleSecrets.map(({ value, ...secret }) => secret),
     deploymentFeatures: input.deploymentFeatures,
     inventoryValues: input.inventoryValues,
     chartValues: input.chartValues,

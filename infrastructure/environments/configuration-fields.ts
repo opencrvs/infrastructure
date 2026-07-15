@@ -94,6 +94,8 @@ export type ConfigurationField = {
   required?: boolean
   validator?: 'kubernetes-memory' | 'positive-integer'
   generatedDefault?: 'username' | 'password'
+  hidden?: boolean
+  createOnlyForNewEnvironment?: boolean
   readonly?: boolean
   readonlyWhen?: Array<{
     when: DerivedValueCondition
@@ -264,6 +266,28 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     bindings: [{ target: 'state', name: 'enableDiskEncryption' }]
   },
   {
+    id: 'kubeSelfHostedRunnerAdditionalLabels',
+    screen: 'infrastructure',
+    subScreen: 'advanced',
+    section: 'Kubernetes',
+    label: 'KUBE_SELF_HOSTED_RUNNER_ADDITIONAL_LABELS',
+    description: 'Comma-separated labels for the self-hosted runner.',
+    control: 'text',
+    bindings: [
+      {
+        target: 'github',
+        type: 'VARIABLE',
+        scope: 'ENVIRONMENT',
+        name: 'KUBE_SELF_HOSTED_RUNNER_ADDITIONAL_LABELS',
+        omitWhenEmpty: true
+      },
+      {
+        target: 'ansible',
+        name: 'kube_self_hosted_runner_additional_labels'
+      }
+    ]
+  },
+  {
     id: 'diskSpace',
     screen: 'infrastructure',
     subScreen: 'advanced',
@@ -343,6 +367,27 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
         type: 'VARIABLE',
         scope: 'ENVIRONMENT',
         name: 'ACTIVATE_USERS'
+      }
+    ]
+  },
+  {
+    id: 'superUserPassword',
+    screen: 'application',
+    subScreen: 'advanced',
+    section: 'OpenCRVS',
+    label: 'SUPER_USER_PASSWORD',
+    description: 'Automatically generated OpenCRVS super user password.',
+    control: 'password',
+    required: true,
+    generatedDefault: 'password',
+    hidden: true,
+    createOnlyForNewEnvironment: true,
+    bindings: [
+      {
+        target: 'github',
+        type: 'SECRET',
+        scope: 'ENVIRONMENT',
+        name: 'SUPER_USER_PASSWORD'
       }
     ]
   },
