@@ -346,6 +346,68 @@ function testHiddenSecretsAreExcludedFromReviewPlan() {
   assert(plan.secrets.some((secret) => secret.name === 'VISIBLE_SECRET'))
 }
 
+function testDefaultUserPasswordIsOmittedWhenSmtpEnabled() {
+  const field = CONFIGURATION_FIELDS.find(({ id }) => id === 'defaultUserPassword')
+  assert(field)
+  assert(field.deriveValue?.some(
+    (rule) =>
+      'fieldId' in rule.when &&
+      rule.when.fieldId === 'smtpEnabled' &&
+      rule.when.equals === true &&
+      rule.value === ''
+  ))
+
+  const baseInput = {
+    enabled: true,
+    environmentExists: false,
+    includeSecretValues: true,
+    approvalRequired: false,
+    githubApprovers: '',
+    applicationDomain: '',
+    githubToken: '',
+    applicationSecrets: [],
+    dependencyFields: [],
+    advancedFields: [field],
+    dependenciesConfig: {},
+    advancedConfig: {},
+    genericScreenConfigs: {},
+    backupEnabled: false,
+    diskEncryptionEnabled: false,
+    isFieldEnabled: () => true,
+    isFieldActive: () => true,
+    getActiveBindings: (configurationField: ConfigurationField) =>
+      configurationField.bindings || [],
+    getVariableValue: () => '',
+    variableExists: () => false,
+    secretExists: () => false,
+    hasEnvironmentSecret: () => false,
+    getEncryptionKey: () => 'key',
+    getBackupEncryptionPassphrase: () => 'passphrase',
+    getBackupHostKeyPair: () => ({
+      privateKey: 'private',
+      publicKey: 'public'
+    })
+  }
+
+  const smtpDisabledPlan = buildGithubUpdates({
+    ...baseInput,
+    getFieldValue: () => 'generated-default-password'
+  })
+  const smtpEnabledPlan = buildGithubUpdates({
+    ...baseInput,
+    getFieldValue: () => ''
+  })
+
+  assert(smtpDisabledPlan.variables.some(
+    (variable) =>
+      variable.name === 'DEFAULT_USER_PASSWORD' &&
+      variable.value === 'generated-default-password'
+  ))
+  assert(!smtpEnabledPlan.variables.some(
+    (variable) => variable.name === 'DEFAULT_USER_PASSWORD'
+  ))
+}
+
 testGeneratedValuesAreStableAndScoped()
 testLockedDerivedValueIgnoresSubmittedValue()
 testGithubDisabledProducesNoGithubPlan()
@@ -356,5 +418,6 @@ testBackupRestoreDependencyFieldsPlanGithubUpdates()
 testUnchangedGithubVariablesAreNotUpdated()
 testHiddenGeneratedSecretIsOnlyCreatedForNewEnvironment()
 testHiddenSecretsAreExcludedFromReviewPlan()
+testDefaultUserPasswordIsOmittedWhenSmtpEnabled()
 
 console.log('configurator regression tests passed')

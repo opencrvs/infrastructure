@@ -392,6 +392,33 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     ]
   },
   {
+    id: 'defaultUserPassword',
+    screen: 'application',
+    subScreen: 'advanced',
+    section: 'OpenCRVS',
+    label: 'DEFAULT_USER_PASSWORD',
+    description: 'The default password for newly created users.',
+    control: 'password',
+    generatedDefault: 'password',
+    deriveValue: [
+      {
+        when: { fieldId: 'smtpEnabled', equals: true },
+        value: '',
+      }
+    ],
+    bindings: [
+      {
+        target: 'github',
+        // Value is not a secret because it is used as default
+        // password for new users and is not sensitive information.
+        type: 'VARIABLE',
+        scope: 'ENVIRONMENT',
+        name: 'DEFAULT_USER_PASSWORD',
+        omitWhenEmpty: true
+      }
+    ]
+  },
+  {
     id: 'traefikMode',
     screen: 'application',
     section: 'OpenCRVS domain and TLS certificate',
