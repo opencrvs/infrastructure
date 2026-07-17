@@ -487,11 +487,12 @@ function getStateFieldValueFromGitHub(field: ConfigurationField): ConfigurationV
     case 'traefikMode':
       return hasStaticSsl ? 'static_ssl' : 'lets_encrypt'
     case 'dockerhubMode':
-      return (
-        hasDockerhubAccount && hasDockerhubRepo && !hasDockerhubCredentials
-          ? 'opencrvs'
-          : 'custom'
-      )
+      if (!hasDockerhubAccount && !hasDockerhubRepo && !hasDockerhubCredentials) {
+        return undefined
+      }
+      return hasDockerhubAccount && hasDockerhubRepo && !hasDockerhubCredentials
+        ? 'opencrvs'
+        : 'custom'
     case 'smtpEnabled':
       return hasSmtpConfiguration
     case 'backupRestoreMode':
@@ -1360,6 +1361,25 @@ function isConfigurationFieldActive(field: ConfigurationField) {
   )
 }
 
+function isConfigurationFieldActiveForValues(
+  field: ConfigurationField,
+  values: Record<string, unknown>
+) {
+  if (!field.visibleWhen) {
+    return true
+  }
+
+  const hasDraftValue = Object.prototype.hasOwnProperty.call(
+    values,
+    field.visibleWhen.fieldId
+  )
+  const controllingValue = hasDraftValue
+    ? values[field.visibleWhen.fieldId]
+    : getConfigurationFieldValueById(field.visibleWhen.fieldId)
+
+  return valuesEqual(controllingValue, field.visibleWhen.equals)
+}
+
 function getHelmUpdates(): HelmUpdate[] {
   return buildHelmUpdates({
     enabled: hasDeploymentFeature('helm'),
@@ -1387,6 +1407,10 @@ function saveScreenFields(
   for (const field of fields
     .filter(isFieldEnabledForDeployment)
     .filter(isFieldVisibleInUi)) {
+    if (!isConfigurationFieldActiveForValues(field, nextConfig)) {
+      continue
+    }
+
     const submitted = submittedValues[field.id]
     const current = currentConfig[field.id] ?? field.defaultValue ?? ''
 
@@ -1493,7 +1517,7 @@ function saveDependenciesConfig(payload: DependenciesRequest) {
   dependenciesConfig = nextConfig
 
   for (const field of fields.filter(({ control }) => control !== 'checkbox')) {
-    if (!isConfigurationFieldActive(field)) {
+    if (!isConfigurationFieldActiveForValues(field, nextConfig)) {
       continue
     }
 
@@ -1578,7 +1602,7 @@ function saveGenericScreenConfig(
   setScreenFieldValues(screenId, fields, nextConfig)
 
   for (const field of fields.filter(({ control }) => control !== 'checkbox')) {
-    if (!isConfigurationFieldActive(field)) {
+    if (!isConfigurationFieldActiveForValues(field, nextConfig)) {
       continue
     }
 
