@@ -129,13 +129,37 @@ textarea.form-control {
 
 .connection-summary,
 .status,
+.finalize-progress,
 .finalize-summary {
   max-width: 620px;
 }
 
 .status,
+.finalize-progress,
 .finalize-summary {
   margin-top: 20px;
+}
+
+.finalize-progress {
+  padding: 1rem;
+  border: 1px solid var(--installer-line);
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-body-bg);
+}
+
+.finalize-progress-steps {
+  display: grid;
+  gap: 0.25rem;
+  padding-left: 1.1rem;
+}
+
+.finalize-progress-steps li.active {
+  color: var(--bs-body-color);
+  font-weight: 600;
+}
+
+.finalize-progress-steps li.done {
+  color: var(--bs-success-text-emphasis);
 }
 
 .finalize-summary pre {

@@ -58,9 +58,15 @@ const reviewVariables = document.querySelector('#reviewVariables');
 const reviewSecrets = document.querySelector('#reviewSecrets');
 const reviewHelmValues = document.querySelector('#reviewHelmValues');
 const finalizeSummary = document.querySelector('#finalize-summary');
+const finalizeProgress = document.querySelector('#finalize-progress');
+const finalizeProgressLabel = document.querySelector('#finalize-progress-label');
+const finalizeProgressPercent = document.querySelector('#finalize-progress-percent');
+const finalizeProgressBar = document.querySelector('#finalize-progress-bar');
+const finalizeProgressSteps = document.querySelector('#finalize-progress-steps');
 let users = [];
 let editingUserIndex = null;
 let environmentPreviewRequest = 0;
+let finalizeProgressTimer = null;
 let deploymentFeatures = ['github', 'ansible', 'helm'];
 let enabledConfigurationScreens = new Set(configurationSchema.map(({ id }) => id));
 const configurationControllers = new Map(
@@ -190,6 +196,73 @@ function syncConfigurationAvailability(states) {
 function showReviewStatus(type, message) {
   reviewStatusBox.className = 'status alert alert-' + (type === 'error' ? 'danger' : type || 'secondary');
   reviewStatusBox.textContent = message;
+}
+
+function getFinalizeProgressSteps() {
+  return [
+    { label: 'Environment', detail: 'Preparing environment configuration.' },
+    ...(hasDeploymentFeature('ansible')
+      ? [{ label: 'Infrastructure', detail: 'Generating inventory files.' }]
+      : []),
+    ...(hasDeploymentFeature('helm')
+      ? [{ label: 'Helm values', detail: 'Writing chart values and overrides.' }]
+      : []),
+    ...(hasDeploymentFeature('github')
+      ? [{ label: 'GitHub', detail: 'Updating variables, secrets, workflows, and environment.' }]
+      : []),
+    { label: 'Finalize', detail: 'Building next steps summary.' }
+  ];
+}
+
+function renderFinalizeProgress(steps, activeIndex, percent) {
+  finalizeProgress.classList.remove('d-none');
+  finalizeProgressLabel.textContent = steps[activeIndex]?.detail || 'Finalizing setup...';
+  finalizeProgressPercent.textContent = Math.round(percent) + '%';
+  finalizeProgressBar.style.width = Math.max(0, Math.min(100, percent)) + '%';
+  finalizeProgressSteps.innerHTML = '';
+
+  steps.forEach((step, index) => {
+    const item = document.createElement('li');
+    item.textContent = step.label;
+    item.classList.toggle('done', index < activeIndex);
+    item.classList.toggle('active', index === activeIndex);
+    finalizeProgressSteps.appendChild(item);
+  });
+}
+
+function startFinalizeProgress() {
+  const steps = getFinalizeProgressSteps();
+  let tick = 0;
+
+  window.clearInterval(finalizeProgressTimer);
+  finalizeProgressBar.classList.add('progress-bar-animated');
+  renderFinalizeProgress(steps, 0, 5);
+
+  finalizeProgressTimer = window.setInterval(() => {
+    tick += 1;
+    const maxBeforeDone = 92;
+    const percent = Math.min(maxBeforeDone, 5 + tick * 6);
+    const activeIndex = Math.min(
+      steps.length - 1,
+      Math.floor((percent / 100) * steps.length)
+    );
+    renderFinalizeProgress(steps, activeIndex, percent);
+  }, 700);
+}
+
+function finishFinalizeProgress(success) {
+  window.clearInterval(finalizeProgressTimer);
+  finalizeProgressTimer = null;
+
+  if (!success) {
+    finalizeProgress.classList.add('d-none');
+    return;
+  }
+
+  const steps = getFinalizeProgressSteps();
+  renderFinalizeProgress(steps, steps.length - 1, 100);
+  finalizeProgressLabel.textContent = 'Finalization complete.';
+  finalizeProgressBar.classList.remove('progress-bar-animated');
 }
 
 function showEnvironmentStatus(type, message) {
@@ -679,10 +752,17 @@ for (const [screenId, controller] of configurationControllers) {
 finalizeButton.addEventListener('click', async () => {
   finalizeButton.disabled = true;
   finalizeButton.textContent = 'Finalizing...';
-  showReviewStatus('', 'Generating files and updating GitHub environment...');
+  showReviewStatus(
+    '',
+    hasDeploymentFeature('github')
+      ? 'Generating files and updating GitHub environment...'
+      : 'Generating configuration files...'
+  );
+  startFinalizeProgress();
 
   try {
     const result = await postJson('/api/finalize');
+    finishFinalizeProgress(true);
 
     renderReview(result);
     for (const section of document.querySelectorAll('.review-section')) {
@@ -696,6 +776,7 @@ finalizeButton.addEventListener('click', async () => {
     finalizeButton.classList.add('d-none');
     reviewStatusBox.classList.add('d-none');
   } catch (error) {
+    finishFinalizeProgress(false);
     showReviewStatus('error', error.message || 'Finalize failed.');
     finalizeButton.disabled = false;
     finalizeButton.textContent = 'Finalize setup';

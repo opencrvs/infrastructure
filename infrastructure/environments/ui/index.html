@@ -224,6 +224,16 @@
           <div class="actions d-flex gap-2 pt-3">
             <button id="finalize-button" class="btn btn-primary" type="button">Finalize setup</button>
           </div>
+          <div id="finalize-progress" class="finalize-progress d-none" role="status" aria-live="polite">
+            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+              <span id="finalize-progress-label" class="small fw-semibold">Preparing finalization...</span>
+              <span id="finalize-progress-percent" class="small text-body-secondary">0%</span>
+            </div>
+            <div class="progress" aria-hidden="true">
+              <div id="finalize-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+            </div>
+            <ol id="finalize-progress-steps" class="finalize-progress-steps small text-body-secondary mb-0 mt-2"></ol>
+          </div>
           <div id="finalize-summary" class="finalize-summary d-none"></div>
           <div id="review-status" class="status alert d-none" role="status" aria-live="polite"></div>
         </section>
