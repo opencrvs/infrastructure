@@ -11,8 +11,23 @@
 
 set -e
 
-CERT="<PATH_TO_CERT>"
-KEY="<PATH_TO_KEY>"
+set -euo pipefail
+
+LOG_MODE="${LOG_MODE:-auto}"  # auto | stdout | syslog
+
+# Path to the new certificate and key files on filesystem
+CERT="${1:-$CERT}"
+KEY="${2:-$KEY}"
+if [ -z "$CERT" ] || [ -z "$KEY" ]; then
+  logger -p user.err -t traefik-cert "Error: Certificate and key file paths must be provided as arguments or environment variables."
+  logger -t traefik-cert "Usage: $0 <path-to-cert> <path-to-key>"
+  exit 1
+fi
+[ -f "$CERT" ] || { logger -p user.err -t traefik-cert "Certificate file not found: $CERT"; exit 1; }
+[ -f "$KEY" ] || { logger -p user.err -t traefik-cert "Key file not found: $KEY"; exit 1; }
+
+
+# Default namespace and secret name for Traefik TLS certs
 NAMESPACE="traefik"
 SECRET_NAME="traefik-cert"
 BACKUP_SECRET=$(mktemp)
@@ -38,7 +53,7 @@ if kubectl create secret tls $SECRET_NAME \
   --key=$KEY \
   -n $NAMESPACE \
   --dry-run=client -o yaml | kubectl apply -f -; then
-  logger -p user.info -t traefik-cert "TLS secret updated successfully"
+  logger -t traefik-cert "TLS secret updated successfully"
 else
   logger -p user.err -t traefik-cert "TLS secret update FAILED"
   kubectl apply -f $BACKUP_SECRET
