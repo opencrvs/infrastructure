@@ -17,6 +17,8 @@ export type NextStepsInput = {
 export type NextSteps = {
   primaryHost: string
   primaryCommand: string
+  workerNodes: string[]
+  backupHost: string
   additionalHosts: string[]
   additionalCommand: string
 }
@@ -68,6 +70,8 @@ export function buildNextSteps(input: NextStepsInput): NextSteps | null {
       `            --token ${shellQuote(token)} \\`,
       '            --enable-runner'
     ].join('\n'),
+    workerNodes,
+    backupHost,
     additionalHosts: [...new Set([...workerNodes, backupHost].filter(Boolean))],
     additionalCommand: [
       'curl -sfL https://raw.githubusercontent.com/opencrvs/infrastructure/refs/heads/develop/scripts/bootstrap/opencrvs-bootstrap.sh -o opencrvs-bootstrap.sh && \\',

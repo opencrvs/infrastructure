@@ -144,6 +144,26 @@
       additionalHeading.textContent = 'Bootstrap worker nodes and backup server';
       container.appendChild(additionalHeading);
 
+      const hostsList = document.createElement('dl');
+      hostsList.className = 'row small mb-3';
+      const appendHosts = (label, hosts) => {
+        if (!hosts?.length) {
+          return;
+        }
+        const term = document.createElement('dt');
+        term.className = 'col-sm-4';
+        term.textContent = label;
+        const description = document.createElement('dd');
+        description.className = 'col-sm-8';
+        description.textContent = hosts.join(', ');
+        hostsList.append(term, description);
+      };
+      appendHosts('Worker nodes', steps.workerNodes || []);
+      appendHosts('Backup server', steps.backupHost ? [steps.backupHost] : []);
+      if (hostsList.children.length) {
+        container.appendChild(hostsList);
+      }
+
       const additionalInstruction = document.createElement('p');
       additionalInstruction.textContent = 'Run the following command on: ' +
         steps.additionalHosts.join(', ') + '.';

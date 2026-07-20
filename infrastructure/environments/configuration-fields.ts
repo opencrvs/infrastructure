@@ -542,6 +542,23 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
       { target: 'github', type: 'SECRET', scope: 'REPOSITORY', name: 'DOCKER_TOKEN' }
     ]
   },
+    {
+    id: 'dependenciesMonitoringEnabled',
+    screen: 'dependencies',
+    section: 'Monitoring',
+    label: 'Enable monitoring',
+    description: 'Deploy the OpenCRVS dependency monitoring stack.',
+    control: 'checkbox',
+    defaultValue: true,
+    bindings: [
+      {
+        target: 'helm',
+        chart: 'dependencies',
+        path: 'monitoring.enabled',
+        omitWhenDefault: true
+      }
+    ]
+  },
   {
     id: 'kibanaUsername',
     screen: 'dependencies',
@@ -826,23 +843,6 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     visibleWhen: { fieldId: 'smtpEnabled', equals: true },
     bindings: [
       { target: 'github', type: 'SECRET', scope: 'ENVIRONMENT', name: 'ALERT_EMAIL' }
-    ]
-  },
-  {
-    id: 'dependenciesMonitoringEnabled',
-    screen: 'dependencies',
-    section: 'Monitoring',
-    label: 'Enable monitoring',
-    description: 'Deploy the OpenCRVS dependency monitoring stack.',
-    control: 'checkbox',
-    defaultValue: true,
-    bindings: [
-      {
-        target: 'helm',
-        chart: 'dependencies',
-        path: 'monitoring.enabled',
-        omitWhenDefault: true
-      }
     ]
   },
   {
