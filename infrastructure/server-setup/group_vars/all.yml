@@ -78,6 +78,7 @@ calico_version: "v3.32.1"
 # CNI configuration (read-only after installation)
 pod_network_cidr: "192.168.0.0/16"
 
+# Helm version
 # Helm 4 is not yet compatible with kubernetes.core.helm module commands.
 # see: 
 # - https://docs.ansible.com/projects/ansible/latest/collections/kubernetes/core/helm_module.html
