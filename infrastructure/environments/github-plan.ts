@@ -1,8 +1,3 @@
-import {
-  CONFIGURATION_FIELDS,
-  CONFIGURATION_SCREENS,
-  getConfigurationFields
-} from './configuration-fields'
 import type {
   ConfigurationField,
   FieldBinding,
@@ -20,13 +15,6 @@ export type GithubUpdate = {
   hidden?: boolean
 }
 
-export type GithubSecretPlanItem = {
-  scope: 'ENVIRONMENT' | 'REPOSITORY'
-  type: 'SECRET'
-  name: string
-  value: string
-}
-
 export type GithubPlanInput = {
   enabled: boolean
   environmentExists: boolean
@@ -35,12 +23,7 @@ export type GithubPlanInput = {
   githubApprovers: string
   applicationDomain: string
   githubToken: string
-  applicationSecrets: GithubSecretPlanItem[]
-  dependencyFields: ConfigurationField[]
-  advancedFields: ConfigurationField[]
-  dependenciesConfig: Record<string, ConfigurationValue>
-  advancedConfig: Record<string, ConfigurationValue>
-  genericScreenConfigs: Record<string, Record<string, ConfigurationValue>>
+  fields: ConfigurationField[]
   backupEnabled: boolean
   diskEncryptionEnabled: boolean
   isFieldEnabled: (field: ConfigurationField) => boolean
@@ -50,7 +33,6 @@ export type GithubPlanInput = {
   getVariableValue: (scope: 'ENVIRONMENT' | 'REPOSITORY', name: string) => string
   variableExists: (scope: 'ENVIRONMENT' | 'REPOSITORY', name: string) => boolean
   secretExists: (scope: 'ENVIRONMENT' | 'REPOSITORY', name: string) => boolean
-  hasEnvironmentSecret: (name: string) => boolean
   getEncryptionKey: () => string
   getBackupEncryptionPassphrase: () => string
   getBackupHostKeyPair: () => {
@@ -94,70 +76,8 @@ export function planSecret(
   }
 }
 
-export function buildApplicationSecretItems(
-  config: {
-    dockerhubMode?: 'opencrvs' | 'custom'
-    dockerhubOrganisation?: string
-    dockerhubRepository?: string
-    dockerhubUsername?: string
-    dockerhubToken?: string
-    traefikMode?: 'lets_encrypt' | 'static_ssl' | 'custom'
-    sslCrt?: string
-    sslKey?: string
-    smtpEnabled?: boolean
-    smtpHost?: string
-    smtpUsername?: string
-    smtpPassword?: string
-    smtpPort?: string
-    smtpSecure?: string | boolean
-    senderEmailAddress?: string
-    alertEmail?: string
-  },
-  hasEnvironmentSecret: (name: string) => boolean
-) {
-  const dockerhubSecrets =
-    config.dockerhubMode === 'opencrvs'
-      ? [
-          { scope: 'REPOSITORY', type: 'SECRET', name: 'DOCKERHUB_ACCOUNT', value: 'opencrvs' },
-          { scope: 'REPOSITORY', type: 'SECRET', name: 'DOCKERHUB_REPO', value: 'ocrvs-countryconfig' }
-        ]
-      : [
-          { scope: 'REPOSITORY', type: 'SECRET', name: 'DOCKERHUB_ACCOUNT', value: config.dockerhubOrganisation || '' },
-          { scope: 'REPOSITORY', type: 'SECRET', name: 'DOCKERHUB_REPO', value: config.dockerhubRepository || '' },
-          { scope: 'REPOSITORY', type: 'SECRET', name: 'DOCKER_USERNAME', value: config.dockerhubUsername || '' },
-          { scope: 'REPOSITORY', type: 'SECRET', name: 'DOCKER_TOKEN', value: config.dockerhubToken || '' }
-        ]
-
-  const sslSecrets =
-    config.traefikMode === 'static_ssl'
-      ? [
-          { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SSL_CRT', value: config.sslCrt || '' },
-          { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SSL_KEY', value: config.sslKey || '' }
-        ]
-      : []
-
-  const smtpSecrets = config.smtpEnabled
-    ? [
-        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SMTP_HOST', value: config.smtpHost || '' },
-        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SMTP_USERNAME', value: config.smtpUsername || '' },
-        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SMTP_PASSWORD', value: config.smtpPassword || '' },
-        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SMTP_PORT', value: config.smtpPort || '' },
-        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SMTP_SECURE', value: String(config.smtpSecure ?? '') },
-        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'SENDER_EMAIL_ADDRESS', value: config.senderEmailAddress || '' },
-        { scope: 'ENVIRONMENT', type: 'SECRET', name: 'ALERT_EMAIL', value: config.alertEmail || '' }
-      ].filter((secret) => secret.value || hasEnvironmentSecret(secret.name))
-    : []
-
-  return [
-    ...dockerhubSecrets,
-    ...sslSecrets,
-    ...smtpSecrets
-  ] as GithubSecretPlanItem[]
-}
-
 function buildFieldSecrets(
   fields: ConfigurationField[],
-  config: Record<string, ConfigurationValue>,
   input: GithubPlanInput
 ) {
   const secrets: GithubUpdate[] = []
@@ -177,12 +97,11 @@ function buildFieldSecrets(
       }
 
       const exists = input.secretExists(binding.scope, binding.name)
-      const configuredValue = config[field.id]
-      const value = String(
-        configuredValue === undefined && field.generatedDefault && !exists
-          ? input.getFieldValue(field)
-          : configuredValue ?? ''
-      )
+      const value = String(input.getFieldValue(field) ?? '')
+      if (binding.omitWhenEmpty && !value) {
+        continue
+      }
+
       secrets.push(
         planSecret(
           binding.scope,
@@ -238,7 +157,7 @@ export function buildGithubUpdates(input: GithubPlanInput) {
     )
   }
 
-  const configuredVariables = CONFIGURATION_FIELDS.flatMap((field) => {
+  const configuredVariables = input.fields.flatMap((field) => {
     if (!input.isFieldEnabled(field) || !input.isFieldActive(field)) {
       return []
     }
@@ -268,18 +187,7 @@ export function buildGithubUpdates(input: GithubPlanInput) {
 
   variables.push(...configuredVariables)
 
-  const secrets = input.applicationSecrets.map((secret) =>
-    planSecret(
-      secret.scope,
-      secret.name,
-      input.includeSecretValues
-        ? secret.value
-        : secret.value
-          ? '[provided on submit]'
-          : '',
-      input.secretExists(secret.scope, secret.name)
-    )
-  )
+  const secrets = buildFieldSecrets(input.fields, input)
 
   secrets.push(
     planSecret(
@@ -293,39 +201,6 @@ export function buildGithubUpdates(input: GithubPlanInput) {
       input.secretExists('REPOSITORY', 'GH_TOKEN')
     )
   )
-
-  secrets.push(
-    ...buildFieldSecrets(
-      input.dependencyFields,
-      input.dependenciesConfig,
-      input
-    ),
-    ...buildFieldSecrets(
-      input.advancedFields,
-      input.advancedConfig,
-      input
-    )
-  )
-
-  for (const definition of CONFIGURATION_SCREENS) {
-    if ([
-      'infrastructure',
-      'application',
-      'containerRegistry',
-      'dependencies'
-    ].includes(definition.id)) {
-      continue
-    }
-    for (const field of getConfigurationFields(definition.id)) {
-      secrets.push(
-        ...buildFieldSecrets(
-          [field],
-          input.genericScreenConfigs[definition.id] || {},
-          input
-        )
-      )
-    }
-  }
 
   if (input.backupEnabled) {
     const passphraseExists = input.secretExists(

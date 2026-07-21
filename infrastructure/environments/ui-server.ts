@@ -12,6 +12,7 @@ import {
   CONFIGURATION_SCREENS,
   ConfigurationField,
   DerivedValueCondition,
+  FieldBinding,
   GithubBinding,
   HelmBinding,
   HelmChart,
@@ -47,7 +48,6 @@ import { buildInventoryValues } from './ansible-plan'
 import { finalizeConfiguration } from './finalize'
 import {
   GithubUpdate,
-  buildApplicationSecretItems,
   buildGithubUpdates
 } from './github-plan'
 import { HelmUpdate, buildHelmUpdates } from './helm-plan'
@@ -324,21 +324,6 @@ function setScreenFieldValues(
     screenConfigs[screenId][subScreenId] ||= {}
     screenConfigs[screenId][subScreenId][field.id] = values[field.id]
   }
-}
-
-function getGenericScreenConfigsForGithub() {
-  const specializedScreens = new Set([
-    'infrastructure',
-    'application',
-    'containerRegistry',
-    'dependencies'
-  ])
-
-  return Object.fromEntries(
-    CONFIGURATION_SCREENS
-      .filter(({ id }) => !specializedScreens.has(id))
-      .map(({ id }) => [id, getScreenStoredValues(id)])
-  )
 }
 
 function isFieldIdEnabled(fieldId: string) {
@@ -966,15 +951,6 @@ function getChartValues(config: ApplicationRequest) {
   }
 }
 
-function getApplicationGithubUpdates(config: ApplicationRequest) {
-  return {
-    variables: [
-      { scope: 'ENVIRONMENT', type: 'VARIABLE', name: 'DOMAIN', value: config.domain || '' }
-    ],
-    secrets: buildApplicationSecretItems(config, hasEnvironmentSecret)
-  }
-}
-
 function variableExists(scope: 'ENVIRONMENT' | 'REPOSITORY', name: string) {
   const source = scope === 'ENVIRONMENT' ? environmentVariables : repositoryVariables
   return Boolean(source.find((variable) => variable.name === name))
@@ -1187,49 +1163,42 @@ function getGithubUpdates(
   includeSecretValues = false,
   options: { includeExternalSecrets?: boolean } = {}
 ) {
-  const containerRegistryConfig = getScreenStoredValues('containerRegistry')
+  const includeExternalSecrets = Boolean(options.includeExternalSecrets)
+  const isGithubSecretBinding = (binding: FieldBinding): binding is GithubBinding =>
+    binding.target === 'github' && binding.type === 'SECRET'
+  const getBindingsForGithubPlan = (field: ConfigurationField) => {
+    const activeBindings = getActiveFieldBindings(field)
+    if (!includeExternalSecrets) {
+      return activeBindings
+    }
+
+    const externalSecretBindings = field.bindings.filter(isGithubSecretBinding)
+    return [...new Set([...activeBindings, ...externalSecretBindings])]
+  }
+  const isFieldEnabledForGithubPlan = (field: ConfigurationField) =>
+    isFieldEnabledForDeployment(field) ||
+    (includeExternalSecrets && field.bindings.some(isGithubSecretBinding))
 
   return buildGithubUpdates({
     enabled:
       Boolean(environmentSelection) &&
-      (hasDeploymentFeature('github') || Boolean(options.includeExternalSecrets)),
+      (hasDeploymentFeature('github') || includeExternalSecrets),
     environmentExists: isExistingGithubEnvironment(),
     includeSecretValues,
     approvalRequired: Boolean(environmentSelection?.approvalRequired),
     githubApprovers: environmentSelection?.githubApprovers || '',
     applicationDomain: applicationConfig?.domain || '',
     githubToken: verifiedConnection?.token || '',
-    applicationSecrets: applicationConfig
-      ? getApplicationGithubUpdates({
-          ...applicationConfig,
-          ...containerRegistryConfig
-        }).secrets
-      : [],
-    dependencyFields: getGeneralScreenFields('dependencies'),
-    advancedFields: getAllAdvancedFields(),
-    dependenciesConfig,
-    advancedConfig: Object.assign(
-      {},
-      ...CONFIGURATION_SCREENS.map(({ id }) =>
-        Object.assign(
-          {},
-          ...Object.entries(screenConfigs[id] || {})
-            .filter(([subScreenId]) => subScreenId !== 'general')
-            .map(([, values]) => values)
-        )
-      )
-    ),
-    genericScreenConfigs: getGenericScreenConfigsForGithub(),
+    fields: CONFIGURATION_FIELDS,
     backupEnabled: getBackupRestoreConfig().backupRestoreMode === 'backup',
     diskEncryptionEnabled: Boolean(infrastructureConfig?.enableDiskEncryption),
-    isFieldEnabled: isFieldEnabledForDeployment,
+    isFieldEnabled: isFieldEnabledForGithubPlan,
     isFieldActive: isConfigurationFieldActive,
     getFieldValue: getConfigurationFieldValue,
-    getActiveBindings: getActiveFieldBindings,
+    getActiveBindings: getBindingsForGithubPlan,
     getVariableValue,
     variableExists,
     secretExists,
-    hasEnvironmentSecret,
     getEncryptionKey: getGeneratedEncryptionKey,
     getBackupEncryptionPassphrase: getGeneratedBackupEncryptionPassphrase,
     getBackupHostKeyPair: getGeneratedBackupHostKeyPair
@@ -2259,8 +2228,6 @@ function createRequestHandler() {
     saveApplicationConfig: (payload) =>
       saveApplicationConfig(payload as ApplicationRequest) as Record<string, unknown>,
     getChartValues: (payload) => getChartValues(payload as ApplicationRequest),
-    getApplicationGithubUpdates: (payload) =>
-      getApplicationGithubUpdates(payload as ApplicationRequest),
     saveAdvancedConfig: (payload) => saveAdvancedConfig(payload as AdvancedRequest),
     saveDependenciesConfig: (payload) =>
       saveDependenciesConfig(payload as DependenciesRequest),

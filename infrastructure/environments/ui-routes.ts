@@ -30,7 +30,6 @@ export type UiRouteDependencies = {
   getInventoryValues: (payload: JsonResponse) => unknown
   saveApplicationConfig: (payload: Record<string, unknown>) => JsonResponse
   getChartValues: (payload: JsonResponse) => unknown
-  getApplicationGithubUpdates: (payload: JsonResponse) => unknown
   saveAdvancedConfig: (payload: Record<string, unknown>) => unknown
   saveDependenciesConfig: (payload: Record<string, unknown>) => unknown
   assertReadyToFinalize: () => void
@@ -248,8 +247,7 @@ export function createUiRequestHandler(dependencies: UiRouteDependencies) {
         sendJson(response, 200, {
           saved: true,
           application,
-          chartValues: dependencies.getChartValues(application),
-          githubUpdates: dependencies.getApplicationGithubUpdates(application)
+          chartValues: dependencies.getChartValues(application)
         })
         return
       }
