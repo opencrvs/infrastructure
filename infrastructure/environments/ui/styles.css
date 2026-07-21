@@ -147,6 +147,10 @@ textarea.form-control {
   background: var(--bs-body-bg);
 }
 
+.finalize-progress.finalize-progress-complete .progress-bar {
+  background-color: #a3cfbb;
+}
+
 .finalize-progress-steps {
   display: grid;
   gap: 0.25rem;

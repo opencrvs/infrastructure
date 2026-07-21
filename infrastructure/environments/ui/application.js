@@ -235,6 +235,7 @@ function startFinalizeProgress() {
   let tick = 0;
 
   window.clearInterval(finalizeProgressTimer);
+  finalizeProgress.classList.remove('finalize-progress-complete');
   finalizeProgressBar.classList.add('progress-bar-animated');
   renderFinalizeProgress(steps, 0, 5);
 
@@ -263,6 +264,7 @@ function finishFinalizeProgress(success) {
   renderFinalizeProgress(steps, steps.length - 1, 100);
   finalizeProgressLabel.textContent = 'Finalization complete.';
   finalizeProgressBar.classList.remove('progress-bar-animated');
+  finalizeProgress.classList.add('finalize-progress-complete');
 }
 
 function showEnvironmentStatus(type, message) {
