@@ -13,6 +13,7 @@ import {
 import { buildGithubUpdates } from './github-plan'
 import { buildReviewPlan } from './review-plan'
 import { buildNextSteps } from './next-steps'
+import { buildInventoryValues } from './ansible-plan'
 
 function testGeneratedValuesAreStableAndScoped() {
   const resolveDefaultValue = createFieldDefaultValueResolver()
@@ -408,6 +409,41 @@ function testDefaultUserPasswordIsOmittedWhenSmtpEnabled() {
   ))
 }
 
+function testInventoryValuesFollowAnsibleBindings() {
+  const values = buildInventoryValues({
+    fields: CONFIGURATION_FIELDS.filter((field) =>
+      field.bindings.some((binding) => binding.target === 'ansible')
+    ),
+    values: {
+      kubeAPIHost: '10.0.0.1',
+      kubeWorkerNodes: '10.0.0.2, 10.0.0.3',
+      backupHost: '10.0.0.9'
+    },
+    customValues: {
+      users: [
+        {
+          name: 'admin',
+          ssh_keys: ['ssh-ed25519 test'],
+          state: 'present',
+          role: 'admin'
+        }
+      ]
+    }
+  })
+
+  assert.strictEqual(values.kube_api_host, '10.0.0.1')
+  assert.deepStrictEqual(values.kube_worker_nodes, ['10.0.0.2', '10.0.0.3'])
+  assert.strictEqual(values.backup_host, '10.0.0.9')
+  assert.deepStrictEqual(values.users, [
+    {
+      name: 'admin',
+      ssh_keys: ['ssh-ed25519 test'],
+      state: 'present',
+      role: 'admin'
+    }
+  ])
+}
+
 testGeneratedValuesAreStableAndScoped()
 testLockedDerivedValueIgnoresSubmittedValue()
 testGithubDisabledProducesNoGithubPlan()
@@ -419,5 +455,6 @@ testUnchangedGithubVariablesAreNotUpdated()
 testHiddenGeneratedSecretIsOnlyCreatedForNewEnvironment()
 testHiddenSecretsAreExcludedFromReviewPlan()
 testDefaultUserPasswordIsOmittedWhenSmtpEnabled()
+testInventoryValuesFollowAnsibleBindings()
 
 console.log('configurator regression tests passed')

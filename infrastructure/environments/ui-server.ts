@@ -919,7 +919,19 @@ function validateUsers(inputUsers: User[]) {
 }
 
 function getInventoryValues(config: InfrastructureRequest) {
-  return buildInventoryValues(config, getBackupRestoreConfig())
+  return buildInventoryValues({
+    fields: CONFIGURATION_FIELDS
+      .filter(isFieldEnabledForDeployment)
+      .filter(isConfigurationFieldActive),
+    values: {
+      ...getScreenStoredValues('infrastructure'),
+      ...config,
+      ...getBackupRestoreConfig()
+    },
+    customValues: {
+      users: config.users || []
+    }
+  })
 }
 
 function getChartValues(config: ApplicationRequest) {

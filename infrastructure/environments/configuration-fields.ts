@@ -41,6 +41,7 @@ export type HelmBinding = {
 export type AnsibleBinding = {
   target: 'ansible'
   name: string
+  type?: 'string' | 'boolean' | 'number' | 'list' | 'dict'
 }
 
 export type StateBinding = {
@@ -206,7 +207,8 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
       },
       {
         target: 'ansible',
-        name: 'kube_worker_nodes'
+        name: 'kube_worker_nodes',
+        type: 'list'
       }
     ]
   },
@@ -627,6 +629,10 @@ export const CONFIGURATION_FIELDS: ConfigurationField[] = [
     bindings: [
       { target: 'github', type: 'VARIABLE', scope: 'ENVIRONMENT', name: 'BACKUP_HOST',
         omitWhenEmpty: true
+      },
+      {
+        target: 'ansible',
+        name: 'backup_host'
       }
     ]
   },
