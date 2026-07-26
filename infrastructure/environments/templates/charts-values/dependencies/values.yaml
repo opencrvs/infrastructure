@@ -6,6 +6,8 @@
 # make sure your custom changes doesn't conflict with values.yaml
 ##################################################################################
 
+hostname: {{hostname}}
+
 # Default: storage_type: host_path
 # host_path option is backward compatible with Docker Swarm,
 # configured to use sub-directories within /data folder

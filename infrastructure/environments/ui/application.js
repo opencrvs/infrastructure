@@ -205,7 +205,7 @@ function getFinalizeProgressSteps() {
       ? [{ label: 'Infrastructure', detail: 'Generating inventory files.' }]
       : []),
     ...(hasDeploymentFeature('helm')
-      ? [{ label: 'Helm values', detail: 'Writing chart values and overrides.' }]
+      ? [{ label: 'Helm values', detail: 'Writing generated chart values.' }]
       : []),
     ...(hasDeploymentFeature('github')
       ? [{ label: 'GitHub', detail: 'Updating variables, secrets, workflows, and environment.' }]

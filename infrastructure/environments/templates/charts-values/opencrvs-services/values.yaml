@@ -14,6 +14,7 @@
 # - hostname: valid DNS name for opencrvs
 # - countryconfig.image.name: Countryconfig image repository
 # - countryconfig.image.tag: Countryconfig image tag
+hostname: {{hostname}}
 environment_type: {{environment_type}}
 
 hpa:

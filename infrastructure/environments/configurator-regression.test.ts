@@ -1,4 +1,7 @@
 import assert from 'assert'
+import fs from 'fs'
+import os from 'os'
+import path from 'path'
 
 import {
   CONFIGURATION_FIELDS,
@@ -12,8 +15,10 @@ import {
 } from './configuration-state'
 import { buildGithubUpdates } from './github-plan'
 import { buildReviewPlan } from './review-plan'
+import { buildHelmUpdates } from './helm-plan'
 import { buildNextSteps } from './next-steps'
 import { buildInventoryValues } from './ansible-plan'
+import { copyChartsValues } from './templates'
 
 function testGeneratedValuesAreStableAndScoped() {
   const resolveDefaultValue = createFieldDefaultValueResolver()
@@ -109,8 +114,100 @@ function testReviewSectionsFollowDeploymentFeatures() {
   })
 
   assert(plan.files.includes('environments/development/dependencies/values.yaml'))
+  assert(!plan.files.some((file) => file.endsWith('/values.override.yaml')))
   assert(!plan.files.some((file) => file.startsWith('.github/workflows/')))
   assert(!plan.files.some((file) => file.startsWith('infrastructure/server-setup/inventory/')))
+}
+
+function testHelmPlanKeepsDesiredOperationWhenReviewIsUnchanged() {
+  const field: ConfigurationField = {
+    id: 'domain',
+    screen: 'application',
+    section: 'Domain',
+    label: 'Domain',
+    description: 'Environment domain',
+    control: 'text',
+    defaultValue: 'example.test',
+    bindings: [
+      {
+        target: 'helm',
+        chart: 'opencrvs-services',
+        path: 'hostname'
+      }
+    ]
+  }
+
+  const [update] = buildHelmUpdates({
+    enabled: true,
+    fields: [field],
+    helmBaseValues: {
+      'opencrvs-services': { hostname: 'example.test' }
+    },
+    getFieldValue: () => 'example.test',
+    isFieldEnabled: () => true,
+    isFieldActive: () => true,
+    getActiveBindings: (configurationField) => configurationField.bindings
+  })
+
+  assert.strictEqual(update.action, 'unchanged')
+  assert.strictEqual(update.operation, 'set')
+}
+
+function testChartTemplateCopyCreatesThenPreservesOverrideFiles() {
+  const repositoryDirectory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'opencrvs-configurator-test-')
+  )
+  const overridePath = path.join(
+    repositoryDirectory,
+    'environments',
+    'development',
+    'traefik',
+    'values.override.yaml'
+  )
+  const customOverride = 'custom:\n  preserved: true\n'
+
+  try {
+    copyChartsValues('development', {
+      env: 'development',
+      hostname: 'example.test',
+      environment_type: 'non-production',
+      traefik_mode: 'lets_encrypt'
+    }, repositoryDirectory)
+
+    assert(fs.existsSync(overridePath))
+    assert(fs.readFileSync(overridePath, 'utf8').includes('Use this file to customize'))
+    const generatedValuesPath = path.join(
+      repositoryDirectory,
+      'environments',
+      'development',
+      'opencrvs-services',
+      'values.yaml'
+    )
+    assert(fs.readFileSync(generatedValuesPath, 'utf8').includes(
+      'environment_type: non-production'
+    ))
+    assert(fs.readFileSync(generatedValuesPath, 'utf8').includes(
+      '# Initial configuration file for OpenCRVS installation'
+    ))
+    assert(fs.readFileSync(generatedValuesPath, 'utf8').includes(
+      'hostname: example.test'
+    ))
+
+    fs.writeFileSync(overridePath, customOverride, 'utf8')
+    copyChartsValues('development', {
+      env: 'changed',
+      hostname: 'changed.example.test',
+      environment_type: 'production',
+      traefik_mode: 'static_ssl'
+    }, repositoryDirectory)
+
+    assert.strictEqual(fs.readFileSync(overridePath, 'utf8'), customOverride)
+    assert(fs.readFileSync(generatedValuesPath, 'utf8').includes(
+      'environment_type: production'
+    ))
+  } finally {
+    fs.rmSync(repositoryDirectory, { recursive: true, force: true })
+  }
 }
 
 function testNextStepsHideWhenInventoryAlreadyExists() {
@@ -418,6 +515,8 @@ testGeneratedValuesAreStableAndScoped()
 testLockedDerivedValueIgnoresSubmittedValue()
 testGithubDisabledProducesNoGithubPlan()
 testReviewSectionsFollowDeploymentFeatures()
+testHelmPlanKeepsDesiredOperationWhenReviewIsUnchanged()
+testChartTemplateCopyCreatesThenPreservesOverrideFiles()
 testNextStepsHideWhenInventoryAlreadyExists()
 testFieldActivationWithBindingsAndRequires()
 testBackupRestoreDependencyFieldsPlanGithubUpdates()

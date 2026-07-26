@@ -439,7 +439,8 @@ When `ansible` is enabled:
 For Helm values:
 
 - Generate or update Helm chart values.
-- Apply managed Helm chart overrides.
+- Apply managed changes to generated `values.yaml` files.
+- Never create or modify human-owned `values.override.yaml` files.
 
 When `github` is disabled:
 
@@ -516,7 +517,7 @@ Suggested module boundaries:
 
 - `helm-plan.ts`
   - Build Helm update plans.
-  - Write Helm overrides.
+  - Write generated Helm values.
   - Preserve the existing `copyChartsValues` behavior, including its built-in logic and Handlebars template compilation.
 
 - `ansible-plan.ts`
@@ -612,7 +613,7 @@ Work:
 - Add `ansible-plan.ts`.
 - Add `review-plan.ts`.
 - Move GitHub variable/secret planning into `github-plan.ts`.
-- Move Helm override planning into `helm-plan.ts`.
+- Move Helm values planning into `helm-plan.ts`.
 - Move inventory planning into `ansible-plan.ts`.
 - Preserve existing `copyChartsValues` behavior and Handlebars template compilation.
 - Preserve existing `generateInventory` behavior and Handlebars template compilation.

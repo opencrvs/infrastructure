@@ -198,7 +198,7 @@ let generatedBackupHostPrivateKey = ''
 let generatedBackupHostPublicKey = ''
 let dependenciesConfig: Record<string, ConfigurationValue> = {}
 let screenConfigs: Record<string, Record<string, Record<string, ConfigurationValue>>> = {}
-let helmBaseOverrides: Partial<Record<HelmChart, Record<string, unknown>>> = {}
+let helmBaseValues: Partial<Record<HelmChart, Record<string, unknown>>> = {}
 let lastValuesSecretsPath = ''
 let getFieldDefaultValue = createFieldDefaultValueResolver()
 
@@ -224,7 +224,7 @@ function resetConfiguratorSession() {
   generatedBackupHostPublicKey = ''
   dependenciesConfig = {}
   screenConfigs = {}
-  helmBaseOverrides = {}
+  helmBaseValues = {}
   lastValuesSecretsPath = ''
   getFieldDefaultValue = createFieldDefaultValueResolver()
 }
@@ -585,24 +585,24 @@ function loadUsersFromInventory(environmentName: string) {
   }
 }
 
-function getHelmOverridePath(environmentName: string, chart: HelmChart) {
+function getHelmValuesPath(environmentName: string, chart: HelmChart) {
   return path.join(
     process.cwd(),
     'environments',
     environmentName,
     chart,
-    'values.override.yaml'
+    'values.yaml'
   )
 }
 
-function readHelmOverride(environmentName: string, chart: HelmChart) {
-  const overridePath = getHelmOverridePath(environmentName, chart)
+function readHelmValues(environmentName: string, chart: HelmChart) {
+  const valuesPath = getHelmValuesPath(environmentName, chart)
 
-  if (!fs.existsSync(overridePath)) {
+  if (!fs.existsSync(valuesPath)) {
     return {}
   }
 
-  const parsed = loadYaml(fs.readFileSync(overridePath, 'utf8'))
+  const parsed = loadYaml(fs.readFileSync(valuesPath, 'utf8'))
   return isRecord(parsed) ? parsed : {}
 }
 
@@ -612,7 +612,7 @@ function getFieldConfigValue(
 ) {
   const source = getFieldSource(field)
   const value = source?.target === 'helm'
-    ? getNestedValue(helmBaseOverrides[source.chart] || {}, source.path)
+    ? getNestedValue(helmBaseValues[source.chart] || {}, source.path)
     : getFieldValueFromGitHub(field, environmentName)
 
   return typeof value === 'string' ||
@@ -629,8 +629,8 @@ function loadScreenConfigs(environmentName: string) {
       .map((binding) => binding.chart)
   ))]
 
-  helmBaseOverrides = Object.fromEntries(
-    charts.map((chart) => [chart, readHelmOverride(environmentName, chart)])
+  helmBaseValues = Object.fromEntries(
+    charts.map((chart) => [chart, readHelmValues(environmentName, chart)])
   )
 
   screenConfigs = Object.fromEntries(
@@ -926,6 +926,7 @@ function getChartValues(config: ApplicationRequest) {
 
   return {
     env: environment,
+    hostname: String(getConfigurationFieldValueById('domain') || ''),
     environment_type: environmentType,
     two_fa_enabled: environmentType !== 'production' ? false : true,
     backup_enabled: backupRestoreConfig.backupRestoreMode === 'backup',
@@ -1365,7 +1366,7 @@ function getHelmUpdates(): HelmUpdate[] {
   return buildHelmUpdates({
     enabled: hasDeploymentFeature('helm'),
     fields: CONFIGURATION_FIELDS,
-    helmBaseOverrides,
+    helmBaseValues,
     getFieldValue: getConfigurationFieldValue,
     isFieldEnabled: isFieldEnabledForDeployment,
     isFieldActive: isConfigurationFieldActive,
@@ -1639,36 +1640,36 @@ function saveGenericScreenConfig(
   setScreenFieldValues(screenId, fields, nextConfig)
 }
 
-function writeHelmOverrides(environmentName: string, updates = getHelmUpdates()) {
+function writeHelmValues(environmentName: string, updates = getHelmUpdates()) {
   const charts = [...new Set(updates.map((update) => update.chart))]
 
   for (const chart of charts) {
-    const output = structuredClone(helmBaseOverrides[chart] || {})
+    const output = structuredClone(readHelmValues(environmentName, chart))
     const chartUpdates = updates.filter((update) => update.chart === chart)
 
     for (const update of chartUpdates) {
-      if (update.action === 'remove') {
+      if (update.operation === 'remove') {
         deleteNestedValue(output, update.path)
-      } else if (update.action === 'set') {
+      } else {
         setNestedValue(output, update.path, update.value)
       }
     }
 
     const header = [
       '##################################################################################',
-      '# Environment-specific Helm overrides managed by yarn environment:init',
-      '# Unmanaged keys are preserved when this file is updated.',
+      '# Helm values generated and managed by yarn environment:init',
+      '# Manual customizations belong in values.override.yaml, which is never modified here.',
       '##################################################################################',
       ''
     ].join('\n')
     const yaml = Object.keys(output).length
       ? dumpYaml(output, { noRefs: true, lineWidth: 100 })
       : ''
-    const outputPath = getHelmOverridePath(environmentName, chart)
+    const outputPath = getHelmValuesPath(environmentName, chart)
 
     fs.mkdirSync(path.dirname(outputPath), { recursive: true })
     fs.writeFileSync(outputPath, `${header}${yaml}`, 'utf8')
-    helmBaseOverrides[chart] = output
+    helmBaseValues[chart] = output
   }
 }
 
@@ -1863,7 +1864,9 @@ async function finalizeSetup() {
     applyInventory: (name, values) => generateInventory(name, values as Record<string, any>),
     applyChartValues: (name, values) =>
       copyChartsValues(name, values as Record<string, string | boolean>),
-    applyHelmUpdates: (updates) => writeHelmOverrides(environment, updates),
+    // Helm values are rendered from their Handlebars templates. Re-serializing
+    // them as YAML would discard comments, formatting and template-owned keys.
+    applyHelmUpdates: () => undefined,
     applyGithub: applyGithubFinalization
   })
 

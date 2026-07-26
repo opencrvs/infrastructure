@@ -116,7 +116,6 @@ export async function finalizeConfiguration(
     input.applyChartValues(input.environmentName, input.chartValues)
     performedActions.push(`Generated Helm chart values under environments/${input.environmentName}`)
     input.applyHelmUpdates(input.helmUpdates)
-    performedActions.push('Applied managed Helm chart overrides')
   }
 
   if (input.githubEnabled) {

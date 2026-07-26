@@ -18,6 +18,7 @@ export function getUsers(data: any): any {
   }
   return data.all.vars.users;
 }
+
 // START: TEMPORAL SECTION FOR TRANSITION FROM DOCKER SWARM TO K8s
 // Extract users from the old inventory
 // Docker swarm format to new
@@ -77,9 +78,13 @@ export function extractWorkerNodes(data: any): string[] {
 /**
  * Recursively copy a directory and replace placeholders in text files.
  */
-export function copyChartsValues(env: string, values: Record<string, string | boolean>) {
+export function copyChartsValues(
+  env: string,
+  values: Record<string, string | boolean>,
+  targetRepositoryDirectory = repositoryDirectory
+) {
   const srcDir = path.resolve(__dirname, "templates", "charts-values");
-  const destDir = path.resolve(repositoryDirectory, "environments", env);
+  const destDir = path.resolve(targetRepositoryDirectory, "environments", env);
   fs.mkdirSync(destDir, { recursive: true });
   values['lets_encrypt'] = values['traefik_mode'] === "lets_encrypt" ? true : false
   values['static_ssl'] = values['traefik_mode'] === "static_ssl" ? true : false
@@ -98,6 +103,10 @@ export function copyChartsValues(env: string, values: Record<string, string | bo
       // replace placeholders
       const template = Handlebars.compile(content);
       const updated = template(values);
+      if (path.basename(dest) === 'values.override.yaml' && fs.existsSync(dest)) {
+        log(`  - Preserved: ${dest}`);
+        return;
+      }
       // write updated file
       fs.writeFileSync(dest, updated, "utf8");
       log(`  ✓ Created: ${dest}`);

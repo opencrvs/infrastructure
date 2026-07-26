@@ -14,13 +14,14 @@ export type HelmUpdate = {
   chart: HelmChart
   path: string
   value: ConfigurationValue
+  operation: 'remove' | 'set'
   action: 'remove' | 'set' | 'unchanged'
 }
 
 export type HelmPlanInput = {
   enabled: boolean
   fields: ConfigurationField[]
-  helmBaseOverrides: Partial<Record<HelmChart, Record<string, unknown>>>
+  helmBaseValues: Partial<Record<HelmChart, Record<string, unknown>>>
   getFieldValue: (field: ConfigurationField) => ConfigurationValue
   isFieldEnabled: (field: ConfigurationField) => boolean
   isFieldActive: (field: ConfigurationField) => boolean
@@ -43,12 +44,13 @@ export function buildHelmUpdates(input: HelmPlanInput): HelmUpdate[] {
       .filter((binding): binding is HelmBinding => binding.target === 'helm')
       .map((binding) => {
         const currentValue = getNestedValue(
-          input.helmBaseOverrides[binding.chart] || {},
+          input.helmBaseValues[binding.chart] || {},
           binding.path
         )
         const shouldRemove =
           !input.isFieldActive(field) ||
           Boolean(binding.omitWhenDefault && valuesEqual(value, field.defaultValue))
+        const operation = shouldRemove ? 'remove' : 'set'
         const action = shouldRemove
           ? currentValue === undefined
             ? 'unchanged'
@@ -61,6 +63,7 @@ export function buildHelmUpdates(input: HelmPlanInput): HelmUpdate[] {
           chart: binding.chart,
           path: binding.path,
           value,
+          operation,
           action
         }
       })

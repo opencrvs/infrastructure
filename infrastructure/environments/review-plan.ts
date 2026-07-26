@@ -22,11 +22,8 @@ export function buildFilesToUpdate(input: {
 }) {
   const chartFiles = [
     'dependencies/values.yaml',
-    'dependencies/values.override.yaml',
     'opencrvs-services/values.yaml',
-    'opencrvs-services/values.override.yaml',
-    'traefik/values.yaml',
-    'traefik/values.override.yaml'
+    'traefik/values.yaml'
   ].map((file) => `environments/${input.environmentName}/${file}`)
   const inventoryFiles = input.hasAnsible
     ? [`infrastructure/server-setup/inventory/${input.environmentName}.yml`]
