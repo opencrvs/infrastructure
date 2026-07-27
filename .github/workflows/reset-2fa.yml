@@ -13,7 +13,10 @@ on:
         default: "development"
         required: true
         options:
-          - ""
+          - onetwo222
+          - onenew-1
+          - non-prod
+          - development
 jobs:
   approve:
     environment: ${{ inputs.environment }}

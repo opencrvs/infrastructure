@@ -9,7 +9,10 @@ on:
         default: 'development'
         type: choice
         options:
-          - ""
+          - onetwo222
+          - onenew-1
+          - non-prod
+          - development
       tags:
         description: 'Tags to apply to the provisioned resources'
         required: true
