@@ -93,7 +93,7 @@ jobs:
       # https://github.com/opencrvs/opencrvs-core/issues/13377
       - name: Install OpenTelemetry Collector
         run: |
-          [ ! -f -f environments/${ENV}/opentelemetry/values.yaml ] && echo "No OpenTelemetry values.yaml found for environment ${ENV}, skipping installation" && exit 0
+          [ ! -f environments/${ENV}/opentelemetry/values.yaml ] && echo "No OpenTelemetry values.yaml found for environment ${ENV}, skipping installation" && exit 0
           helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts || true
           touch environments/${ENV}/opentelemetry/values.override.yaml
           helm upgrade --install opentelemetry-collector open-telemetry/opentelemetry-collector \
