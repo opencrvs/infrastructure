@@ -10,3 +10,4 @@
 
 - Always restart the Kubernetes self-hosted runner during deployment to ensure the latest runner image and configuration changes are applied. [#332](https://github.com/opencrvs/infrastructure/pull/332)
 - Testing outbound HTTPS connectivity instead of ping [#338](https://github.com/opencrvs/infrastructure/pull/338)
+- Run differencial backup as non-root user after pgbackrest upgrade [#360](https://github.com/opencrvs/infrastructure/pull/360) [#13370](https://github.com/opencrvs/opencrvs-core/pull/13370)
