@@ -128,11 +128,15 @@ export function copyChartsValues(
  * PORT: process.env.SSH_PORT || "22"
  * });
  */
-export function generateInventory(env: string, values: Record<string, any>){
+export function generateInventory(
+  env: string,
+  values: Record<string, any>,
+  targetRepositoryDirectory = repositoryDirectory
+){
   // Template and output paths
   const templatePath = path.join(__dirname, "templates", "inventory", "inventory.template.yml");
   const outputPath = path.join(
-    repositoryDirectory,
+    targetRepositoryDirectory,
     "infrastructure",
     "server-setup",
     "inventory",

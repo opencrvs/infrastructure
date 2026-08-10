@@ -33,7 +33,7 @@ export type UiRouteDependencies = {
   saveAdvancedConfig: (payload: Record<string, unknown>) => unknown
   saveDependenciesConfig: (payload: Record<string, unknown>) => unknown
   assertReadyToFinalize: () => void
-  getReviewPlan: (includeSecretValues?: boolean) => JsonResponse
+  getReviewPlan: () => JsonResponse
   getValuesSecretsPath: () => string
   finalizeSetup: () => Promise<JsonResponse>
   resetConfiguratorSession: () => void
@@ -278,7 +278,7 @@ export function createUiRequestHandler(dependencies: UiRouteDependencies) {
 
       if (method === 'GET' && url.pathname === '/api/review') {
         dependencies.assertReadyToFinalize()
-        sendJson(response, 200, dependencies.getReviewPlan(false))
+        sendJson(response, 200, dependencies.getReviewPlan())
         return
       }
 

@@ -4,6 +4,10 @@ import type { GithubUpdate } from './github-plan'
 export type ReviewPlanInput = {
   environmentName: string
   deploymentFeatures: string[]
+  /**
+   * @deprecated Review plans never expose secret values. This property remains
+   * temporarily for compatibility with callers that still provide it.
+   */
   includeSecretValues: boolean
   githubUpdates: {
     variables: GithubUpdate[]
@@ -61,9 +65,7 @@ export function buildReviewPlan(input: ReviewPlanInput) {
       hasGithub: input.deploymentFeatures.includes('github')
     }),
     variables: input.githubUpdates.variables,
-    secrets: input.includeSecretValues
-      ? visibleSecrets
-      : visibleSecrets.map(({ value, ...secret }) => secret),
+    secrets: visibleSecrets.map(({ value, ...secret }) => secret),
     deploymentFeatures: input.deploymentFeatures,
     inventoryValues: input.inventoryValues,
     chartValues: input.chartValues,

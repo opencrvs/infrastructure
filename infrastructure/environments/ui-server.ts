@@ -1673,13 +1673,13 @@ function writeHelmValues(environmentName: string, updates = getHelmUpdates()) {
   }
 }
 
-function getReviewPlan(includeSecretValues = false) {
-  const githubUpdates = getGithubUpdates(includeSecretValues)
+function getReviewPlan() {
+  const githubUpdates = getGithubUpdates(false)
 
   return buildReviewPlan({
     environmentName: environmentSelection?.environmentName || '<environment>',
     deploymentFeatures: getDeploymentFeatures(),
-    includeSecretValues,
+    includeSecretValues: false,
     githubUpdates,
     inventoryValues: hasDeploymentFeature('ansible') && infrastructureConfig
       ? getInventoryValues(infrastructureConfig)
@@ -1843,14 +1843,10 @@ async function finalizeSetup() {
   const chartValues = applicationConfig
     ? getChartValues(applicationConfig)
     : null
-  const debugPlan = getReviewPlan(true)
   const githubUpdates = getGithubUpdates(true, {
     includeExternalSecrets: !hasDeploymentFeature('github') && hasDeploymentFeature('helm')
   })
   const helmUpdates = getHelmUpdates()
-
-  console.log('\nOpenCRVS environment:init GitHub debug payload')
-  console.log(JSON.stringify(debugPlan, null, 2))
 
   const finalizeResult = await finalizeConfiguration({
     environmentName: environment,
@@ -1874,7 +1870,7 @@ async function finalizeSetup() {
     ? path.join(process.cwd(), finalizeResult.valuesSecretsFile.path)
     : ''
 
-  const reviewPlan = getReviewPlan(false)
+  const reviewPlan = getReviewPlan()
 
   if (finalizeResult.valuesSecretsFile) {
     reviewPlan.files.push(finalizeResult.valuesSecretsFile.path)
@@ -2235,7 +2231,7 @@ function createRequestHandler() {
     saveDependenciesConfig: (payload) =>
       saveDependenciesConfig(payload as DependenciesRequest),
     assertReadyToFinalize,
-    getReviewPlan: (includeSecretValues) => getReviewPlan(includeSecretValues),
+    getReviewPlan,
     getValuesSecretsPath: () => lastValuesSecretsPath,
     finalizeSetup,
     resetConfiguratorSession

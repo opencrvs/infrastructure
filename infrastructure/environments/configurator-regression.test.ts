@@ -18,7 +18,7 @@ import { buildReviewPlan } from './review-plan'
 import { buildHelmUpdates } from './helm-plan'
 import { buildNextSteps } from './next-steps'
 import { buildInventoryValues } from './ansible-plan'
-import { copyChartsValues } from './templates'
+import { copyChartsValues, generateInventory } from './templates'
 
 function testGeneratedValuesAreStableAndScoped() {
   const resolveDefaultValue = createFieldDefaultValueResolver()
@@ -205,6 +205,38 @@ function testChartTemplateCopyCreatesThenPreservesOverrideFiles() {
     assert(fs.readFileSync(generatedValuesPath, 'utf8').includes(
       'environment_type: production'
     ))
+  } finally {
+    fs.rmSync(repositoryDirectory, { recursive: true, force: true })
+  }
+}
+
+function testInventoryIsRenderedDirectlyFromHandlebarsTemplate() {
+  const repositoryDirectory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'opencrvs-inventory-test-')
+  )
+  const inventoryPath = path.join(
+    repositoryDirectory,
+    'infrastructure',
+    'server-setup',
+    'inventory',
+    'development.yml'
+  )
+
+  try {
+    generateInventory('development', {
+      kube_api_host: '10.0.0.10',
+      kube_worker_nodes: ['10.0.0.11'],
+      backup_host: '10.0.0.12',
+      users: []
+    }, repositoryDirectory)
+
+    const generated = fs.readFileSync(inventoryPath, 'utf8')
+    assert(generated.includes('# Domain/IP address for remote access to your cluster API'))
+    assert(generated.includes('# Workers section is optional'))
+    assert(generated.includes('kube_api_host: 10.0.0.10'))
+    assert(generated.includes('ansible_host: 10.0.0.11'))
+    assert(generated.includes('ansible_host: 10.0.0.12'))
+    assert(!generated.includes('{{'))
   } finally {
     fs.rmSync(repositoryDirectory, { recursive: true, force: true })
   }
@@ -517,6 +549,7 @@ testGithubDisabledProducesNoGithubPlan()
 testReviewSectionsFollowDeploymentFeatures()
 testHelmPlanKeepsDesiredOperationWhenReviewIsUnchanged()
 testChartTemplateCopyCreatesThenPreservesOverrideFiles()
+testInventoryIsRenderedDirectlyFromHandlebarsTemplate()
 testNextStepsHideWhenInventoryAlreadyExists()
 testFieldActivationWithBindingsAndRequires()
 testBackupRestoreDependencyFieldsPlanGithubUpdates()
