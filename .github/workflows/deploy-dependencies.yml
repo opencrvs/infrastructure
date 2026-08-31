@@ -69,7 +69,8 @@ jobs:
             -f environments/${ENV}/traefik/values.yaml \
             -f environments/${ENV}/traefik/values.override.yaml
           kubectl scale deployment traefik --replicas=1 --namespace traefik || true
-
+      # FIXME: remove BACKUP_HOST/RESTORE_HOST after v2.2
+      # See: https://github.com/opencrvs/opencrvs-core/pull/13502
       - name: Install OpenCRVS dependencies
         id: deploy
         run: |
@@ -86,6 +87,8 @@ jobs:
             --namespace "opencrvs-deps-${ENV}" \
             -f environments/${ENV}/dependencies/values.yaml \
             -f environments/${ENV}/dependencies/values.override.yaml \
+            --set backup.host={{ vars.BACKUP_HOST }} \
+            --set restore.host={{ vars.RESTORE_HOST }} \
             --create-namespace \
             --timeout 15m \
             --set hostname=${{ vars.DOMAIN }} \
