@@ -44,7 +44,6 @@ import {
   countryQuestions,
   databaseAndMonitoringQuestions,
   diskQuestions,
-  sentryQuestions,
   emailQuestions,
   metabaseAdminQuestions,
   backupQuestions,
@@ -264,7 +263,6 @@ ALL_QUESTIONS.push(
   ...countryQuestions,
   ...databaseAndMonitoringQuestions,
   ...emailQuestions,
-  ...sentryQuestions,
   ...derivedVariables,
   ...metabaseAdminQuestions
 )
@@ -585,32 +583,6 @@ ALL_QUESTIONS.push(
       databaseAndMonitoringQuestions,
       existingValues
     )
-    const sentryDSNExists = findExistingValue(
-      'SENTRY_DSN',
-      'SECRET',
-      'ENVIRONMENT',
-      existingValues
-    )
-
-    log('\n', kleur.bold().underline('Sentry'))
-    if (sentryDSNExists) {
-      await promptAndStoreAnswer(environment, sentryQuestions, existingValues)
-    } else {
-      const { useSentry } = await prompts(
-        [
-          {
-            name: 'useSentry',
-            type: 'confirm' as const,
-            message: 'Do you want to use Sentry?',
-            initial: Boolean(process.env.SENTRY_DNS)
-          }
-        ]
-      )
-
-      if (useSentry) {
-        await promptAndStoreAnswer(environment, sentryQuestions, existingValues)
-      }
-    }
 
     log('\n', kleur.bold().underline('METABASE ADMIN'))
     await promptAndStoreAnswer(
