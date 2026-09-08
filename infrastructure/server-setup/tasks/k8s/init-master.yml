@@ -40,6 +40,20 @@
   retries: 30
   delay: 10
   changed_when: false
+# OrbStack's guest kernel denies writes to
+# /proc/sys/net/netfilter/nf_conntrack_max from a non-init network namespace
+# (multipass doesn't have this restriction, so disable_conntrack_tuning
+# should stay false there). Only runs on opted-in local-dev inventories,
+# where these disposable VMs make an extra kube-proxy restart harmless.
+- name: Disable kube-proxy conntrack max auto-tuning
+  when: disable_conntrack_tuning | default(false)
+  shell: |
+    kubectl -n kube-system get configmap kube-proxy -o yaml \
+      | sed -e 's/maxPerCore: .*/maxPerCore: 0/' \
+      | kubectl apply -f -
+    kubectl -n kube-system rollout restart daemonset kube-proxy
+  environment:
+    KUBECONFIG: /home/{{ provisioning_user }}/.kube/config
 
 # FIXME: As Ops I would like to have dedicated master node, all workloads should go to workers
 #        Current setup will spread load across all nodes, including master
