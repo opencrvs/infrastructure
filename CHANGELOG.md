@@ -6,6 +6,12 @@
 
 - Make provision user and group ids not rely on hardcoded values [#13192](https://github.com/opencrvs/opencrvs-core/issues/13192)
 
+## 1.9.17 Release Candidate
+
+### Improvements
+
+- Sentry has been removed from OpenCRVS, so `sentry.io` no longer has to be reachable for `opencrvs-bootstrap.sh` to pass its connectivity check. If you allowlist outbound traffic, you can drop it. Environment setup no longer asks for a Sentry DSN. [#13460](https://github.com/opencrvs/opencrvs-core/issues/13460)
+
 ## 2.0.1 Release
 
 ### New features
