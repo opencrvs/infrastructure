@@ -408,19 +408,6 @@ export const emailQuestions = [
   }
 ]
 
-export const sentryQuestions = [
-  {
-    name: 'sentryDsn',
-    type: 'text' as const,
-    message: 'What is your Sentry DSN?',
-    valueType: 'SECRET' as const,
-    validate: notEmpty,
-    valueLabel: 'SENTRY_DSN',
-    initial: process.env.SENTRY_DSN,
-    scope: 'ENVIRONMENT' as const
-  }
-]
-
 export const metabaseAdminQuestions = [
   {
     valueType: 'SECRET' as const,
