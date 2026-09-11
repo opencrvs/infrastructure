@@ -16,8 +16,6 @@
 set -e
 
 # Configurable params
-PROVISION_UID=1000
-PROVISION_GID=1000
 PROVISION_USER="provision"
 PROVISION_GROUP="provision"
 MIN_UBUNTU_VERSION="24.04"
@@ -72,25 +70,27 @@ check_ubuntu_version() {
 curl_check_url() {
     local url="$1"
     local http_code
+    local attempt
 
-    http_code="$(curl \
-        --silent \
-        --location \
-        --head \
-        --retry 3 \
-        --retry-delay 2 \
-        --retry-all-errors \
-        --max-time 10 \
-        --output /dev/null \
-        --write-out "%{http_code}" \
-        "$url" || true)"
+    for attempt in 1 2 3; do
+        http_code="$(curl \
+            --silent \
+            --location \
+            --head \
+            --max-time 10 \
+            --output /dev/null \
+            --write-out "%{http_code}" \
+            "$url" || true)"
 
-    # 000 means curl could not connect / DNS failed / TLS failed / timed out.
-    if [ "$http_code" = "000" ]; then
-        return 1
-    fi
+        # 000 means curl could not connect / DNS failed / TLS failed / timed out.
+        if [ "$http_code" != "000" ]; then
+            return 0
+        fi
 
-    return 0
+        [ "$attempt" -lt 3 ] && sleep 3
+    done
+
+    return 1
 }
 
 check_internet() {
@@ -104,7 +104,6 @@ check_internet() {
         "https://auth.docker.io"
         "https://registry-1.docker.io"
         "https://download.docker.com"
-        "https://sentry.io"
         "https://fonts.gstatic.com"
         "https://storage.googleapis.com"
         "https://fonts.googleapis.com"
@@ -148,10 +147,10 @@ check_ubuntu_version
 check_internet
 
 echo "Downloading dependencies..."
-
+sudo rm -f /tmp/create-provision-user.sh
 curl -sS https://raw.githubusercontent.com/opencrvs/infrastructure/develop/scripts/bootstrap/create-provision-user.sh -o /tmp/create-provision-user.sh
 chmod +x /tmp/create-provision-user.sh
-
+sudo rm -f /tmp/node-runner.sh
 curl -sS https://raw.githubusercontent.com/opencrvs/infrastructure/develop/scripts/bootstrap/node-runner.sh -o /tmp/node-runner.sh
 chmod +x /tmp/node-runner.sh
 

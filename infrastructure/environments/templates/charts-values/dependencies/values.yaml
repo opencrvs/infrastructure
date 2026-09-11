@@ -54,7 +54,16 @@ monitoring:
 
 elastalert:
   env:
-    HTTP_POST2_ALERT_URL: http://countryconfig.opencrvs-{{env}}.svc.cluster.local:3040/email
+    NOTIFICATION_TYPE: email
+  secrets:
+    smtp-config:
+      - ALERT_EMAIL
+      - SENDER_EMAIL_ADDRESS
+      - SMTP_HOST
+      - SMTP_PASSWORD
+      - SMTP_PORT
+      - SMTP_SECURE
+      - SMTP_USERNAME
 
 # Backup configuration
 backup:
