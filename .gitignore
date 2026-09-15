@@ -9,3 +9,8 @@ dump.temporal.env
 vars
 TODO.md
 .ssh
+
+# AI agent config: keep shared settings, ignore local & generated state
+.claude/*
+!.claude/settings.json
+.claude-working/

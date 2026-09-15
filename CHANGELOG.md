@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.0.2 Release Candidate
+
+### Bug fixes
+
+- Make provision user and group ids not rely on hardcoded values [#13192](https://github.com/opencrvs/opencrvs-core/issues/13192)
+
+## 1.9.17 Release Candidate
+
+### Improvements
+
+- Sentry has been removed from OpenCRVS, so `sentry.io` no longer has to be reachable for `opencrvs-bootstrap.sh` to pass its connectivity check. If you allowlist outbound traffic, you can drop it. Environment setup no longer asks for a Sentry DSN. [#13460](https://github.com/opencrvs/opencrvs-core/issues/13460)
+
+## 2.0.1 Release
+
+### New features
+
+- Migration script to convert backup files taken by OS cronjob into k8s compatible format [#13099](https://github.com/opencrvs/opencrvs-core/issues/13099)
+
+### Bug fixes
+
+- Always restart the Kubernetes self-hosted runner during deployment to ensure the latest runner image and configuration changes are applied. [#332](https://github.com/opencrvs/infrastructure/pull/332)
+- Testing outbound HTTPS connectivity instead of ping [#338](https://github.com/opencrvs/infrastructure/pull/338)
+- Run differencial backup as non-root user after pgbackrest upgrade [#360](https://github.com/opencrvs/infrastructure/pull/360) [#13370](https://github.com/opencrvs/opencrvs-core/pull/13370)
+
 ## 1.9.14 Release Candidate
 
 ### Fixes

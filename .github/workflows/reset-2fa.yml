@@ -10,11 +10,10 @@ on:
       environment:
         type: choice
         description: Infrastructure to provision
-        default: 
+        default: "development"
         required: true
         options:
           - ""
-
 jobs:
   approve:
     environment: ${{ inputs.environment }}
