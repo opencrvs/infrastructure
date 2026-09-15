@@ -1,16 +1,28 @@
 import { execSync } from "child_process";
 
 export function getRepoInfo() {
+  try {
+    const remoteUrl = execSync("git config --get remote.origin.url", {
+      stdio: ["ignore", "pipe", "ignore"]
+    })
+      .toString()
+      .trim();
 
-  const remoteUrl = execSync("git config --get remote.origin.url")
-    .toString()
-    .trim();
+    // Handle both SSH and HTTPS formats
+    const match = remoteUrl.match(/github\.com[:/](.+?)\/(.+?)(\.git)?$/);
 
-  // Handle both SSH and HTTPS formats
-  const match = remoteUrl.match(/github\.com[:/](.+?)\/(.+?)(\.git)?$/);
-  if (!match) {
-    throw new Error("Not a GitHub repository or invalid remote URL");
+    if (!match) {
+      return { organization: "", repository: "" };
+    }
+
+    return {
+      organization: match[1],
+      repository: match[2]
+    };
+  } catch {
+    return {
+      organization: "",
+      repository: ""
+    };
   }
-
-  return { organization: match[1], repository: match[2]}
 }
