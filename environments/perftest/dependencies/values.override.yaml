@@ -6,3 +6,10 @@
 utilities:
   image:
     tag: v2.1.0-beta
+
+network_policies:
+  ingress_mode: deny
+  egress_mode: deny
+  allowed_namespaces:
+    - opencrvs-perftest
+    

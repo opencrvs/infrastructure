@@ -5,3 +5,9 @@
 gateway:
   env:
     DISABLE_RATE_LIMIT: "true"
+
+network_policies:
+  ingress_mode: deny
+  egress_mode: deny
+  allowed_namespaces:
+    - opencrvs-deps-perftest
