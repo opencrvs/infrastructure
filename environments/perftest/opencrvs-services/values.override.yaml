@@ -11,3 +11,6 @@ network_policy:
   egress_mode: deny
   allowed_namespaces:
     - opencrvs-deps-perftest
+
+elasticsearch:
+  reindex_enabled: false
