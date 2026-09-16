@@ -6,7 +6,7 @@ gateway:
   env:
     DISABLE_RATE_LIMIT: "true"
 
-network_policies:
+network_policy:
   ingress_mode: deny
   egress_mode: deny
   allowed_namespaces:
