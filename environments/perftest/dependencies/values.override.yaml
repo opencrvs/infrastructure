@@ -12,3 +12,11 @@ network_policy:
   egress_mode: deny
   allowed_namespaces:
     - opencrvs-perftest
+
+filebeat:
+  network_policy:
+    egress_mode: full
+
+metricbeat:
+  network_policy:
+    egress_mode: full
