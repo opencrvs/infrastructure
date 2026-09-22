@@ -1,0 +1,10 @@
+{
+  "index_patterns": ["k6-metrics-*"],
+  "template": {
+    "settings": {
+      "index.lifecycle.name": "k6-metrics-rollover-policy",
+      "index.lifecycle.rollover_alias": "k6-metrics",
+      "index.number_of_replicas": 0
+    }
+  }
+}
