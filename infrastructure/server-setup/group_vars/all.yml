@@ -25,7 +25,13 @@ disk_encryption_key_path: /root/disk-encryption-key.txt
 data_file_path: /cryptfs_file_sparse.img
 
 # Minimum required disk space for successful kubernetes deployment
-min_free_disk_size: "30g"
+min_free_disk_size: "50g"
+# Minimum free disk space to reserve, as a percentage of the encrypted partition size.
+# ext4 journal and inode-table overhead scales with partition size, so large encrypted
+# partitions need proportionally more headroom than the fixed min_free_disk_size above.
+# The larger of the two (fixed vs percentage-based) is required as free space.
+min_free_disk_percent: 10
+
 # Kubernetes components versions:
 # - kubeadm
 # - kubelet
