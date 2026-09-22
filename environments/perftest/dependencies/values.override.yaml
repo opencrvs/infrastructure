@@ -16,7 +16,9 @@ network_policy:
 filebeat:
   network_policy:
     egress_mode: full
+  custom_ilm_configmap: filebeat-ilm-config-perftest
 
 metricbeat:
   network_policy:
     egress_mode: full
+  custom_ilm_configmap: metricbeat-ilm-config-perftest

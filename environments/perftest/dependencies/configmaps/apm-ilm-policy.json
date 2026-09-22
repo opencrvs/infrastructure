@@ -1,0 +1,30 @@
+{
+  "policy": {
+    "phases": {
+      "hot": {
+        "min_age": "0ms",
+        "actions": {
+          "set_priority": {
+            "priority": 100
+          },
+          "rollover": {
+            "max_age": "1d",
+            "max_primary_shard_size": "500mb"
+          }
+        }
+      },
+      "delete": {
+        "min_age": "7d",
+        "actions": {
+          "delete": {
+            "delete_searchable_snapshot": true
+          }
+        }
+      }
+    },
+    "_meta": {
+      "managed": true,
+      "description": "ILM policy for perftest environment with limited storage"
+    }
+  }
+}
