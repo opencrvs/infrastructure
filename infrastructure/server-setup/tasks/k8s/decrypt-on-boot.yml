@@ -115,8 +115,8 @@
 - name: Copy reboot.service systemd file. Must decrypt disk on reboot
   ansible.builtin.copy:
     dest: /etc/systemd/system/reboot.service
-    group: 1000
-    owner: 1000
+    group: "{{ provisioning_user }}"
+    owner: "{{ provisioning_user }}"
     mode: g+rwx
     content: |
       [Unit]
