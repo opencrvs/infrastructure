@@ -66,8 +66,7 @@ jobs:
             -f environments/${ENV}/traefik/values.override.yaml
           kubectl scale deployment traefik --replicas=1 --namespace traefik || true
       - name: Apply custom ILM configmaps
-        # Namespace must exist before the configmaps are created; helm
-        # normally creates it, but that happens later in this job.
+        # Namespace must exist first; helm doesn't create it until later in this job.
         run: |
           kubectl create namespace "opencrvs-deps-${ENV}" --dry-run=client -o yaml | kubectl apply -f -
           kubectl create configmap filebeat-ilm-config-perftest \
@@ -106,12 +105,8 @@ jobs:
           kill $STERN_PID 2>/dev/null || true
           exit $STATUS
       - name: Tighten built-in APM ILM policies
-        # apm-server's own ilm.setup config has no effect: APM Server 8.x
-        # writes to data streams backed by Elasticsearch's built-in
-        # `*-apm@template` composable templates, which ship with their own
-        # policies already attached (30d rollover, +10d before delete).
-        # Those built-in policies, not apm-server's, govern retention, so
-        # they're edited directly here instead.
+        # apm-server's own ilm.setup config is inert; Elasticsearch's built-in
+        # *-apm@template policies actually govern retention, so those are edited directly.
         run: |
           NAMESPACE="opencrvs-deps-${ENV}"
           ELASTIC_PASSWORD=$(kubectl get secret elasticsearch-admin-user -n "$NAMESPACE" -o jsonpath='{.data.ELASTIC_PASSWORD}' | base64 -d)
