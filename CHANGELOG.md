@@ -11,6 +11,7 @@
 ### Bug fixes
 
 - Make provision user and group ids not rely on hardcoded values [#13192](https://github.com/opencrvs/opencrvs-core/issues/13192)
+## 2.0.2 Release
 
 ## 2.0.1 Release
 
