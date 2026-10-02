@@ -22,6 +22,7 @@
 - Users with the `operator` role no longer get sudo rules for `cat`, `less` and `tail`, which could be escalated to a root shell or used to read any file. Operators are now members of the `adm` group, so `less`, `tail` and `cp` read system logs in `/var/log` and the journal without sudo. Container logs are available with `kubectl logs`, and `/opt/opencrvs` is already readable by everyone. Access to `/data` through sudo is removed, and previously created operator sudoers files are deleted when the playbook runs
 - SSH keys of users are now exactly the `ssh_keys` of the inventory, so a removed key loses access when the playbook runs with the `users` tag. When `additional_keys_for_provisioning_user` is set, it replaces all keys of the provisioning user and must include the key the provisioning connects with. Removed users lose their sudo rules, `~/.ssh` and `~/.kube`
 - Only `admin` users get `cluster-admin` now. Operators get a read-only Kubernetes role: no secrets, `exec`, port-forward or changes. Kubernetes access of removed users is withdrawn when the playbook runs with the `users` tag. Client certificates are valid for 400 days (`kube_user_cert_days`), so run the playbook at least once in that time
+- Added `e2e.yml` workflow that runs Playwright tests from the `COUNTRYCONFIG_REPOSITORY` repository against an environment. `deploy-opencrvs.yml` calls it after post-deploy validation when the environment has `E2E_ENABLED=true` (configured with `environment:init`). [#13345](https://github.com/opencrvs/opencrvs-core/issues/13345)
 
 ## 2.1.0 Release
 
