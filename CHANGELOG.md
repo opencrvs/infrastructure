@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.0 Release Candidate
+
+### New features
+
+- Added `e2e.yml` workflow that runs Playwright tests from the `COUNTRYCONFIG_REPOSITORY` repository against an environment. `deploy-opencrvs.yml` calls it after post-deploy validation when the environment has `E2E_ENABLED=true` (configured with `environment:init`). [#13345](https://github.com/opencrvs/opencrvs-core/issues/13345)
+
 ## 2.1.0 Release
 
 ### Improvements
