@@ -16,7 +16,7 @@ what's actually running, to rule out a version mismatch as the cause.
 
 | Tag | Meaning |
 |---|---|
-| `ansible` | Version is a variable in [`infrastructure/server-setup/group_vars/all.yml`](infrastructure/server-setup/group_vars/all.yml), applied by the provision playbook, and reviewed every minor release. |
+| `ansible` | Version is a variable in [`infrastructure/server-setup/group_vars/all.yml`](infrastructure/server-setup/group_vars/all.yml), applied by the provision playbook, and reviewed every minor release. Renovate opens PRs for new minor/major versions (hotfix/patch releases are skipped), see [`renovate.json`](renovate.json). |
 | `workflow` | Version is hardcoded as an `env:`/input default inside a `.github/workflows/*.yml` file. Bumped on release branches (see `init-release.yml`'s sed step). |
 | `package` | Version is a dependency/devDependency in [`package.json`](package.json). |
 | `nvmrc` | Version is pinned in [`.nvmrc`](.nvmrc). |
@@ -32,7 +32,7 @@ what's actually running, to rule out a version mismatch as the cause.
 | Helm | ansible | Chart package manager (apt package). Variable: `helm_version`. Check: `helm version`. |
 | helm-diff plugin | ansible | Helm plugin used for idempotent `kubernetes.core.helm` diffs. Variable: `helm_diff_plugin_version`. Check: `helm diff version`. |
 | cert-manager | ansible | Issues/renews TLS certs in-cluster. Variable: `cert_manager_version`. Check: `helm list -n cert-manager`. |
-| Actions Runner Controller (ARC) chart | ansible | Runs the Kubernetes-based self-hosted CI runner. Variable: `arc_chart_version`. Check: `helm list -n actions-runner-system`. |
+| Actions Runner Controller (ARC) chart | ansible | Runs the Kubernetes-based self-hosted CI runner. Variable: `arc_chart_version`. Check: `helm list -n actions-runner-system`. Not tracked by Renovate: this is the legacy (`summerwind`) ARC, whose last release is 0.23.7 (2023-11-27); upstream now ships only the `gha-runner-scale-set` charts, which need a separate migration (runner labels change to a single scale-set name). |
 | pgBackRest | ansible | Postgres differential/incremental backup tool, apt-pinned and held. Variable: `pgbackrest_version`. Check: `pgbackrest version` or `dpkg -s pgbackrest`. |
 | OpenCRVS core & countryconfig images / chart | workflow | The application itself. Variables: `OPENCRVS_CHART_VERSION`, `core-image-tag`, `countryconfig-image-tag` in [`deploy-opencrvs.yml`](.github/workflows/deploy-opencrvs.yml). Check: `helm list -n <env-namespace>` for chart version, `kubectl get deploy -n <ns> -o jsonpath='{.items[*].spec.template.spec.containers[*].image}'` for image tags. |
 | Dependencies chart (Postgres/Elasticsearch/Redis/MinIO bundle) | workflow | Stateful backing services bundle. Variable: `DEPENDENCIES_CHART_VERSION` in [`deploy-dependencies.yml`](.github/workflows/deploy-dependencies.yml). Check: `helm list -n <env-namespace>`. |

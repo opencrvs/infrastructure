@@ -1,0 +1,103 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":semanticCommits"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Kubernetes minor version, used as the pkgs.k8s.io apt repository path",
+      "managerFilePatterns": ["/^infrastructure/server-setup/group_vars/all\\.yml$/"],
+      "matchStrings": ["\\bkubernetes_version:\\s*\"(?<currentValue>v\\d+\\.\\d+)\""],
+      "depNameTemplate": "kubernetes",
+      "packageNameTemplate": "kubernetes/kubernetes",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^(?<version>v\\d+\\.\\d+)\\.\\d+$",
+      "versioningTemplate": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Calico manifests are downloaded from the projectcalico/calico git tag",
+      "managerFilePatterns": ["/^infrastructure/server-setup/group_vars/all\\.yml$/"],
+      "matchStrings": ["\\bcalico_version:\\s*\"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "calico",
+      "packageNameTemplate": "projectcalico/calico",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "description": "Helm apt package version from the official Helm apt repository",
+      "managerFilePatterns": ["/^infrastructure/server-setup/group_vars/all\\.yml$/"],
+      "matchStrings": ["\\bhelm_version:\\s*\"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "helm",
+      "datasourceTemplate": "deb",
+      "registryUrlTemplate": "https://packages.buildkite.com/helm-linux/helm-debian/any?suite=any&components=main&binaryArch=amd64",
+      "versioningTemplate": "deb"
+    },
+    {
+      "customType": "regex",
+      "description": "helm-diff plugin, installed from the databus23/helm-diff git tag",
+      "managerFilePatterns": ["/^infrastructure/server-setup/group_vars/all\\.yml$/"],
+      "matchStrings": ["\\bhelm_diff_plugin_version:\\s*\"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "helm-diff",
+      "packageNameTemplate": "databus23/helm-diff",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "description": "cert-manager Helm chart from the Jetstack chart repository",
+      "managerFilePatterns": ["/^infrastructure/server-setup/group_vars/all\\.yml$/"],
+      "matchStrings": ["\\bcert_manager_version:\\s*\"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "cert-manager",
+      "datasourceTemplate": "helm",
+      "registryUrlTemplate": "https://charts.jetstack.io"
+    },
+    {
+      "customType": "regex",
+      "description": "pgBackRest upstream version, installed from the PGDG apt repository as pgbackrest=<version>-*",
+      "managerFilePatterns": ["/^infrastructure/server-setup/group_vars/all\\.yml$/"],
+      "matchStrings": ["\\bpgbackrest_version:\\s*\"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "pgbackrest",
+      "datasourceTemplate": "deb",
+      "registryUrlTemplate": "https://apt.postgresql.org/pub/repos/apt?suite=noble-pgdg&components=main&binaryArch=amd64",
+      "extractVersionTemplate": "^(?<version>\\d+\\.\\d+\\.\\d+)-",
+      "versioningTemplate": "semver"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Server middleware: skip hotfix (patch) releases, they are picked up together with the next minor or major bump",
+      "matchFileNames": ["infrastructure/server-setup/group_vars/all.yml"],
+      "matchUpdateTypes": ["patch"],
+      "enabled": false
+    },
+    {
+      "description": "Server middleware: one PR that Renovate keeps refreshed with the newest versions, merge it while preparing the next minor release",
+      "matchFileNames": ["infrastructure/server-setup/group_vars/all.yml"],
+      "groupName": "server middleware"
+    },
+    {
+      "description": "kubeadm upgrades a cluster by one minor version at a time, so each Kubernetes minor gets its own PR",
+      "matchFileNames": ["infrastructure/server-setup/group_vars/all.yml"],
+      "matchDepNames": ["kubernetes"],
+      "groupName": null,
+      "separateMultipleMinor": true,
+      "prBodyNotes": [
+        "kubeadm upgrades a cluster by one minor version at a time: ship at most one Kubernetes minor bump per OpenCRVS release, and check that `calico_version` supports it."
+      ]
+    },
+    {
+      "description": "pgBackRest must match the version installed in the Postgres pod by opencrvs-core, so it gets its own PR",
+      "matchFileNames": ["infrastructure/server-setup/group_vars/all.yml"],
+      "matchDepNames": ["pgbackrest"],
+      "groupName": null,
+      "prBodyNotes": [
+        "The backup server and the Postgres pod must run the same pgBackRest version: bump `postgres.pgbackrest_version` in opencrvs-core `charts/dependencies/values.yaml` to the same version in the same release."
+      ]
+    },
+    {
+      "description": "Helm 4 is not yet compatible with the kubernetes.core.helm module, see group_vars/all.yml",
+      "matchFileNames": ["infrastructure/server-setup/group_vars/all.yml"],
+      "matchDepNames": ["helm"],
+      "allowedVersions": "/^3\\./"
+    }
+  ]
+}
