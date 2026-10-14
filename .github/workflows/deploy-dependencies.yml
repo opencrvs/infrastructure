@@ -92,15 +92,15 @@ jobs:
 
           kill $STERN_PID 2>/dev/null || true
           exit $STATUS
-      # FIXME: Implement vars.MONITORING_ENABLED check to conditionally install OpenTelemetry Collector
-      # https://github.com/opencrvs/opencrvs-core/issues/13377
+      # MONITORING_ENABLED is set by `environment:init`. Environments that have not
+      # re-run it have no variable yet, so only an explicit 'false' skips the install.
       - name: Install OpenTelemetry Collector
+        if: ${{ vars.MONITORING_ENABLED != 'false' }}
         run: |
           [ ! -f environments/${ENV}/opentelemetry/values.yaml ] && echo "No OpenTelemetry values.yaml found for environment ${ENV}, skipping installation" && exit 0
           helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts || true
           touch environments/${ENV}/opentelemetry/values.override.yaml
           helm upgrade --install opentelemetry-collector open-telemetry/opentelemetry-collector \
-            --namespace traefik \
             --create-namespace \
             --namespace "opencrvs-deps-${ENV}" \
             --set image.repository="otel/opentelemetry-collector-k8s" \
