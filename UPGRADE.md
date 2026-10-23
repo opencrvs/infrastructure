@@ -16,7 +16,7 @@ what's actually running, to rule out a version mismatch as the cause.
 
 | Tag | Meaning |
 |---|---|
-| `ansible` | Version is a variable in [`infrastructure/server-setup/group_vars/all.yml`](infrastructure/server-setup/group_vars/all.yml), applied by the provision playbook, and reviewed every minor release. |
+| `ansible` | Version is a variable in [`infrastructure/server-setup/group_vars/all.yml`](infrastructure/server-setup/group_vars/all.yml), applied by the provision playbook, and reviewed every minor release. Renovate opens PRs for new minor/major versions (hotfix/patch releases are skipped), see [`renovate.json`](renovate.json). |
 | `workflow` | Version is hardcoded as an `env:`/input default inside a `.github/workflows/*.yml` file. Bumped on release branches (see `init-release.yml`'s sed step). |
 | `package` | Version is a dependency/devDependency in [`package.json`](package.json). |
 | `nvmrc` | Version is pinned in [`.nvmrc`](.nvmrc). |
