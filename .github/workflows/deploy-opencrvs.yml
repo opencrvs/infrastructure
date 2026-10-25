@@ -42,7 +42,13 @@ jobs:
     environment: ${{ inputs.environment }}
     runs-on: ubuntu-26.04
     timeout-minutes: 60
+    outputs:
+      e2e-enabled: ${{ steps.e2e-config.outputs.enabled }}
     steps:
+      # E2E_ENABLED is an environment variable, which job-level `if` conditions can't read
+      - name: Read e2e configuration
+        id: e2e-config
+        run: echo "enabled=${{ vars.E2E_ENABLED || 'false' }}" >> "$GITHUB_OUTPUT"
       - name: Waiting for manual approval
         if: ${{ (vars.APPROVAL_REQUIRED || 'false') == 'true' }}
         uses: trstringer/manual-approval@v1
@@ -204,4 +210,13 @@ jobs:
       environment: ${{ inputs.environment }}
       core-image-tag: ${{ inputs.core-image-tag }}
       stage: postdeploy
+    secrets: inherit
+  e2e:
+    needs:
+      - approve
+      - validate-postdeploy
+    if: needs.approve.outputs.e2e-enabled == 'true'
+    uses: ./.github/workflows/e2e.yml
+    with:
+      environment: ${{ inputs.environment }}
     secrets: inherit
