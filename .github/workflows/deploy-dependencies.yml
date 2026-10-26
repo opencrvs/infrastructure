@@ -11,7 +11,7 @@ on:
         options:
           - ""
 env:
-  DEPENDENCIES_CHART_VERSION: "v1.9.21"
+  DEPENDENCIES_CHART_VERSION: "v1.9.22"
   TRAEFIK_CHART_VERSION: "39.0.0"
 jobs:
   approve:
