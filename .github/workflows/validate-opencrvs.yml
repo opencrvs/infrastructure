@@ -48,8 +48,6 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v7
-      - name: Create namespace
-        run: kubectl create namespace "opencrvs-${ENV}" || true
       - name: Create job validate-${{ inputs.stage }} from helm template and apply it
         run: |
           kubectl delete job -n ${namespace} --ignore-not-found=true validate-${{ inputs.stage }}

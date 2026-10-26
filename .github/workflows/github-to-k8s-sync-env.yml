@@ -326,7 +326,11 @@ jobs:
             namespace=$(yq e ".metadata.namespace" "$f")
             [ "$namespace" == "null" ] && echo "ℹ️  No namespace defined for $f, skipping secret creation" && continue
             echo "🚀 Applying $f within namespace"
-            kubectl get namespace $namespace >/dev/null 2>&1 || kubectl create namespace $namespace
+            # Namespaces are created by provisioning, the runner is not allowed to create or read them
+            if ! kubectl auth can-i create secrets -n "$namespace" >/dev/null 2>&1; then
+              echo "❌ Namespace $namespace does not exist or the runner has no access to it. Create it before running the deployment, see 'Cloud-native environments' in README.md" >&2
+              exit 1
+            fi
             yq eval . "$f" > /dev/null && echo "✅ $f is valid YAML" || echo "❌ $f has YAML errors"
             kubectl delete --ignore-not-found -n $namespace -f "$f"
             kubectl apply -n $namespace -f "$f"
