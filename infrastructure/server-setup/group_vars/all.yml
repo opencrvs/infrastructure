@@ -97,9 +97,19 @@ helm_diff_plugin_version: "v3.15.10"
 # Certificate manager chart version
 cert_manager_version: "v1.21.0"
 
-# Action runner controller chart version
-arc_chart_version: "0.23.7"
-arc_opencrvs_runner_version: "latest"
+# Kubernetes self-hosted runner (official gha-runner-scale-set with ephemeral runners)
+# Override per environment in environments/<env>/inventory-vars.yml (passed to ansible as --extra-vars)
+# Version of both the controller and the scale set charts, they must match
+arc_scale_set_chart_version: "0.15.0"
+arc_controller_release_name: "arc"
+# Image built by https://github.com/opencrvs/github-opencrvs-self-hosted-runner
+arc_scale_set_runner_image: "ghcr.io/opencrvs/opencrvs-github-ephemeral-runner"
+arc_scale_set_runner_version: "latest"
+# Jobs run one by one per cluster. One idle runner is kept warm.
+arc_scale_set_min_runners: 1
+arc_scale_set_max_runners: 1
+# Runner pod resources, e.g. {requests: {cpu: 500m, memory: 1Gi}}
+arc_scale_set_runner_resources: {}
 
 # Postgres: differencial backup support (pgBackRest) version
 pgbackrest_version: "2.59.0"

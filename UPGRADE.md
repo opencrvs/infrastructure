@@ -16,7 +16,7 @@ what's actually running, to rule out a version mismatch as the cause.
 
 | Tag | Meaning |
 |---|---|
-| `ansible` | Version is a variable in [`infrastructure/server-setup/group_vars/all.yml`](infrastructure/server-setup/group_vars/all.yml), applied by the provision playbook, and reviewed every minor release. |
+| `ansible` | Version is a variable in [`infrastructure/server-setup/group_vars/all.yml`](infrastructure/server-setup/group_vars/all.yml), applied by the provision playbook, and reviewed every minor release. Renovate opens PRs for new minor/major versions (hotfix/patch releases are skipped), see [`renovate.json`](renovate.json). |
 | `workflow` | Version is hardcoded as an `env:`/input default inside a `.github/workflows/*.yml` file. Bumped on release branches (see `init-release.yml`'s sed step). |
 | `package` | Version is a dependency/devDependency in [`package.json`](package.json). |
 | `nvmrc` | Version is pinned in [`.nvmrc`](.nvmrc). |
@@ -32,7 +32,7 @@ what's actually running, to rule out a version mismatch as the cause.
 | Helm | ansible | Chart package manager (apt package). Variable: `helm_version`. Check: `helm version`. |
 | helm-diff plugin | ansible | Helm plugin used for idempotent `kubernetes.core.helm` diffs. Variable: `helm_diff_plugin_version`. Check: `helm diff version`. |
 | cert-manager | ansible | Issues/renews TLS certs in-cluster. Variable: `cert_manager_version`. Check: `helm list -n cert-manager`. |
-| Actions Runner Controller (ARC) chart | ansible | Runs the Kubernetes-based self-hosted CI runner. Variable: `arc_chart_version`. Check: `helm list -n actions-runner-system`. |
+| Actions Runner Controller (ARC) chart | ansible | Runs the Kubernetes-based self-hosted CI runner. Installs the official `gha-runner-scale-set-controller` and `gha-runner-scale-set` charts (variable: `arc_scale_set_chart_version`, both charts must stay on the same version; check: `helm list -n arc-systems` and `helm list -n arc-runners`). Helm does not upgrade CRDs, the scale-set task applies them with `helm show crds` on every provision. |
 | pgBackRest | ansible | Postgres differential/incremental backup tool, apt-pinned and held. Variable: `pgbackrest_version`. Check: `pgbackrest version` or `dpkg -s pgbackrest`. |
 | OpenCRVS core & countryconfig images / chart | workflow | The application itself. Variables: `OPENCRVS_CHART_VERSION`, `core-image-tag`, `countryconfig-image-tag` in [`deploy-opencrvs.yml`](.github/workflows/deploy-opencrvs.yml). Check: `helm list -n <env-namespace>` for chart version, `kubectl get deploy -n <ns> -o jsonpath='{.items[*].spec.template.spec.containers[*].image}'` for image tags. |
 | Dependencies chart (Postgres/Elasticsearch/Redis/MinIO bundle) | workflow | Stateful backing services bundle. Variable: `DEPENDENCIES_CHART_VERSION` in [`deploy-dependencies.yml`](.github/workflows/deploy-dependencies.yml). Check: `helm list -n <env-namespace>`. |
@@ -42,8 +42,23 @@ what's actually running, to rule out a version mismatch as the cause.
 | Node.js | nvmrc | Runtime for the `@opencrvs/infrastructure` CLI tooling. Pinned in `.nvmrc` (`package.json` `engines.node` should match). Check: `node -v`. |
 | `@opencrvs/toolkit` | package | CLI used for `environment:init`/`upgrade`/etc. Check: `cat package.json | grep '"@opencrvs/toolkit"'` or `npm ls @opencrvs/toolkit`. |
 | husky | package | Git hooks manager for this repo. Check: `npx husky --version`. |
-| Kubernetes self-hosted runner image (`opencrvs-github-runner`) | ansible | CI runner container deployed via ARC, built by [`opencrvs/github-opencrvs-self-hosted-runner`](https://github.com/opencrvs/github-opencrvs-self-hosted-runner). Variable: `arc_opencrvs_runner_version`. Check running image: `kubectl get pods -n actions-runner-system -o jsonpath='{.items[*].spec.containers[*].image}'`. |
+| Kubernetes self-hosted runner image (`opencrvs-github-ephemeral-runner`) | ansible | CI runner container deployed via ARC, built by [`opencrvs/github-opencrvs-self-hosted-runner`](https://github.com/opencrvs/github-opencrvs-self-hosted-runner). Variables: `arc_scale_set_runner_image` / `arc_scale_set_runner_version`. Check running image: `kubectl get pods -n arc-runners -o jsonpath='{.items[*].spec.containers[*].image}'`. |
 | Node-based self-hosted runner (`node-runner.sh`) | external | GitHub Actions runner binary installed as a systemd service on non-k8s nodes. Self-updates automatically before each job (see [`scripts/bootstrap/README.md`](scripts/bootstrap/README.md)) — not version-pinned in this repo. Check: GitHub UI → Settings → Actions → Runners, or `config.sh --version` / `journalctl -u 'actions.runner.*'` on the node. |
 | metrics-server | external | Supplies `kubectl top`/HPA metrics. Always installs the latest GitHub release at provision time — not version-pinned. Check: `kubectl get deployment metrics-server -n kube-system -o jsonpath='{.spec.template.spec.containers[0].image}'`. |
 | Workflow `environment:` dropdown options | toolkit | Populated by `opencrvs-core/packages/toolkit`, not by anything in this repo — track that package's version/behavior in `opencrvs-core` if the dropdown misbehaves. |
+
+## Overriding Ansible variables per environment
+
+Variables defined in [`group_vars/all.yml`](infrastructure/server-setup/group_vars/all.yml) (for example
+`arc_scale_set_max_runners`) can be overridden per environment in `environments/<env>/inventory-vars.yml`,
+creating the file if it does not exist:
+
+```yaml
+arc_scale_set_max_runners: 2
+```
+
+`provision.yml` and `reset-2fa.yml` pass that file to Ansible as `--extra-vars`, which has the highest precedence.
+Do **not** set such variables under `all: vars:` in `environments/<env>/inventory.yml`: `group_vars/all.yml` outranks
+inventory group vars, so the value is silently ignored. Setting it as a host-level variable on the master node
+works but is easy to miss, and `inventory.yml` is managed by the toolkit while `inventory-vars.yml` is not.
 
