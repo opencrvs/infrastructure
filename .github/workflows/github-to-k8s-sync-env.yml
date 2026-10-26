@@ -289,7 +289,7 @@ jobs:
             [ "$namespace" == "null" ] && echo "ℹ️  No namespace defined for $f, skipping secret creation" && continue
             echo "🚀 Applying $f within namespace"
             kubectl get namespace $namespace >/dev/null 2>&1 || kubectl create namespace $namespace
-            yq eval . "$f" > /dev/null && echo "✅ $f is valid YAML" || echo "❌ $f has YAML errors" && cat "$f"
+            yq eval . "$f" > /dev/null && echo "✅ $f is valid YAML" || echo "❌ $f has YAML errors"
             kubectl delete --ignore-not-found -n $namespace -f "$f"
             kubectl apply -n $namespace -f "$f"
             echo "Dropping last-applied-configuration annotation for secret $(basename ${f/.yaml/})"
