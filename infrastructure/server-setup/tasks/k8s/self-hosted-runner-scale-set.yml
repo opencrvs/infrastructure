@@ -9,10 +9,13 @@
     arc_runners_namespace: arc-runners
     arc_auth_secret_name: arc-github-auth
     arc_scale_set_name: "arc-runner-set-{{ kube_cluster_env }}"
-    arc_scale_set_labels: >-
-      {{ (['self-hosted', 'k8s', kube_cluster_env]
+    # Environments served by this cluster. A job selects one of them by label, the same names
+    # are used for the namespaces the runner is allowed to deploy to.
+    arc_runner_environments: >-
+      {{ ([kube_cluster_env]
           + (kube_self_hosted_runner_additional_labels | default('') | split(',') | map('trim') | reject('equalto', '') | list))
           | unique | list }}
+    arc_scale_set_labels: "{{ (['self-hosted', 'k8s'] + arc_runner_environments) | unique | list }}"
   block:
     # Helm installs CRDs from the chart's crds/ directory only once and never upgrades them.
     # Server-side apply is required, the CRDs (~3MB) are too large for client-side apply annotations.
@@ -70,6 +73,9 @@
           metadata:
             name: opencrvs-runner
             namespace: "{{ arc_runners_namespace }}"
+
+    - name: Configure permissions of the CI runner
+      ansible.builtin.include_tasks: tasks/k8s/self-hosted-runner-rbac.yml
 
     - name: Grant cluster-admin to CI runner serviceaccount
       kubernetes.core.k8s:
