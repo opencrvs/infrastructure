@@ -7,8 +7,9 @@
 #   environments/<kube_cluster_env>/traefik/values.yaml           (required, skipped when absent)
 #   environments/<kube_cluster_env>/traefik/values.override.yaml  (optional)
 #
-# Helm never upgrades CRDs from a chart's crds/ directory, the same as before this moved from
-# the deploy-dependencies workflow.
+# Helm installs CRDs from the chart's crds/ directory only once and never upgrades them, so they are
+# applied here on every provision. Server-side apply with --force-conflicts takes over the fields
+# Helm set when it created them.
 - name: Install Traefik
   vars:
     traefik_values_dir: "{{ playbook_dir }}/../../environments/{{ kube_cluster_env }}/traefik"
@@ -31,6 +32,19 @@
       ansible.builtin.debug:
         msg: "{{ traefik_values_dir }}/values.yaml does not exist, Traefik is not installed"
       when: not traefik_values_exist
+
+    - name: Apply Traefik CRDs of chart version {{ traefik_chart_version }}
+      ansible.builtin.shell: |
+        set -o pipefail
+        helm show crds oci://ghcr.io/traefik/helm/traefik \
+          --version {{ traefik_chart_version }} \
+          | kubectl apply --server-side=true --force-conflicts -f -
+      args:
+        executable: /bin/bash
+      environment:
+        KUBECONFIG: /home/{{ provisioning_user }}/.kube/config
+      changed_when: false
+      when: traefik_values_exist
 
     - name: Deploy Traefik via Helm
       kubernetes.core.helm:
