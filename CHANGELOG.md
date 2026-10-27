@@ -1,6 +1,10 @@
 # Changelog
 
-## 2.1.2 Release Candidate
+## 2.1.2
+
+### Bug fixes
+
+- The GitHub to Kubernetes environment sync no longer prints secret manifests to the workflow log [#409](https://github.com/opencrvs/infrastructure/pull/409)
 
 ## 2.1.1
 
