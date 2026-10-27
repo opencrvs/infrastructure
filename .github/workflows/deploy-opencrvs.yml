@@ -85,7 +85,8 @@ jobs:
       GITHUB_ACTOR: ${{ github.actor }}
       CORE_IMAGE_TAG: ${{ inputs.core-image-tag }}
       COUNTRYCONFIG_IMAGE_TAG: ${{ inputs.countryconfig-image-tag }}
-      COUNTRYCONFIG_IMAGE_NAME: ${{ secrets.DOCKERHUB_ACCOUNT || 'opencrvs' }}/${{ secrets.DOCKERHUB_REPO || 'ocrvs-farajaland'}}
+      # TODO: v2.4: Remove the DOCKERHUB_* fallbacks after all repositories ran the secrets migration
+      COUNTRYCONFIG_IMAGE_NAME: ${{ vars.REGISTRY_HOST || 'docker.io' }}/${{ secrets.REGISTRY_ORGANISATION || secrets.DOCKERHUB_ACCOUNT || 'opencrvs' }}/${{ secrets.REGISTRY_REPOSITORY || secrets.DOCKERHUB_REPO || 'ocrvs-farajaland' }}
       SENDER_EMAIL_ADDRESS: ${{ secrets.SENDER_EMAIL_ADDRESS }}
       ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
     runs-on:
