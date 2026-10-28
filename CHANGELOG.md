@@ -15,6 +15,8 @@
 - Backup and restore workflows no longer read the non-existent `job-name` input in the approval step, the approval issue title and text now describe the operation
 - `convert-backup.sh` no longer leaves decrypted backup data on the backup server (all plaintext is kept in a private temporary directory that is always removed on exit) and no longer passes the passphrase on the command line
 - Backup rotation on the backup server no longer runs as root. The script is installed root-owned as `/usr/local/sbin/opencrvs-rotate-backups.sh`, the cron job runs as `backup`, and directory names are matched strictly and passed to `rm` NUL-delimited.
+- Restore, Deploy OpenCRVS, Validate pre/post deploy, Reset 2FA and Start a new release workflows check their text inputs (backup date, image tags, stage, user name, release version and target branch) against the expected format and pass them to scripts as environment variables. The backup date check in Restore now reads the `backup-date` input, and the `reset-2fa.yml` playbook checks the user name as well
+- Pre-deploy validation in the Deploy OpenCRVS workflow now starts after the approval step
 
 ## 2.1.0 Release
 

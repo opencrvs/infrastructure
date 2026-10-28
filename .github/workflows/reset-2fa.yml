@@ -20,6 +20,14 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 60
     steps:
+      - name: Validate inputs
+        env:
+          RESET_USER: ${{ inputs.user }}
+        run: |
+          if [[ ! "$RESET_USER" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]]; then
+            echo "❌ Error: Invalid user name. Use lowercase letters, digits, '_' or '-' (up to 32 characters)."
+            exit 1
+          fi
       - name: Waiting for manual approval
         if: ${{ vars.APPROVAL_REQUIRED != 'false' }}
         uses: trstringer/manual-approval@v1
