@@ -6,8 +6,13 @@
 
 - Container registry other than Docker Hub. The `DOCKERHUB_ACCOUNT`, `DOCKERHUB_REPO`, `DOCKER_USERNAME` and `DOCKER_TOKEN` secrets are renamed to `REGISTRY_ORGANISATION`, `REGISTRY_REPOSITORY`, `REGISTRY_USERNAME` and `REGISTRY_TOKEN`, the new variable `REGISTRY_HOST` (default `docker.io`) sets the registry, and the pull secret is now `registry-credentials`. The secrets migration workflow copies the secrets, and `dockerhub-credentials` is still created next to the new pull secret [#14209](https://github.com/opencrvs/opencrvs-core/issues/14209)
 
+### Improvements
+
+- The manual approval of GitHub Actions workflows is now required unless the `APPROVAL_REQUIRED` environment variable is explicitly set to `false`, and the user who started a workflow can no longer approve it. The `GH_APPROVERS` variable must list at least one user other than the person starting the workflow (at least 3 for `Clear all environment data`, so 4 users in total)
+
 ### Bug fixes
 
+- Backup and restore workflows no longer read the non-existent `job-name` input in the approval step, the approval issue title and text now describe the operation
 - `convert-backup.sh` no longer leaves decrypted backup data on the backup server (all plaintext is kept in a private temporary directory that is always removed on exit) and no longer passes the passphrase on the command line
 
 ## 2.1.0 Release

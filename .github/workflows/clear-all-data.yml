@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Waiting for manual approval
-        if: ${{ (vars.APPROVAL_REQUIRED || 'false') == 'true' }}
+        if: ${{ vars.APPROVAL_REQUIRED != 'false' }}
         uses: trstringer/manual-approval@v1
         with:
           secret: ${{ github.TOKEN }}
@@ -29,7 +29,7 @@ jobs:
           minimum-approvals: 3
           issue-title: "Reset environment (${{ inputs.environment }})"
           issue-body: >
-            3 separate users must approve to reset data on production.
+            3 separate users, other than the initiator, must approve to reset data on production.
             
             > [!WARNING]
             > **Are you sure what you are doing?**
@@ -39,7 +39,7 @@ jobs:
             Please approve or deny ${{ inputs.environment }} environment reset 
             initiated from GitHub Actions by @${{ github.actor }}.
 
-          exclude-workflow-initiator-as-approver: false
+          exclude-workflow-initiator-as-approver: true
   prepare:
     needs: approve
     outputs:

@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Waiting for manual approval
-        if: ${{ (vars.APPROVAL_REQUIRED || 'false') == 'true' }}
+        if: ${{ vars.APPROVAL_REQUIRED != 'false' }}
         uses: trstringer/manual-approval@v1
         with:
           secret: ${{ github.TOKEN }}
@@ -32,7 +32,7 @@ jobs:
             Please approve or deny Reset 2FA from user ${{ inputs.user }} in 
             ${{ inputs.environment }} initiated from GitHub Actions by @${{ github.actor }}.
 
-          exclude-workflow-initiator-as-approver: false
+          exclude-workflow-initiator-as-approver: true
 
   reset:
     needs: approve
