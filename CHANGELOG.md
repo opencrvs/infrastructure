@@ -14,6 +14,7 @@
 
 - Backup and restore workflows no longer read the non-existent `job-name` input in the approval step, the approval issue title and text now describe the operation
 - `convert-backup.sh` no longer leaves decrypted backup data on the backup server (all plaintext is kept in a private temporary directory that is always removed on exit) and no longer passes the passphrase on the command line
+- Backup rotation on the backup server no longer runs as root. The script is installed root-owned as `/usr/local/sbin/opencrvs-rotate-backups.sh`, the cron job runs as `backup`, and directory names are matched strictly and passed to `rm` NUL-delimited.
 
 ## 2.1.0 Release
 
