@@ -14,10 +14,18 @@ on:
           - migration-staging
           - qa
           - qa-hotfix
+      data-cleanup-only:
+        description: 'Run only the data-cleanup job'
+        type: boolean
+        default: false
+
   workflow_call:
     inputs:
       environment:
         type: string
+      data-cleanup-only:
+        type: boolean
+        default: false
 jobs:
   approve:
     environment: ${{ inputs.environment }}
@@ -98,11 +106,8 @@ jobs:
       max-parallel: 1  # Ensure jobs run one by one
       fail-fast: true  # Stop on first failure
       matrix:
-        job-name:
-          - data-cleanup
-          - postgres-on-deploy
-          - data-migration
-          - data-migration-analytics
+        # data-cleanup-only is set by callers (e.g. deploy-and-e2e); standalone runs execute all jobs
+        job-name: ${{ fromJSON(inputs.data-cleanup-only && '["data-cleanup"]' || '["data-cleanup", "postgres-on-deploy", "data-migration", "data-migration-analytics"]') }}
     steps:
         - name: Download helm release values file into /tmp/opencrvs-${{ inputs.environment }}.json
           uses: actions/download-artifact@v8

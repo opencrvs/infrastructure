@@ -295,25 +295,30 @@ jobs:
           fi
           done
 
-      - name: Map Dockerhub credentials if available
+      - name: Map container registry credentials if available
         env:
-          # TODO: Rename to DOCKERHUB_USERNAME after swarm migration
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKER_USERNAME || '' }}
-          # TODO: Rename to DOCKERHUB_TOKEN after swarm migration 
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKER_TOKEN || '' }}
-          DOCKERHUB_SECRET_NAME: ${{ vars.DOCKERHUB_SECRET_NAME || 'dockerhub-credentials' }}
+          REGISTRY_HOST: ${{ vars.REGISTRY_HOST || 'docker.io' }}
+          # TODO: v2.4: Remove the DOCKER_* fallbacks after all repositories ran the secrets migration
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME || secrets.DOCKER_USERNAME || '' }}
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN || secrets.DOCKER_TOKEN || '' }}
+          # TODO: v2.4: Remove after all environments refer to registry-credentials in their values.yaml.
+          # Environments set up before the rename pull images with the previous name.
+          LEGACY_SECRET_NAME: ${{ vars.DOCKERHUB_SECRET_NAME || 'dockerhub-credentials' }}
           NAMESPACE_TEMPLATE: ${{ inputs.namespace_template }}
         run: |
-          if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_TOKEN" ] && [ "z$NAMESPACE_TEMPLATE" = "zopencrvs" ]; then
-            kubectl create secret docker-registry "$DOCKERHUB_SECRET_NAME" \
-              --docker-server=https://index.docker.io/v1/ \
-              --docker-username="$DOCKERHUB_USERNAME" \
-              --docker-password="$DOCKERHUB_TOKEN" \
-              --namespace="${NAMESPACE_TEMPLATE}-${{ inputs.environment }}" \
-              --dry-run=client -o yaml > "k8s-secrets/$DOCKERHUB_SECRET_NAME.yaml"
-            echo "✅ Generated Docker Registry Secret manifest: k8s-secrets/$DOCKERHUB_SECRET_NAME.yaml"
+          if [ -n "$REGISTRY_USERNAME" ] && [ -n "$REGISTRY_TOKEN" ] && [ "$NAMESPACE_TEMPLATE" = "opencrvs" ]; then
+            [ "$REGISTRY_HOST" = "docker.io" ] && REGISTRY_HOST=index.docker.io
+            for secret_name in registry-credentials "$LEGACY_SECRET_NAME"; do
+              kubectl create secret docker-registry "$secret_name" \
+                --docker-server="$REGISTRY_HOST" \
+                --docker-username="$REGISTRY_USERNAME" \
+                --docker-password="$REGISTRY_TOKEN" \
+                --namespace="${NAMESPACE_TEMPLATE}-${{ inputs.environment }}" \
+                --dry-run=client -o yaml > "k8s-secrets/$secret_name.yaml"
+              echo "✅ Generated Registry Secret manifest: k8s-secrets/$secret_name.yaml"
+            done
           else
-            echo "ℹ️  Dockerhub credentials not provided, skipping Docker Registry Secret creation for $DOCKERHUB_SECRET_NAME"
+            echo "ℹ️  Container registry credentials not provided, skipping Docker Registry Secret creation"
           fi
 
       - name: Apply secrets to Kubernetes

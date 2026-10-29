@@ -73,9 +73,9 @@ Before starting the deployment, ensure the following requirements are met:
 OpenCRVS requires custom Country Config docker image for configuration.
 
 - Fork country config repository https://github.com/opencrvs/opencrvs-countryconfig
-- Create Docker Hub account or use your own private docker registry
-- Push build and push image to the docker registry
-- Create Docker Hub API access key or use your own way for authentication into private registry.
+- Use a container registry that implements the OCI Registry v2 API, for example Docker Hub or GHCR
+- Build and push the image to the registry
+- Create an access token for the registry. `yarn environment:init` stores it, with the registry host, organisation, repository and username, as `REGISTRY_HOST`, `REGISTRY_ORGANISATION`, `REGISTRY_REPOSITORY`, `REGISTRY_USERNAME` and `REGISTRY_TOKEN`.
 
 For more details check developers documentation [TODO](link)
 
