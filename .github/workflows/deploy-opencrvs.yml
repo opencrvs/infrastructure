@@ -118,8 +118,6 @@ jobs:
           EOF
           )
           echo "$SUMMARY" | sed 's/^          //' >> $GITHUB_STEP_SUMMARY
-      - name: Create namespace
-        run: kubectl create namespace "opencrvs-${ENV}" || true
       - name: Copy secrets from dependencies into application namespace
         # Only redis secret for now needs to be copied
         run: |
@@ -154,7 +152,6 @@ jobs:
             --namespace "opencrvs-${ENV}" \
             -f environments/${ENV}/opencrvs-services/values.yaml \
             -f environments/${ENV}/opencrvs-services/values.override.yaml \
-            --create-namespace \
             --atomic \
             --wait \
             --wait-for-jobs \

@@ -1,0 +1,192 @@
+# Permissions of the CI runner (ServiceAccount opencrvs-runner in the runner pods namespace).
+#
+# The runner gets the opencrvs-deployer ClusterRole through RoleBindings, one per namespace of
+# the environments served by this cluster (kube_environments). A RoleBinding grants a ClusterRole
+# only inside its own namespace, so the runner has no access to other namespaces, to cluster-scoped
+# resources, or to the secrets of the runner itself.
+#
+# The runner holds no cluster-scoped permissions. Cluster-scoped objects of the charts it deploys are
+# created by provisioning instead, see monitoring-rbac.yml.
+#
+# RBAC has no namespace wildcards: every namespace needs its own RoleBinding.
+# Namespaces are created here because `create namespace` cannot be limited to certain names.
+- name: Configure permissions of the CI runner
+  vars:
+    arc_runner_namespaces: >-
+      {{ (kube_environments | map('regex_replace', '^', 'opencrvs-') | list)
+         + (kube_environments | map('regex_replace', '^', 'opencrvs-deps-') | list) }}
+    arc_runner_rbac_labels:
+      app.kubernetes.io/managed-by: opencrvs-provisioning
+      app.kubernetes.io/name: opencrvs-deployer
+  block:
+    - name: Validate environment names used as namespace suffixes
+      ansible.builtin.assert:
+        that:
+          - item is match('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')
+          - ('opencrvs-deps-' ~ item) | length <= 63
+        fail_msg: >-
+          '{{ item }}' cannot be used as a namespace suffix. Environment names, including
+          kube_self_hosted_runner_additional_labels, must be valid lowercase DNS labels
+      loop: "{{ kube_environments }}"
+
+    - name: Create ClusterRole opencrvs-deployer
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRole
+          metadata:
+            name: opencrvs-deployer
+            labels: "{{ arc_runner_rbac_labels }}"
+          # Everything the workflows and the charts (Helm release secrets included) need
+          rules:
+            - apiGroups: [""]
+              resources: [configmaps, secrets, services, serviceaccounts, persistentvolumeclaims]
+              verbs: [get, list, watch, create, update, patch, delete]
+            # Kubernetes only lets a user create a Role holding permissions the user already has.
+            # The dependencies chart creates backup-runner-role with the `exec` verb on pods
+            # and `create` on pods/exec, the runner must hold them too.
+            - apiGroups: [""]
+              resources: [pods]
+              verbs: [get, list, watch, create, update, patch, delete, exec]
+            - apiGroups: [""]
+              resources: [pods/exec]
+              verbs: [create]
+            - apiGroups: [""]
+              resources: [pods/log, events]
+              verbs: [get, list, watch]
+            - apiGroups: [apps]
+              resources: [deployments, statefulsets, daemonsets]
+              verbs: [get, list, watch, create, update, patch, delete]
+            - apiGroups: [apps]
+              resources: [replicasets]
+              verbs: [get, list, watch]
+            # Held for the same reason as pods/exec: backup-runner-role scales statefulsets on restore
+            - apiGroups: [apps]
+              resources: [statefulsets/scale]
+              verbs: [get, update, patch]
+            - apiGroups: [batch]
+              resources: [jobs, cronjobs]
+              verbs: [get, list, watch, create, update, patch, delete]
+            - apiGroups: [autoscaling]
+              resources: [horizontalpodautoscalers]
+              verbs: [get, list, watch, create, update, patch, delete]
+            - apiGroups: [policy]
+              resources: [poddisruptionbudgets]
+              verbs: [get, list, watch, create, update, patch, delete]
+            - apiGroups: [networking.k8s.io]
+              resources: [networkpolicies, ingresses]
+              verbs: [get, list, watch, create, update, patch, delete]
+            - apiGroups: [traefik.io]
+              resources: [ingressroutes, middlewares, traefikservices]
+              verbs: [get, list, watch, create, update, patch, delete]
+            # The dependencies chart creates a Role and a RoleBinding for the backup jobs
+            - apiGroups: [rbac.authorization.k8s.io]
+              resources: [roles, rolebindings]
+              verbs: [get, list, watch, create, update, patch, delete]
+
+    - name: Create namespaces of the environments
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ item }}"
+            labels:
+              # Report only for now, nothing is rejected
+              pod-security.kubernetes.io/warn: baseline
+              pod-security.kubernetes.io/audit: baseline
+      loop: "{{ arc_runner_namespaces }}"
+
+    - name: Bind opencrvs-deployer to the runner in the namespaces of the environments
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: RoleBinding
+          metadata:
+            name: opencrvs-deployer
+            namespace: "{{ item }}"
+            labels: "{{ arc_runner_rbac_labels }}"
+          subjects:
+            - kind: ServiceAccount
+              name: opencrvs-runner
+              namespace: "{{ arc_runners_namespace }}"
+          roleRef:
+            kind: ClusterRole
+            name: opencrvs-deployer
+            apiGroup: rbac.authorization.k8s.io
+      loop: "{{ arc_runner_namespaces }}"
+
+    # Namespaces are kept, they hold data. Only the access of the runner is revoked.
+    - name: Find RoleBindings of environments not served by this cluster anymore
+      kubernetes.core.k8s_info:
+        api_version: rbac.authorization.k8s.io/v1
+        kind: RoleBinding
+        label_selectors:
+          - app.kubernetes.io/managed-by=opencrvs-provisioning
+          - app.kubernetes.io/name=opencrvs-deployer
+      register: arc_runner_rolebindings
+
+    - name: Remove stale RoleBindings
+      kubernetes.core.k8s:
+        state: absent
+        api_version: rbac.authorization.k8s.io/v1
+        kind: RoleBinding
+        name: opencrvs-deployer
+        namespace: "{{ item }}"
+      loop: "{{ arc_runner_rolebindings.resources | map(attribute='metadata.namespace') | list | difference(arc_runner_namespaces) }}"
+
+    # The static TLS certificate of Traefik is synced from GitHub secrets by the runner.
+    # `create` cannot be limited by name, the other verbs are limited to the one secret.
+    - name: Create namespace of Traefik
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: traefik
+
+    - name: Create Role for the Traefik TLS secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: Role
+          metadata:
+            name: opencrvs-runner-traefik-cert
+            namespace: traefik
+            labels:
+              app.kubernetes.io/managed-by: opencrvs-provisioning
+              app.kubernetes.io/name: opencrvs-runner-traefik-cert
+          rules:
+            - apiGroups: [""]
+              resources: [secrets]
+              verbs: [create]
+            - apiGroups: [""]
+              resources: [secrets]
+              resourceNames: [traefik-cert]
+              verbs: [get, update, patch, delete]
+
+    - name: Bind the Traefik TLS secret Role to the runner
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: RoleBinding
+          metadata:
+            name: opencrvs-runner-traefik-cert
+            namespace: traefik
+            labels:
+              app.kubernetes.io/managed-by: opencrvs-provisioning
+              app.kubernetes.io/name: opencrvs-runner-traefik-cert
+          subjects:
+            - kind: ServiceAccount
+              name: opencrvs-runner
+              namespace: "{{ arc_runners_namespace }}"
+          roleRef:
+            kind: Role
+            name: opencrvs-runner-traefik-cert
+            apiGroup: rbac.authorization.k8s.io

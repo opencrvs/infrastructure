@@ -1,0 +1,81 @@
+# ClusterRoles and ClusterRoleBindings of Filebeat and Metricbeat. The dependencies chart does not
+# create them by default (`create_cluster_roles: false`).
+#
+# Only one environment of a cluster has monitoring. It is the provision environment (kube_cluster_env).
+# The bindings use the chart default ServiceAccounts (`filebeat.service_account_name`,
+# `metricbeat.service_account_name`) in its dependencies namespace.
+#
+# The rules must match the chart: opencrvs-core/charts/dependencies/templates/{filebeat,metricbeat}.yaml
+#
+# `helm.sh/resource-policy: keep` stops Helm from deleting roles that an earlier chart version created.
+- name: Configure cluster roles of the monitoring stack
+  vars:
+    monitoring_rbac_labels:
+      app.kubernetes.io/managed-by: opencrvs-provisioning
+      app.kubernetes.io/name: opencrvs-monitoring
+    monitoring_rbac_annotations:
+      helm.sh/resource-policy: keep
+    monitoring_cluster_roles:
+      filebeat:
+        - apiGroups: [""]
+          resources: [pods, namespaces, nodes]
+          verbs: [get, list, watch]
+        - apiGroups: [apps]
+          resources: [replicasets, statefulsets]
+          verbs: [get, list, watch]
+      metricbeat:
+        - apiGroups: [""]
+          resources: [nodes, namespaces, events, pods, services, endpoints, persistentvolumes, persistentvolumeclaims, configmaps]
+          verbs: [get, list, watch]
+        - apiGroups: [batch]
+          resources: [jobs]
+          verbs: [get, list, watch]
+        - apiGroups: [extensions]
+          resources: [replicasets]
+          verbs: [get, list, watch]
+        - apiGroups: [apps]
+          resources: [statefulsets, deployments, replicasets]
+          verbs: [get, list, watch]
+        - apiGroups: [""]
+          resources: [nodes/stats]
+          verbs: [get]
+        - nonResourceURLs: [/metrics]
+          verbs: [get]
+  block:
+    - name: Create ClusterRoles of the monitoring stack
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRole
+          metadata:
+            name: "{{ item.key }}"
+            labels: "{{ monitoring_rbac_labels }}"
+            annotations: "{{ monitoring_rbac_annotations }}"
+          rules: "{{ item.value }}"
+      loop: "{{ monitoring_cluster_roles | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+
+    - name: Bind ClusterRoles of the monitoring stack to their ServiceAccounts
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: "{{ item.key }}"
+            labels: "{{ monitoring_rbac_labels }}"
+            annotations: "{{ monitoring_rbac_annotations }}"
+          roleRef:
+            apiGroup: rbac.authorization.k8s.io
+            kind: ClusterRole
+            name: "{{ item.key }}"
+          # The ServiceAccount has the name of the role. The list replaces the subjects of an earlier provision.
+          subjects:
+            - kind: ServiceAccount
+              name: "{{ item.key }}"
+              namespace: "opencrvs-deps-{{ kube_cluster_env }}"
+      loop: "{{ monitoring_cluster_roles | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
