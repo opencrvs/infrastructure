@@ -8,13 +8,13 @@
 # Copyright (C) The OpenCRVS Authors located at https://github.com/opencrvs/opencrvs-core/blob/master/AUTHORS.
 ansible_python_interpreter: /usr/bin/python3
 
-crontab_user: root
 provisioning_user: provision
 
 # User for ssh connection to backup server
 backup_server_user: 'backup'
 # Home directory for user on backup server
 backup_server_user_home: '/home/backup'
+rotate_backups_script_path: /usr/local/sbin/opencrvs-rotate-backups.sh
 # Amount of backups to keep (one week)
 amount_of_backups_to_keep: 7
 
@@ -97,9 +97,23 @@ helm_diff_plugin_version: "v3.15.10"
 # Certificate manager chart version
 cert_manager_version: "v1.21.0"
 
-# Action runner controller chart version
-arc_chart_version: "0.23.7"
-arc_opencrvs_runner_version: "latest"
+# Traefik ingress controller chart version (OCI chart on ghcr.io)
+# Values are read from environments/<env>/traefik/values.yaml
+traefik_chart_version: "41.0.2"
+
+# Kubernetes self-hosted runner (official gha-runner-scale-set with ephemeral runners)
+# Override per environment in environments/<env>/inventory-vars.yml (passed to ansible as --extra-vars)
+# Version of both the controller and the scale set charts, they must match
+arc_scale_set_chart_version: "0.15.0"
+arc_controller_release_name: "arc"
+# Image built by https://github.com/opencrvs/github-opencrvs-self-hosted-runner
+arc_scale_set_runner_image: "ghcr.io/opencrvs/opencrvs-github-ephemeral-runner"
+arc_scale_set_runner_version: "latest"
+# Jobs run one by one per cluster. One idle runner is kept warm.
+arc_scale_set_min_runners: 1
+arc_scale_set_max_runners: 1
+# Runner pod resources, e.g. {requests: {cpu: 500m, memory: 1Gi}}
+arc_scale_set_runner_resources: {}
 
 # Postgres: differencial backup support (pgBackRest) version
 pgbackrest_version: "2.59.0"

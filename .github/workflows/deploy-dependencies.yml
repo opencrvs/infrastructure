@@ -11,8 +11,7 @@ on:
         options:
           - ""
 env:
-  DEPENDENCIES_CHART_VERSION: "v2.1.0"
-  TRAEFIK_CHART_VERSION: "41.0.2"
+  DEPENDENCIES_CHART_VERSION: "v2.2.0"
 jobs:
   approve:
     environment: ${{ inputs.environment }}
@@ -20,7 +19,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Waiting for manual approval
-        if: ${{ (vars.APPROVAL_REQUIRED || 'false') == 'true' }}
+        if: ${{ vars.APPROVAL_REQUIRED != 'false' }}
         uses: trstringer/manual-approval@v1
         with:
           secret: ${{ github.TOKEN }}
@@ -30,7 +29,7 @@ jobs:
           issue-body: >
             Please approve or deny the OpenCRVS dependencies deployment to ${{ inputs.environment }}
             initiated from GitHub Actions by @${{ github.actor }}.
-          exclude-workflow-initiator-as-approver: false
+          exclude-workflow-initiator-as-approver: true
 
   github-to-k8s-sync-env:
     needs: approve
@@ -55,16 +54,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
-      - name: Install Traefik
-        run: |
-          touch environments/${ENV}/traefik/values.override.yaml
-          kubectl scale deployment traefik --replicas=0 --namespace traefik || true
-          helm upgrade --install traefik oci://ghcr.io/traefik/helm/traefik:${TRAEFIK_CHART_VERSION} \
-            --namespace traefik \
-            --create-namespace \
-            -f environments/${ENV}/traefik/values.yaml \
-            -f environments/${ENV}/traefik/values.override.yaml
-          kubectl scale deployment traefik --replicas=1 --namespace traefik || true
       # FIXME: remove BACKUP_HOST/RESTORE_HOST after v2.2
       # See: https://github.com/opencrvs/opencrvs-core/pull/13502
       - name: Install OpenCRVS dependencies
@@ -92,15 +81,15 @@ jobs:
 
           kill $STERN_PID 2>/dev/null || true
           exit $STATUS
-      # FIXME: Implement vars.MONITORING_ENABLED check to conditionally install OpenTelemetry Collector
-      # https://github.com/opencrvs/opencrvs-core/issues/13377
+      # MONITORING_ENABLED is set by `environment:init`. Environments that have not
+      # re-run it have no variable yet, so only an explicit 'false' skips the install.
       - name: Install OpenTelemetry Collector
+        if: ${{ vars.MONITORING_ENABLED != 'false' }}
         run: |
           [ ! -f environments/${ENV}/opentelemetry/values.yaml ] && echo "No OpenTelemetry values.yaml found for environment ${ENV}, skipping installation" && exit 0
           helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts || true
           touch environments/${ENV}/opentelemetry/values.override.yaml
           helm upgrade --install opentelemetry-collector open-telemetry/opentelemetry-collector \
-            --namespace traefik \
             --create-namespace \
             --namespace "opencrvs-deps-${ENV}" \
             --set image.repository="otel/opentelemetry-collector-k8s" \

@@ -41,6 +41,9 @@ on:
 jobs:
   release_workflow:
     runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ inputs.version }}
+      TARGET_BRANCH: ${{ inputs.target_branch }}
     steps:
       # Derive the base branch from the version number.
       #   - patch (z > 0): base = release/<x>.<y>.<z-1>
@@ -48,11 +51,16 @@ jobs:
       - name: Determine the Base Branch
         id: get_base_branch
         run: |
-          version="${{ inputs.version }}"
+          version="$VERSION"
 
           if [[ ! $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Invalid version was provided as input: $version" >&2
             echo "Please follow semver format for versioning, e/g 1.7.2"
+            exit 1
+          fi
+
+          if [[ ! $TARGET_BRANCH =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ ]]; then
+            echo "Invalid target branch was provided as input" >&2
             exit 1
           fi
 
@@ -76,8 +84,8 @@ jobs:
       - name: Check if release branch already exists
         id: check_branch
         run: |
-          if git ls-remote --exit-code --heads origin "release/${{ inputs.version }}" > /dev/null 2>&1; then
-            echo "Branch release/${{ inputs.version }} already exists, skipping creation."
+          if git ls-remote --exit-code --heads origin "release/$VERSION" > /dev/null 2>&1; then
+            echo "Branch release/$VERSION already exists, skipping creation."
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
@@ -94,8 +102,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git checkout -b "release/${{ inputs.version }}"
-          export VERSION="${{ inputs.version }}"
+          git checkout -b "release/$VERSION"
           # Bump helm chart version: sed instead of yq to preserve formatting and comments.
           sed -i \
             -e "s/^\(\s*OPENCRVS_CHART_VERSION:\s*\).*/\1\"v$VERSION\"/" \
@@ -106,9 +113,9 @@ jobs:
             -e "s/^\(\s*DEPENDENCIES_CHART_VERSION:\s*\).*/\1\"v$VERSION\"/" \
             .github/workflows/deploy-dependencies.yml
           # Bump package.json without creating a git tag.
-          yarn version --new-version ${{ inputs.version }} --no-git-tag-version
+          yarn version --new-version "$VERSION" --no-git-tag-version
           git add .
-          git commit -m "chore: update version to ${{ inputs.version }}"
+          git commit -m "chore: update version to $VERSION"
 
           # Prepend a new "Release Candidate" section to the top of CHANGELOG.md.
           # sed removes the existing "# Changelog" header (lines 1-2) so we can
@@ -118,26 +125,26 @@ jobs:
           {
             echo "# Changelog"
             echo ""
-            echo "## ${{ inputs.version }} Release Candidate"
+            echo "## $VERSION Release Candidate"
             echo ""
             cat COPY_CHANGELOG.md
           } > CHANGELOG.md
           rm COPY_CHANGELOG.md
           git add CHANGELOG.md
-          git commit -m "docs: update changelog for ${{ inputs.version }} release candidate"
+          git commit -m "docs: update changelog for $VERSION release candidate"
 
-          git push origin "release/${{ inputs.version }}"
+          git push origin "release/$VERSION"
 
       # A dedicated merge-back branch is used for the develop PR so that any
       # conflict-resolution commits do not land on the release branch itself.
       - name: Create merge-back branch for develop PR
         run: |
-          MERGEBACK_BRANCH="merge-back/release-${{ inputs.version }}-to-develop"
+          MERGEBACK_BRANCH="merge-back/release-$VERSION-to-develop"
           if git ls-remote --exit-code --heads origin "$MERGEBACK_BRANCH" > /dev/null 2>&1; then
             echo "Branch $MERGEBACK_BRANCH already exists, skipping."
           else
-            git fetch origin "release/${{ inputs.version }}"
-            git checkout -b "$MERGEBACK_BRANCH" "origin/release/${{ inputs.version }}"
+            git fetch origin "release/$VERSION"
+            git checkout -b "$MERGEBACK_BRANCH" "origin/release/$VERSION"
             git push origin "$MERGEBACK_BRANCH"
           fi
 
@@ -152,15 +159,15 @@ jobs:
       # Skipped if the PR already exists from a previous run.
       - name: Create Pull Request
         run: |
-          MERGEBACK_BRANCH="merge-back/release-${{ inputs.version }}-to-develop"
-          TARGET="${{ inputs.target_branch }}"
+          MERGEBACK_BRANCH="merge-back/release-$VERSION-to-develop"
+          TARGET="$TARGET_BRANCH"
 
           EXISTING_PR=$(gh pr list --head "$MERGEBACK_BRANCH" --base "$TARGET" --state open --json number --jq '.[0].number // ""')
           if [ -z "$EXISTING_PR" ]; then
             gh pr create \
               --base "$TARGET" \
               --head "$MERGEBACK_BRANCH" \
-              --title "chore: merge release v${{ inputs.version }} back to $TARGET" \
+              --title "chore: merge release v$VERSION back to $TARGET" \
               --body "Merge release branch back to $TARGET to include version bump and changelog updates."
           else
             echo "PR $MERGEBACK_BRANCH → $TARGET already exists (#$EXISTING_PR), skipping."
@@ -175,12 +182,12 @@ jobs:
       # Skipped if a release for this version already exists from a previous run.
       - name: Create a draft release
         run: |
-          TAG_NAME="v${{ inputs.version }}"
+          TAG_NAME="v$VERSION"
           if gh release view "$TAG_NAME" > /dev/null 2>&1; then
             echo "Release $TAG_NAME already exists, skipping."
           else
             TITLE="OpenCRVS - $TAG_NAME"
-            NOTES="Release notes for version ${{ inputs.version }}"
+            NOTES="Release notes for version $VERSION"
             git tag "$TAG_NAME"
             git push origin "$TAG_NAME"
             gh release create "$TAG_NAME" \
@@ -193,7 +200,7 @@ jobs:
 
       - name: Delete the tag
         run: |
-          TAG_NAME="v${{ inputs.version }}"
+          TAG_NAME="v$VERSION"
           if git ls-remote --exit-code --tags origin "$TAG_NAME" > /dev/null 2>&1; then
             git tag -d "$TAG_NAME" 2>/dev/null || true
             git push origin ":refs/tags/$TAG_NAME"

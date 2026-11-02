@@ -24,22 +24,6 @@ helm template  -f infrastructure/${ENV}/opencrvs-services/values.yaml \
     -s templates/data-seed-job.yaml \
     oci://ghcr.io/opencrvs/opencrvs-services | kubectl apply -f -
 
-DOMAIN=aws.opencrvs.dev
-
-
-
-TOKEN=`curl -X POST "https://auth.aws.opencrvs.dev/authenticate-super-user" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "username": "o.admin",
-       "password": "'"$SUPER_USER_PASSWORD"'"
-     }' | jq .token`
-
-curl -H "Authorization: Bearer $TOKEN"  -X GET https://countryconfig.aws.opencrvs.dev/locations
-curl -H "Authorization: Bearer $TOKEN"  -X GET https://config.aws.opencrvs.dev/locations?type=ADMIN_STRUCTURE&_count=0
-curl -H "Authorization: Bearer $TOKEN"  -X GET https://gateway.aws.opencrvs.dev/locations?type=ADMIN_STRUCTURE&_count=0
-
-
 
 helm template -f infrastructure/${ENV}/opencrvs-services/values.yaml \
     --set data_cleanup.enabled=true \
