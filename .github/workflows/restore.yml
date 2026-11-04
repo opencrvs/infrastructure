@@ -36,18 +36,30 @@ jobs:
     environment: ${{ inputs.environment }}
     timeout-minutes: 60
     steps:
+      - name: Validate inputs
+        env:
+          BACKUP_DATE: ${{ inputs.backup-date }}
+        run: |
+          # An empty date keeps the default of the restore job
+          if [ -n "$BACKUP_DATE" ]; then
+            if [[ ! "$BACKUP_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || ! date -d "$BACKUP_DATE" >/dev/null 2>&1; then
+              echo "❌ Error: Invalid date format. Please use YYYY-MM-DD."
+              exit 1
+            fi
+          fi
       - name: Waiting for manual approval
-        if: ${{ (vars.APPROVAL_REQUIRED || 'false') == 'true' }}
+        if: ${{ vars.APPROVAL_REQUIRED != 'false' }}
         uses: trstringer/manual-approval@v1
         with:
           secret: ${{ github.TOKEN }}
           approvers: ${{ vars.GH_APPROVERS }}
-          minimum-approvals: ${{ inputs.job-name == 'data-cleanup' && 3 || 1 }}
-          issue-title: "Run ${{ inputs.job-name }} job on ${{ inputs.environment }} environment"
+          minimum-approvals: 3
+          issue-title: "Restore (${{ inputs.environment }})"
           issue-body: >
-            Please approve or deny job ${{ inputs.job-name }} on ${{ inputs.environment }} environment
+            Please approve or deny the restore of ${{ inputs.environment }} environment
+            (backup date: ${{ inputs.backup-date || 'not set' }})
             initiated from GitHub Actions by @${{ github.actor }}.
-          exclude-workflow-initiator-as-approver: false
+          exclude-workflow-initiator-as-approver: true
   prepare:
     needs: approve
     environment: ${{ inputs.environment }}
@@ -59,9 +71,6 @@ jobs:
       - k8s
       - ${{ inputs.environment }}
     steps:
-      - name: Validate date
-        run: |
-          date -d "${{ inputs.restore-date }}" >/dev/null || { echo "❌ Error: Invalid date format. Please use YYYY-MM-DD."; exit 1; }
       - name: Get restore profile for environment ${{ inputs.environment }}
         id: profile
         env:
@@ -122,6 +131,8 @@ jobs:
             name: opencrvs-deps-${{ inputs.environment }}-values-file
             path: /tmp
         - name: Create job ${{ matrix.job-name }} from helm template and apply it
+          env:
+            BACKUP_DATE: ${{ inputs.backup-date }}
           run: |
             kubectl delete job -n ${namespace} --ignore-not-found=true ${{ matrix.job-name }}
             echo "Templating with version: ${{ needs.prepare.outputs.version }}"
@@ -131,7 +142,7 @@ jobs:
               --set restore.enabled=true \
               --set restore.cronjob=false \
               --set backup_encryption_secret=backup-encryption-secret \
-              --set env.RESTORE_DATE=${{ inputs.backup-date }} \
+              --set-string env.RESTORE_DATE="$BACKUP_DATE" \
               --namespace ${namespace} \
               --show-only templates/${{ matrix.job-name }}-cronjob.yaml \
               oci://ghcr.io/opencrvs/opencrvs-dependencies-chart \

@@ -8,13 +8,13 @@
 # Copyright (C) The OpenCRVS Authors located at https://github.com/opencrvs/opencrvs-core/blob/master/AUTHORS.
 ansible_python_interpreter: /usr/bin/python3
 
-crontab_user: root
 provisioning_user: provision
 
 # User for ssh connection to backup server
 backup_server_user: 'backup'
 # Home directory for user on backup server
 backup_server_user_home: '/home/backup'
+rotate_backups_script_path: /usr/local/sbin/opencrvs-rotate-backups.sh
 # Amount of backups to keep (one week)
 amount_of_backups_to_keep: 7
 

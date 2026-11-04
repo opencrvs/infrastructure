@@ -101,6 +101,15 @@ You will need to provide the following values and answers to the following quest
 > [!NOTE]
 > OpenCRVS environment is provisioned with and deployed as Helm charts. Configuration files are created at first run of `yarn environment:init`, all further changes should be made manually at `environments/<environment name>/`
 
+### Workflow approvals
+
+Every workflow that changes an environment (provision, deploy, seed, backup, restore, reset 2FA, clear all data) starts with an `approve` job:
+
+- The approval is required unless the `APPROVAL_REQUIRED` variable of the GitHub environment is explicitly set to `false`. If it is not set, the approval is required.
+- Approvers are the GitHub users listed in the `GH_APPROVERS` repository variable. The user who started the workflow is removed from the list of approvers of that run.
+- Most workflows need 1 approval, `Clear all environment data` needs 3. List at least one more user than the approvals needed (4 users for `Clear all environment data`), otherwise the run waits until it times out.
+- For production, where your GitHub plan supports it, also configure **Required reviewers** with **Prevent self-review** and restrict **Deployment branches** to protected branches in the GitHub environment settings (Settings → Environments). GitHub enforces these rules itself, while the approval job is part of the workflow file and can be edited in a branch.
+
 ---
 
 ## 1. Create a GitHub environment

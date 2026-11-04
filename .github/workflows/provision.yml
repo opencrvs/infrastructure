@@ -35,7 +35,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Waiting for manual approval
-        if: ${{ (vars.APPROVAL_REQUIRED || 'false') == 'true' }}
+        if: ${{ vars.APPROVAL_REQUIRED != 'false' }}
         uses: trstringer/manual-approval@v1
         with:
           secret: ${{ github.TOKEN }}
@@ -46,7 +46,7 @@ jobs:
             Please approve or deny ${{ inputs.environment }} environment provisioning
             initiated from GitHub Actions by @${{ github.actor }}.
 
-          exclude-workflow-initiator-as-approver: false
+          exclude-workflow-initiator-as-approver: true
 
   provision:
     needs: approve
@@ -59,16 +59,16 @@ jobs:
       - name: Set variables for ansible
         id: ansible-variables
         run: |
-          echo '${{ toJSON(env) }}' > tmp_vars.json
-          JSON_WITHOUT_EMPTY=$(jq -c '
-            with_entries(select(.value | type == "string" and length > 0))
+          JSON_WITHOUT_EMPTY=$(jq -nc '
+            $ENV
+            | with_entries(select(.value | type == "string" and length > 0))
             | if has("backup_host_private_key") then
                 .backup_host_private_key_base64 = (.backup_host_private_key | @base64)
                 | del(.backup_host_private_key)
               else
                 .
               end
-          ' tmp_vars.json | jq -R )
+          ' | jq -R )
           echo "EXTRA_VARS=$JSON_WITHOUT_EMPTY" >> $GITHUB_OUTPUT
         env:
           repository: ${{ github.repository }}
