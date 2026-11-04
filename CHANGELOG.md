@@ -18,6 +18,7 @@
 - Restore, Deploy OpenCRVS, Validate pre/post deploy, Reset 2FA and Start a new release workflows check their text inputs (backup date, image tags, stage, user name, release version and target branch) against the expected format and pass them to scripts as environment variables. The backup date check in Restore now reads the `backup-date` input, and the `reset-2fa.yml` playbook checks the user name as well
 - Pre-deploy validation in the Deploy OpenCRVS workflow now starts after the approval step
 - Users with the `operator` role no longer get sudo rules for `cat`, `less` and `tail`, which could be escalated to a root shell or used to read any file. Operators are now members of the `adm` group, so `less`, `tail` and `cp` read system logs in `/var/log` and the journal without sudo. Container logs are available with `kubectl logs`, and `/opt/opencrvs` is already readable by everyone. Access to `/data` through sudo is removed, and previously created operator sudoers files are deleted when the playbook runs
+- Two-factor authentication set-up is now done by sshd (`ForceCommand`, `/usr/local/sbin/opencrvs-require-2fa.sh`) and not by `.profile`. A user that has not set it up yet can only open an interactive login, where the set-up starts. Commands, `scp`, `sftp` and `ssh -T` ask the user to log in interactively first. The provisioning user, the backup user and users with `two_factor: false` are not affected. A script that logs in as any other user must use a user with `two_factor: false`
 
 ## 2.1.0 Release
 
