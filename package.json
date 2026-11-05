@@ -7,7 +7,7 @@
     "linux"
   ],
   "engines": {
-    "node": "22.x.x"
+    "node": "26.x"
   },
   "license": "MPL-2.0",
   "husky": {},
