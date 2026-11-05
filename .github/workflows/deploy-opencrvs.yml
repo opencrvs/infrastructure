@@ -41,9 +41,16 @@ permissions:
   contents: read
 
 jobs:
+  check-private-network:
+    uses: ./.github/workflows/check-private-network.yml
+    with:
+      environment: ${{ inputs.environment }}
+    secrets: inherit
+
   approve:
     permissions:
       issues: write
+    needs: check-private-network
     environment: ${{ inputs.environment }}
     runs-on: ubuntu-26.04
     timeout-minutes: 60
@@ -93,6 +100,7 @@ jobs:
     secrets: inherit
   deploy:
     needs:
+      - check-private-network
       - github-to-k8s-sync-env
       - validate-predeploy
     environment: ${{ inputs.environment }}
