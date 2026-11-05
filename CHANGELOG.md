@@ -19,6 +19,7 @@
 - Pre-deploy validation in the Deploy OpenCRVS workflow now starts after the approval step
 - Two-factor authentication set-up is now done by sshd (`ForceCommand`, `/usr/local/sbin/opencrvs-require-2fa.sh`) and not by `.profile`. A user that has not set it up yet can only open an interactive login, where the set-up starts. Commands, `scp`, `sftp` and `ssh -T` ask the user to log in interactively first. The provisioning user, the backup user and users with `two_factor: false` are not affected. A script that logs in as any other user must use a user with `two_factor: false`
 - Users with the `operator` role no longer get sudo rules for `cat`, `less` and `tail`, which could be escalated to a root shell or used to read any file. Operators are now members of the `adm` group, so `less`, `tail` and `cp` read system logs in `/var/log` and the journal without sudo. Container logs are available with `kubectl logs`, and `/opt/opencrvs` is already readable by everyone. Access to `/data` through sudo is removed, and previously created operator sudoers files are deleted when the playbook runs
+- SSH keys of users are now exactly the `ssh_keys` of the inventory, so a removed key loses access when the playbook runs with the `users` tag. When `additional_keys_for_provisioning_user` is set, it replaces all keys of the provisioning user and must include the key the provisioning connects with. Removed users lose their sudo rules, `~/.ssh` and `~/.kube`
 
 ## 2.1.0 Release
 
