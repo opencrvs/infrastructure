@@ -91,6 +91,7 @@ jobs:
           kube_api_allowed_cidrs: ${{ vars.KUBE_API_ALLOWED_CIDRS }}
           kube_runner_token: ${{ secrets.GH_TOKEN }}
           kube_self_hosted_runner_additional_labels: ${{ vars.KUBE_SELF_HOSTED_RUNNER_ADDITIONAL_LABELS }}
+          monitoring_enabled: ${{ vars.MONITORING_ENABLED != 'false' }}
       - name: checkout repository
         uses: actions/checkout@v7
       - name: Run Ansible Playbook

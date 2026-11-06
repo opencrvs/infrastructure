@@ -74,7 +74,6 @@ jobs:
             -f environments/${ENV}/dependencies/values.override.yaml \
             --set backup.host=${{ vars.BACKUP_HOST }} \
             --set restore.host=${{ vars.RESTORE_HOST }} \
-            --create-namespace \
             --timeout 15m \
             --set hostname=${{ vars.DOMAIN }} \
             --atomic; STATUS=$?;
@@ -90,7 +89,6 @@ jobs:
           helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts || true
           touch environments/${ENV}/opentelemetry/values.override.yaml
           helm upgrade --install opentelemetry-collector open-telemetry/opentelemetry-collector \
-            --create-namespace \
             --namespace "opencrvs-deps-${ENV}" \
             --set image.repository="otel/opentelemetry-collector-k8s" \
             --set mode=deployment \

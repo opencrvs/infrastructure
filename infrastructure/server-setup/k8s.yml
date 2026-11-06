@@ -107,6 +107,14 @@
 - name: Configure k8s cluster components
   hosts: master
   tags: k8s
+  vars:
+    # Environments served by this cluster: kube_cluster_env and the comma separated
+    # kube_self_hosted_runner_additional_labels. The names are used for the namespaces opencrvs-<env> and
+    # opencrvs-deps-<env>, and a job selects the CI runner by them.
+    kube_environments: >-
+      {{ ([kube_cluster_env]
+          + (kube_self_hosted_runner_additional_labels | default('') | split(',') | map('trim') | reject('equalto', '') | list))
+          | unique | list }}
   tasks:
     - name: Labels nodes
       include_tasks: tasks/k8s/label-nodes.yml
@@ -118,6 +126,9 @@
       include_tasks: tasks/k8s/cert-manager.yml
     - name: Install Traefik
       include_tasks: tasks/k8s/install-traefik.yml
+    - name: Configure cluster roles of the monitoring stack
+      include_tasks: tasks/k8s/monitoring-rbac.yml
+      when: monitoring_enabled | default(true) | bool
     - name: Install k8s self-hosted runner (runner scale set)
       include_tasks: tasks/k8s/self-hosted-runner-scale-set.yml
       when: kube_runner_token is defined and kube_runner_token | trim != ''
