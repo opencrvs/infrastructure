@@ -15,20 +15,18 @@
   loop_control:
     label: "{{ item.name }}"
 
-# Users without SSH keys in the inventory have no access either. The k8s tasks do not create kube config for them
-- name: Remove SSH keys and kube config of removed users and users without SSH keys
+# Users without SSH keys in the inventory have no access either
+- name: Remove SSH keys of removed users and users without SSH keys
   ansible.builtin.file:
-    path: /home/{{ item.0.name }}/{{ item.1 }}
+    path: /home/{{ item.name }}/.ssh
     state: absent
   become: yes
   when: >-
-    item.0.state == 'absent'
-    or (item.0.name not in [ansible_user, backup_server_user] and item.0.ssh_keys | default([]) | length == 0)
-  with_nested:
-    - '{{ users }}'
-    - ['.ssh', '.kube']
+    item.state == 'absent'
+    or (item.name not in [ansible_user, backup_server_user] and item.ssh_keys | default([]) | length == 0)
+  with_items: '{{ users }}'
   loop_control:
-    label: "{{ item.0.name }}: {{ item.1 }}"
+    label: "{{ item.name }}"
 
 - name: Grant passwordless sudo to admin users, but prevent usage of 'su'
   ansible.builtin.lineinfile:
