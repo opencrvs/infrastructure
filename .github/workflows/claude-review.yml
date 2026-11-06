@@ -48,7 +48,7 @@ jobs:
             --jq '.[] | select(.body | contains("<!-- claude-review -->")) | .id')
           if [ -n "$found" ]; then echo "skip=true" >> "$GITHUB_OUTPUT"; fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: steps.guard.outputs.skip != 'true'
         with:
           ref: refs/pull/${{ env.PR_NUMBER }}/head
