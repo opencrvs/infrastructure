@@ -63,6 +63,11 @@ jobs:
             exit 1
           fi
 
+          if [[ ! $TARGET_BRANCH =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ ]]; then
+            echo "Invalid target branch was provided as input" >&2
+            exit 1
+          fi
+
           IFS='.' read -r x y z <<< "$version"
           if [ "$z" = "0" ]; then
             base_branch="develop"
@@ -112,7 +117,7 @@ jobs:
             -e "s/^\(\s*DEPENDENCIES_CHART_VERSION:\s*\).*/\1\"v$VERSION\"/" \
             .github/workflows/deploy-dependencies.yml
           # Bump package.json without creating a git tag.
-          yarn version --new-version "$VERSION" --no-git-tag-version
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
           git add .
           git commit -m "chore: update version to $VERSION"
 
