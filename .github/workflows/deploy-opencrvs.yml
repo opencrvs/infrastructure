@@ -16,11 +16,11 @@ on:
       core-image-tag:
         description: "Tag of the core image"
         required: true
-        default: "v2.1.4"
+        default: "v2.2.0"
       countryconfig-image-tag:
         description: "Tag of the countryconfig image"
         required: true
-        default: "v2.1.4"
+        default: "v2.2.0"
       data-seed-enabled:
         description: "Data seeding during deployment"
         required: false
@@ -36,16 +36,39 @@ on:
 
 env:
   # Assuming chart version matches core image tag
-  OPENCRVS_CHART_VERSION: "v2.1.4"
+  OPENCRVS_CHART_VERSION: "v2.2.0"
+permissions:
+  contents: read
+
 jobs:
+  check-private-network:
+    uses: ./.github/workflows/check-private-network.yml
+    with:
+      environment: ${{ inputs.environment }}
+    secrets: inherit
+
   approve:
+    permissions:
+      issues: write
+    needs: check-private-network
     environment: ${{ inputs.environment }}
     runs-on: ubuntu-26.04
     timeout-minutes: 60
     steps:
+      - name: Validate inputs
+        env:
+          CORE_IMAGE_TAG: ${{ inputs.core-image-tag }}
+          COUNTRYCONFIG_IMAGE_TAG: ${{ inputs.countryconfig-image-tag }}
+        run: |
+          for tag in "$CORE_IMAGE_TAG" "$COUNTRYCONFIG_IMAGE_TAG"; do
+            if [[ ! "$tag" =~ ^[A-Za-z0-9_][A-Za-z0-9._-]{0,127}$ ]]; then
+              echo "❌ Error: Invalid image tag. Use up to 128 letters, digits, '.', '_' or '-'."
+              exit 1
+            fi
+          done
       - name: Waiting for manual approval
-        if: ${{ (vars.APPROVAL_REQUIRED || 'false') == 'true' }}
-        uses: trstringer/manual-approval@v1
+        if: ${{ vars.APPROVAL_REQUIRED != 'false' }}
+        uses: trstringer/manual-approval@fa642940caf8412403569b28b2db4a1df08a83a3 # v1.13.1
         with:
           secret: ${{ github.TOKEN }}
           approvers: ${{ vars.GH_APPROVERS }}
@@ -59,7 +82,7 @@ jobs:
             country config: ${{ inputs.countryconfig-image-tag }} to ${{ inputs.environment }} 
             initiated from GitHub Actions by @${{ github.actor }}.
 
-          exclude-workflow-initiator-as-approver: false
+          exclude-workflow-initiator-as-approver: true
 
   github-to-k8s-sync-env:
     needs: approve
@@ -68,6 +91,7 @@ jobs:
       environment: ${{ inputs.environment }}
     secrets: inherit
   validate-predeploy:
+    needs: approve
     uses: ./.github/workflows/validate-opencrvs.yml
     with:
       environment: ${{ inputs.environment }}
@@ -76,6 +100,7 @@ jobs:
     secrets: inherit
   deploy:
     needs:
+      - check-private-network
       - github-to-k8s-sync-env
       - validate-predeploy
     environment: ${{ inputs.environment }}
@@ -85,7 +110,9 @@ jobs:
       GITHUB_ACTOR: ${{ github.actor }}
       CORE_IMAGE_TAG: ${{ inputs.core-image-tag }}
       COUNTRYCONFIG_IMAGE_TAG: ${{ inputs.countryconfig-image-tag }}
-      COUNTRYCONFIG_IMAGE_NAME: ${{ secrets.DOCKERHUB_ACCOUNT || 'opencrvs' }}/${{ secrets.DOCKERHUB_REPO || 'ocrvs-farajaland'}}
+      DATA_SEED_ENABLED: ${{ inputs.data-seed-enabled }}
+      # TODO: v2.4: Remove the DOCKERHUB_* fallbacks after all repositories ran the secrets migration
+      COUNTRYCONFIG_IMAGE_NAME: ${{ vars.REGISTRY_HOST || 'docker.io' }}/${{ secrets.REGISTRY_ORGANISATION || secrets.DOCKERHUB_ACCOUNT || 'opencrvs' }}/${{ secrets.REGISTRY_REPOSITORY || secrets.DOCKERHUB_REPO || 'ocrvs-farajaland' }}
       SENDER_EMAIL_ADDRESS: ${{ secrets.SENDER_EMAIL_ADDRESS }}
       ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
     runs-on:
@@ -98,22 +125,15 @@ jobs:
         env:
           PUBLIC_DOMAIN: ${{ vars.DOMAIN }}
         run: |
-          RESET="${{ inputs.reset }}"
-          if [ "$RESET" = "true" ]; then
-            RESET_MARK="<span style='color:green'>⚠️ Yes</span>"
-          else
-            RESET_MARK="<span style='color:red'>✅ No</span>"
-          fi
           SUMMARY=$(cat <<EOF
           ### Deployment Summary
 
           | Key | Value |
           |-----|-------|
           | Environment URL | https://$PUBLIC_DOMAIN |
-          | Core image tag | \`${{ inputs.core-image-tag }}\` |
-          | Country config image | \`${{ inputs.countryconfig-image-tag }}\` |
-          | Branch name | \`${{ github.ref_name }}\` |
-          | Reset environment | $RESET_MARK |
+          | Core image tag | \`$CORE_IMAGE_TAG\` |
+          | Country config image | \`$COUNTRYCONFIG_IMAGE_TAG\` |
+          | Branch name | \`$BRANCH\` |
           EOF
           )
           echo "$SUMMARY" | sed 's/^          //' >> $GITHUB_STEP_SUMMARY
@@ -161,7 +181,7 @@ jobs:
             --set-string countryconfig.image.tag="$COUNTRYCONFIG_IMAGE_TAG" \
             --set countryconfig.image.name="$COUNTRYCONFIG_IMAGE_NAME" \
             --set data_seed.env.ACTIVATE_USERS="${{ vars.ACTIVATE_USERS || 'false' }}" \
-            --set data_seed.enabled="${{ inputs.data-seed-enabled }}" \
+            --set data_seed.enabled="$DATA_SEED_ENABLED" \
             --set env.CONTENT_SECURITY_POLICY_WILDCARD="${{ vars.CONTENT_SECURITY_POLICY_WILDCARD }}" \
             --set hostname=${{ vars.DOMAIN }} 2>&1 ; STATUS=$?;
 

@@ -14,6 +14,9 @@ on:
     inputs:
       environment:
         type: string
+permissions:
+  contents: read
+
 jobs:
   reindex:
     environment: ${{ inputs.environment }}

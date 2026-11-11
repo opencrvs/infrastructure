@@ -117,7 +117,7 @@ jobs:
             -e "s/^\(\s*DEPENDENCIES_CHART_VERSION:\s*\).*/\1\"v$VERSION\"/" \
             .github/workflows/deploy-dependencies.yml
           # Bump package.json without creating a git tag.
-          npm version "$VERSION" --no-git-tag-version --allow-same-version
+          yarn version --new-version "$VERSION" --no-git-tag-version
           git add .
           git commit -m "chore: update version to $VERSION"
 
