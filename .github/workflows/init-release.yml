@@ -17,8 +17,9 @@
 #        - patch release (z > 0)  → release/<x>.<y>.<z-1>
 #        - minor/major (z = 0)    → develop
 #   2. Creates a release branch (release/<version>) from the base branch.
-#   3. Bumps Chart.yaml and prepends a CHANGELOG section, then pushes
-#      both commits to the release branch.
+#   3. Bumps the chart/image versions in the deploy workflows, package.json
+#      version and its @opencrvs/toolkit dependency, and prepends a CHANGELOG
+#      section, then pushes both commits to the release branch.
 #   4. Opens a merge-back PR (release/<version> → develop) that already
 #      contains the version-bump commits, keeping develop in sync.
 #   5. Creates a draft GitHub release and immediately deletes the backing tag.
@@ -118,6 +119,10 @@ jobs:
             .github/workflows/deploy-dependencies.yml
           # Bump package.json without creating a git tag.
           npm version "$VERSION" --no-git-tag-version --allow-same-version
+          # Keep @opencrvs/toolkit (used by the `opencrvs environment ...` CLI)
+          # in lockstep with the release. It is published from opencrvs-core
+          # with the same version number as the release.
+          npm pkg set "dependencies.@opencrvs/toolkit=$VERSION"
           git add .
           git commit -m "chore: update version to $VERSION"
 
