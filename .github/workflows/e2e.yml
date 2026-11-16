@@ -55,9 +55,11 @@ jobs:
           token: ${{ secrets.GH_TOKEN || github.token }}
 
       - name: Verify Playwright configuration
+        env:
+          COUNTRYCONFIG_REPOSITORY: ${{ vars.COUNTRYCONFIG_REPOSITORY }}
         run: |
-          if ! ls playwright.config.* >/dev/null 2>&1; then
-            echo "::error::No playwright.config found in ${{ vars.COUNTRYCONFIG_REPOSITORY }}. See packages/countryconfig-template/e2e in opencrvs-core for an example."
+          if [ ! -f playwright.config.ts ]; then
+            echo "::error::No playwright.config.ts found in the root of $COUNTRYCONFIG_REPOSITORY. Upgrade the country configuration repository to a version that includes the e2e tests."
             exit 1
           fi
 
@@ -103,9 +105,9 @@ jobs:
           export NODE_EXTRA_CA_CERTS=/tmp/letsencrypt-stg-root-x1.pem
           curl -s -o $NODE_EXTRA_CA_CERTS https://letsencrypt.org/certs/staging/letsencrypt-stg-root-x1.pem
           npx playwright test
+      # The playwright-ctrf-json-reporter writes to ./ctrf in the country config repository root
       - id: ctrf_check
         if: '!cancelled()'
-        working-directory: packages/testland
         run: |
           [ -d ctrf ] && \
            echo "ctrf=true" >> $GITHUB_OUTPUT || \
@@ -113,7 +115,7 @@ jobs:
       - name: Publish Test Report
         uses: ctrf-io/github-test-reporter@v1
         with:
-          report-path: './packages/testland/ctrf/*.json'
+          report-path: './ctrf/*.json'
           github-report: true
           summary-report: true
           test-report: true
