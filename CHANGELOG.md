@@ -4,6 +4,7 @@
 
 ### New features
 
+- Added `e2e.yml` workflow that runs Playwright tests from the `COUNTRYCONFIG_REPOSITORY` repository against an environment. `deploy-opencrvs.yml` calls it after post-deploy validation when the environment has `E2E_ENABLED=true` (configured with `environment:init`). [#13345](https://github.com/opencrvs/opencrvs-core/issues/13345)
 - Container registry other than Docker Hub. The `DOCKERHUB_ACCOUNT`, `DOCKERHUB_REPO`, `DOCKER_USERNAME` and `DOCKER_TOKEN` secrets are renamed to `REGISTRY_ORGANISATION`, `REGISTRY_REPOSITORY`, `REGISTRY_USERNAME` and `REGISTRY_TOKEN`, the new variable `REGISTRY_HOST` (default `docker.io`) sets the registry, and the pull secret is now `registry-credentials`. The secrets migration workflow copies the secrets, and `dockerhub-credentials` is still created next to the new pull secret [#14209](https://github.com/opencrvs/opencrvs-core/issues/14209)
 
 ### Improvements
