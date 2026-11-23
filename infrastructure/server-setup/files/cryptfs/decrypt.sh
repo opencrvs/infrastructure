@@ -42,7 +42,7 @@ while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do case $1 in
     shift; ENCRYPTION_KEY_FILE_PATH=$1
     ;;
   -remote-ssh-private-key | --remoteSshPrivateKeyFilepath )
-    shift; REMOTE_SSH_PRIVATE_KEY_FILE_PATH=$1
+    shift; REMOTE_SSH_PRIVATE_KEY=$1
     ;;
   -remote-file-encryption-key | --remoteFileEncryptionKeyFilepath )
     shift; REMOTE_FILE_ENCRYPTION_KEY_PATH=$1
@@ -53,7 +53,7 @@ while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do case $1 in
 esac; shift; done
 if [[ "$1" == '--' ]]; then shift; fi
 
-if [[ -n "$REMOTE_ENCRYPTED_KEY_FILE_PATH" || -n "$REMOTE_FILE_ENCRYPTION_KEY_PATH" || -n "$REMOTE_SSH_PRIVATE_KEY" ]]; then
+if [[ -n "$REMOTE_ENCRYPTED_KEY_FILE_PATH" ]]; then
   if [[ -z "$REMOTE_ENCRYPTED_KEY_FILE_PATH" || -z "$REMOTE_FILE_ENCRYPTION_KEY_PATH" || -z "$REMOTE_SSH_PRIVATE_KEY" ]]; then
     echo "ERROR: Remote disk encryption key requires -remote, -remote-file-encryption-key, and -remote-ssh-private-key."
     exit 1
