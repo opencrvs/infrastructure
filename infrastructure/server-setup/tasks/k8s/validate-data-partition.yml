@@ -9,8 +9,11 @@
 
     - name: Test disk encryption key for LUKS header
       when: disk_encryption_key is defined
-      shell: 'echo "{{ disk_encryption_key }}" | cryptsetup -d - luksOpen /tmp/luks-header.img test --test-passphrase'
+      shell: cryptsetup -d - luksOpen /tmp/luks-header.img test --test-passphrase
+      args:
+        stdin: "{{ disk_encryption_key }}"
       register: luks_test
+      no_log: true
 
     - name: Display success message
       debug:

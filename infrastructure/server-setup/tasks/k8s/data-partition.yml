@@ -68,8 +68,21 @@
     - encryptedFileSystemPreCheck.stat.exists
     - free_disk_size_gb | int < required_free_disk_size_gb | int
 
+- name: "Install cryptfs scripts"
+  ansible.builtin.copy:
+    src: "./files/cryptfs/"
+    dest: "/opt/opencrvs/scripts/cryptfs/"
+    owner: "{{ ansible_user }}"
+    group: application
+    mode: "0755"
+    directory_mode: "0755"
+  when: disk_encryption_key is defined
+
 - name: "Bootstrap encrypted data folder"
-  script: ./files/cryptfs/bootstrap.sh -s {{ encrypted_disk_size }} -p {{ disk_encryption_key }} -f {{ data_file_path }}
+  shell: /opt/opencrvs/scripts/cryptfs/bootstrap.sh -s {{ encrypted_disk_size }} -f {{ data_file_path }} --passphrase-stdin
+  args:
+    stdin: "{{ disk_encryption_key }}"
+  no_log: true
   when:
     - disk_encryption_key is defined
     - not encryptedFileSystemPreCheck.stat.exists
@@ -95,7 +108,10 @@
   when: disk_encryption_key is defined
 
 - name: "Mount encrypted data folder"
-  script: ../cryptfs/mount.sh -p {{ disk_encryption_key }} -f {{ data_file_path }}
+  shell: /opt/opencrvs/scripts/cryptfs/mount.sh -f {{ data_file_path }} --passphrase-stdin
+  args:
+    stdin: "{{ disk_encryption_key }}"
+  no_log: true
   when:
     - disk_encryption_key is defined
     - encryptedFileSystemPostCheck.stat.exists
