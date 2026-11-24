@@ -21,9 +21,7 @@
 #   2. It bumps the version in package.json, the chart versions and the
 #      default image tags, and adds a "## <version>" section to CHANGELOG.md.
 #      It skips each change that is already there, so a re-run is safe.
-#   3. For the newest line only, it opens a PR that merges the line branch
-#      into develop. The older lines do not merge into develop.
-#   4. It creates a draft GitHub release.
+#   3. It creates a draft GitHub release.
 name: 11. Release - Start a new release
 on:
   workflow_dispatch:
@@ -41,7 +39,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 env:
   VERSION: ${{ inputs.version }}
@@ -68,11 +65,9 @@ jobs:
 
           echo "branch=release/$line" >> "$GITHUB_OUTPUT"
           echo "base=$base" >> "$GITHUB_OUTPUT"
-          # Dots are removed so that the name passes the branch-name check
-          # of the repos: release/2.1.x -> merge-back/release-21x-into-develop.
-          echo "merge_back=merge-back/release-${line//./}-into-develop" >> "$GITHUB_OUTPUT"
 
-      # Full history is required to merge the line branch into develop.
+      # Full history and the tags are required to cut a missing line branch
+      # from the tag of the previous patch.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -140,45 +135,6 @@ jobs:
           fi
 
           git push origin "$LINE_BRANCH"
-
-      # Only the newest line merges into develop. The newest line is the
-      # release/<major>.<minor>.x branch with the highest version.
-      - name: Merge the newest line into develop
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LINE_BRANCH: ${{ steps.line.outputs.branch }}
-          MERGE_BACK: ${{ steps.line.outputs.merge_back }}
-        run: |
-          newest=$(git ls-remote --heads origin 'release/*' \
-            | sed 's|.*refs/heads/||' \
-            | grep -E '^release/[0-9]+\.[0-9]+\.x$' \
-            | sort -V | tail -n 1)
-          if [ "$newest" != "$LINE_BRANCH" ]; then
-            echo "$LINE_BRANCH is not the newest line ($newest), so it does not merge into develop."
-            exit 0
-          fi
-
-          open=$(gh pr list --head "$MERGE_BACK" --base develop --state open --json number --jq '.[0].number // ""')
-          if [ -z "$open" ]; then
-            # No PR is open, so the branch can start again from the line.
-            git push --force origin "$LINE_BRANCH:refs/heads/$MERGE_BACK"
-            gh pr create --base develop --head "$MERGE_BACK" \
-              --title "chore: merge $LINE_BRANCH into develop" \
-              --body "This PR merges $LINE_BRANCH into develop. It carries the fixes of the line and the start of $VERSION."
-            exit 0
-          fi
-
-          # The open PR can have commits that resolve conflicts with develop,
-          # so the line is merged into the branch and the branch is not reset.
-          git fetch origin "$MERGE_BACK"
-          git checkout -B "$MERGE_BACK" "origin/$MERGE_BACK"
-          if git merge --no-edit "origin/$LINE_BRANCH"; then
-            git push origin "$MERGE_BACK"
-            echo "Updated #$open with $LINE_BRANCH."
-          else
-            git merge --abort
-            echo "::warning::$LINE_BRANCH does not merge cleanly into $MERGE_BACK. Merge it into #$open by hand."
-          fi
 
       # The draft gives the release notes a place while the release is in
       # progress. The workflow deletes its tag again, so that no tag points at
