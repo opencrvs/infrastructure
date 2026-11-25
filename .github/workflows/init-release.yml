@@ -131,6 +131,10 @@ jobs:
           else
             # Insert "## <version>" right below the "# Changelog" header.
             sed -i "0,/^# Changelog$/s//# Changelog\n\n## $VERSION/" CHANGELOG.md
+            if ! grep -qx "## $VERSION" CHANGELOG.md; then
+              echo "::error::CHANGELOG.md has no '# Changelog' line, so the $VERSION section was not added."
+              exit 1
+            fi
             git commit -am "docs: add $VERSION to the changelog"
           fi
 
