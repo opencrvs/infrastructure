@@ -6,11 +6,22 @@ Runner installation is managed by [`opencrvs-bootstrap.sh`](./opencrvs-bootstrap
 
 Node runner is used for running GitHub Actions provision workflow to deploy Kubernetes cluster and configure node (VM) for OpenCRVS.
 
+## Bootstrapping a node
 
-Run following command:
+Download `opencrvs-bootstrap.sh` from the release tag (e.g.: v2.2.0) that you deploy, not from `develop`, and run it:
 ```
-curl -s https://raw.githubusercontent.com/opencrvs/infrastructure/develop/scripts/bootstrap/node-runner.sh -o runner.sh && bash runner.sh
+VERSION=<release tag, e.g.: v2.2.0>
+curl -fsSLO https://raw.githubusercontent.com/opencrvs/infrastructure/${VERSION}/scripts/bootstrap/opencrvs-bootstrap.sh
+bash opencrvs-bootstrap.sh --enable-runner --owner <owner> --repo <repo> --env <env>
 ```
+
+The script needs a GitHub token for the self-hosted runner. It reads it from the GITHUB_TOKEN environment variable, and asks for it if the variable is empty.
+
+To set the variable without leaving the token in the shell history:
+```
+read -rs GITHUB_TOKEN && export GITHUB_TOKEN
+```
+
 
 ## Upgrades
 

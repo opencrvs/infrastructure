@@ -21,7 +21,9 @@
 #   2. It bumps the version in package.json, the chart versions and the
 #      default image tags, and adds a "## <version>" section to CHANGELOG.md.
 #      It skips each change that is already there, so a re-run is safe.
-#   3. It creates a draft GitHub release.
+#   3. It pins scripts/bootstrap/opencrvs-bootstrap.sh to the release: the tag
+#      that the helper scripts are downloaded from, and their SHA-256 sums.
+#   4. It creates a draft GitHub release.
 name: 11. Release - Start a new release
 on:
   workflow_dispatch:
@@ -119,6 +121,16 @@ jobs:
             -e "s/^\(\s*DEPENDENCIES_CHART_VERSION:\s*\).*/\1\"v$VERSION\"/" \
             .github/workflows/deploy-dependencies.yml
 
+          # Pin the bootstrap script to the release
+          create_user_sha=$(sha256sum scripts/bootstrap/create-provision-user.sh | cut -d ' ' -f 1)
+          node_runner_sha=$(sha256sum scripts/bootstrap/node-runner.sh | cut -d ' ' -f 1)
+
+          sed -i \
+            -e "s/^\(INFRASTRUCTURE_VERSION=\).*/\1\"v$VERSION\"/" \
+            -e "s/^\(CREATE_PROVISION_USER_SHA256=\).*/\1\"$create_user_sha\"/" \
+            -e "s/^\(NODE_RUNNER_SHA256=\).*/\1\"$node_runner_sha\"/" \
+            "scripts/bootstrap/opencrvs-bootstrap.sh"
+
           if git diff --quiet; then
             echo "The versions are already on $VERSION."
           else
@@ -137,7 +149,6 @@ jobs:
             fi
             git commit -am "docs: add $VERSION to the changelog"
           fi
-
           git push origin "$LINE_BRANCH"
 
       # The draft gives the release notes a place while the release is in
