@@ -33,10 +33,14 @@ Options:
   --env           Infrastructure environment name(s) comma-separated (required)
                   Runner will be used to provision infrastructure for these envs
                   For example: dev,qa,staging or prod
-  --token         GitHub PAT or registration token (required)
   --name          Runner name (default: <hostname>-runner)
   --dir           Runner install directory (default: /opt/github-runner)
   -h, --help      Show this help message
+
+Environment:
+  GITHUB_TOKEN    GitHub PAT or registration token (required)
+                  The script asks for it if the variable is empty.
+                  It is not an option, because an option shows in the process list and in the shell history.
 """
   exit 1
 }
@@ -46,7 +50,6 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --owner) GITHUB_OWNER="$2"; shift 2 ;;
     --repo) REPO_NAME="$2"; shift 2 ;;
-    --token) GITHUB_TOKEN="$2"; shift 2 ;;
     --dir) RUNNER_DIR="$2"; shift 2 ;;
     --env) ENV="$2"; shift 2 ;;
     --runas-user) RUNAS_USER="$2"; shift 2 ;;

@@ -15,10 +15,36 @@
 # - Can be used for both master and worker nodes
 set -e
 
+# Managed by the release workflow, see .github/workflows/init-release.yml
+INFRASTRUCTURE_VERSION="v2.2.0"
+CREATE_PROVISION_USER_SHA256="5111770e1752769133d5366fcaf17b4f10277e0546b02d9a2e0ddfea764f1f4c"
+NODE_RUNNER_SHA256="3bc5536d89dc68f82ed20d2071fad575b1d62262cf1780ccda339255964f9bce"
+
 # Configurable params
 PROVISION_USER="provision"
 PROVISION_GROUP="provision"
 MIN_UBUNTU_VERSION="24.04"
+REQUIRED_URLS=(
+    "https://raw.githubusercontent.com/"
+    "https://packages.buildkite.com"
+    "https://pkgs.k8s.io"
+    "https://archive.ubuntu.com"
+    "https://changelogs.ubuntu.com"
+    "https://hub.docker.com"
+    "https://auth.docker.io"
+    "https://registry-1.docker.io"
+    "https://download.docker.com"
+    "https://sentry.io"
+    "https://fonts.gstatic.com"
+    "https://storage.googleapis.com"
+    "https://fonts.googleapis.com"
+    "https://github.com"
+    "https://acme-v02.api.letsencrypt.org"
+    "https://registry.npmjs.org"
+    "https://registry.yarnpkg.com"
+    "https://eu.ui-avatars.com"
+)
+
 
 # --- Helper Functions --- #
 abort() { echo "ERROR: $1"; exit 1; }
@@ -34,12 +60,16 @@ Options required for master node:
     --env             Infrastructure environment name(s) comma-separated (required)
                         Runner will be used to provision infrastructure for these envs
                         For example: dev,qa,staging or prod
-    --token           GitHub PAT or registration token (required)
     --enable-runner   Whether to enable the runner after installation (default: true)
 Options Required for worker node:
     --ssh-public-key  Add ssh public key to add to the user instead of generating a new key pair
 Help:
     -h, --help      Show this help message
+
+Environment:
+    GITHUB_TOKEN      GitHub PAT or registration token. Needed with --enable-runner.
+                        The script asks for it if the variable is empty.
+                        It is not an option, because an option shows in the process list and in the shell history.
 """
   exit 1
 }
@@ -49,7 +79,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --owner) GITHUB_OWNER="$2"; shift 2 ;;
     --repo) REPO_NAME="$2"; shift 2 ;;
-    --token) GITHUB_TOKEN="$2"; shift 2 ;;
+    --token) abort "--token is not supported anymore, because the token would show in the process list and in the shell history. Set the GITHUB_TOKEN environment variable, or leave it empty and the script asks for it." ;;
     --env) ENV="$2"; shift 2 ;;
     --enable-runner) ENABLE_RUNNER=true; shift ;;
     --ssh-public-key) SSH_PUBLIC_KEY="$2"; shift 2 ;;
@@ -97,27 +127,6 @@ curl_check_url() {
 }
 
 check_internet() {
-    local urls=(
-        "https://raw.githubusercontent.com/"
-        "https://packages.buildkite.com"
-        "https://pkgs.k8s.io"
-        "https://archive.ubuntu.com"
-        "https://changelogs.ubuntu.com"
-        "https://hub.docker.com"
-        "https://auth.docker.io"
-        "https://registry-1.docker.io"
-        "https://download.docker.com"
-        "https://sentry.io"
-        "https://fonts.gstatic.com"
-        "https://storage.googleapis.com"
-        "https://fonts.googleapis.com"
-        "https://github.com"
-        "https://acme-v02.api.letsencrypt.org"
-        "https://registry.npmjs.org"
-        "https://registry.yarnpkg.com"
-        "https://eu.ui-avatars.com"
-    )
-
     local failed=0
 
     echo "Testing outbound HTTPS connectivity..."
@@ -126,7 +135,7 @@ check_internet() {
     printf "%-40s %-10s\n" "URL" "STATUS"
     printf "%-40s %-10s\n" "----------------------------------------" "----------"
 
-    for url in "${urls[@]}"; do
+    for url in "${REQUIRED_URLS[@]}"; do
         if curl_check_url "$url"; then
             printf "%-45s %-10s\n" "$url" "OK"
         else
@@ -144,25 +153,57 @@ check_internet() {
     echo "Internet connectivity OK."
 }
 
+# The token comes from the GITHUB_TOKEN environment variable. If the variable is
+# empty, the script asks for it. It is only needed to install the runner.
+read_github_token() {
+    [ "${ENABLE_RUNNER:-}" = "true" ] || return 0
+    [ -z "${GITHUB_TOKEN:-}" ] || return 0
+
+    printf "GitHub PAT or registration token (no echo): "
+    read -rs GITHUB_TOKEN
+
+    [ -n "$GITHUB_TOKEN" ] || abort "The GitHub token is empty. Set the GITHUB_TOKEN environment variable."
+}
+
+# Downloads a helper script and verify SHA-256.
+download_script() {
+    local name="$1"
+    local expected_sha256="$2"
+    local url="https://raw.githubusercontent.com/opencrvs/infrastructure/${INFRASTRUCTURE_VERSION}/scripts/bootstrap/${name}"
+    local file="${WORK_DIR}/${name}"
+    local actual_sha256
+
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 "$url" --output "$file" \
+        || abort "Could not download $url. If ${INFRASTRUCTURE_VERSION} is a new release, check that it is published."
+
+    actual_sha256="$(sha256sum "$file" | cut -d ' ' -f 1)"
+    if [ "$actual_sha256" != "$expected_sha256" ]; then
+        abort "SHA-256 of $name does not match. Expected $expected_sha256, got $actual_sha256. The script is not run."
+    fi
+
+    chmod +x "$file"
+    echo "Downloaded $name ${INFRASTRUCTURE_VERSION}, SHA-256 OK."
+}
+
 # ---- MAIN ---- #
+
+read_github_token
 
 echo "Running basic checks..."
 check_ubuntu_version
 check_internet
 
 echo "Downloading dependencies..."
-sudo rm -f /tmp/create-provision-user.sh
-curl -sS https://raw.githubusercontent.com/opencrvs/infrastructure/develop/scripts/bootstrap/create-provision-user.sh -o /tmp/create-provision-user.sh
-chmod +x /tmp/create-provision-user.sh
-sudo rm -f /tmp/node-runner.sh
-curl -sS https://raw.githubusercontent.com/opencrvs/infrastructure/develop/scripts/bootstrap/node-runner.sh -o /tmp/node-runner.sh
-chmod +x /tmp/node-runner.sh
+WORK_DIR="$(mktemp -d)"
+trap 'rm -rf "$WORK_DIR"' EXIT
+download_script create-provision-user.sh "$CREATE_PROVISION_USER_SHA256"
+download_script node-runner.sh "$NODE_RUNNER_SHA256"
 
-/tmp/create-provision-user.sh --ssh-public-key "$SSH_PUBLIC_KEY"
-[ "x$ENABLE_RUNNER" == "xtrue" ] && /tmp/node-runner.sh --env "${ENV}" \
+"$WORK_DIR/create-provision-user.sh" --ssh-public-key "$SSH_PUBLIC_KEY"
+# The token is passed in the environment of the runner script, not as an option.
+[ "x$ENABLE_RUNNER" == "xtrue" ] && GITHUB_TOKEN="$GITHUB_TOKEN" "$WORK_DIR/node-runner.sh" --env "${ENV}" \
                                                         --owner "${GITHUB_OWNER}" \
-                                                        --repo "${REPO_NAME}" \
-                                                        --token "${GITHUB_TOKEN}"
+                                                        --repo "${REPO_NAME}"
 
 echo ""
 sudo [ -f "/home/$PROVISION_USER/.ssh/id_ed25519.pub" ] && \
