@@ -15,7 +15,7 @@ FS_SIZE=50g                       # -s, --size
 FS_FILE=/cryptfs_file_sparse.img  # -f, --file
 MOUNT_PATH=/data                  # -m, --mount
 DEV_MAP_NAME=cryptfs              # -n, --name
-                                  # -p, --passphrase (required)
+                                  # --passphrase-stdin (required, reads the passphrase from the first line of stdin)
 
 # options
 while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do case $1 in
@@ -31,14 +31,14 @@ while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do case $1 in
   -n | --dev-map-name )
     shift; DEV_MAP_NAME=$1
     ;;
-  -p | --passphrase )
-    shift; PASSPHRASE=$1
+  --passphrase-stdin )
+    IFS= read -r PASSPHRASE || true
     ;;
 esac; shift; done
 if [[ "$1" == '--' ]]; then shift; fi
 
 if [[ -z "$PASSPHRASE" ]]; then
-  echo "ERROR: Passphrase is required. Use -p or --passphrase."
+  echo "ERROR: Passphrase is required. Use --passphrase-stdin and provide the passphrase on stdin."
   exit 1
 fi
 
@@ -54,10 +54,10 @@ fi
 LOOP_DEVICE=$(losetup --find --show $FS_FILE)
 
 # setup encryption on the device
-echo $PASSPHRASE | cryptsetup -q -d - luksFormat $LOOP_DEVICE
+echo "$PASSPHRASE" | cryptsetup -q -d - luksFormat $LOOP_DEVICE
 
 # open the LUKS device and set a mapping name
-echo $PASSPHRASE | cryptsetup -d - luksOpen $LOOP_DEVICE $DEV_MAP_NAME
+echo "$PASSPHRASE" | cryptsetup -d - luksOpen $LOOP_DEVICE $DEV_MAP_NAME
 
 # create a file system on the device
 mkfs.ext4 /dev/mapper/$DEV_MAP_NAME
