@@ -9,10 +9,8 @@
     arc_runners_namespace: arc-runners
     arc_auth_secret_name: arc-github-auth
     arc_scale_set_name: "arc-runner-set-{{ kube_cluster_env }}"
-    arc_scale_set_labels: >-
-      {{ (['self-hosted', 'k8s', kube_cluster_env]
-          + (kube_self_hosted_runner_additional_labels | default('') | split(',') | map('trim') | reject('equalto', '') | list))
-          | unique | list }}
+    # A job selects one of the environments served by this cluster by label
+    arc_scale_set_labels: "{{ (['self-hosted', 'k8s'] + kube_environments) | unique | list }}"
   block:
     # Helm installs CRDs from the chart's crds/ directory only once and never upgrades them.
     # Server-side apply is required, the CRDs (~3MB) are too large for client-side apply annotations.
@@ -71,22 +69,16 @@
             name: opencrvs-runner
             namespace: "{{ arc_runners_namespace }}"
 
-    - name: Grant cluster-admin to CI runner serviceaccount
+    - name: Configure permissions of the CI runner
+      ansible.builtin.include_tasks: tasks/k8s/self-hosted-runner-rbac.yml
+
+    # Revokes the cluster-admin binding of earlier provisions, the runner now holds the permissions above
+    - name: Revoke cluster-admin from CI runner serviceaccount
       kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: rbac.authorization.k8s.io/v1
-          kind: ClusterRoleBinding
-          metadata:
-            name: opencrvs-arc-runner-admin
-          subjects:
-            - kind: ServiceAccount
-              name: opencrvs-runner
-              namespace: "{{ arc_runners_namespace }}"
-          roleRef:
-            kind: ClusterRole
-            name: cluster-admin
-            apiGroup: rbac.authorization.k8s.io
+        state: absent
+        api_version: rbac.authorization.k8s.io/v1
+        kind: ClusterRoleBinding
+        name: opencrvs-arc-runner-admin
 
     - name: Deploy opencrvs runner scale set via Helm
       kubernetes.core.helm:
